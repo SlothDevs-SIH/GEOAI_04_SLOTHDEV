@@ -63,7 +63,7 @@ Every file below is written by code in this repo; a missing file means that eval
 | `results/oscd_learned.json` | `ml/train_siamunet.py ROOT --gate` | **Run once** (RTX 4050): learned test F1 0.54 [0.34, 0.66], precision 0.45, recall 0.67, ECE 0.076; beats spectral, so `default_method` is `learned` by the pre-set rule. The intervals overlap with spectral's |
 | `results/oscd_val_variants.json` | `ml/eval_variants_val.py ROOT` | **Run** on the 3 validation cities: spectral F1 0.06, learned 0.36, hybrid 0.05 (recall 0.03): the hybrid is rejected |
 | `results/learned_false_alarms.json` | `eval/learned_false_alarms.py` | **Run**: polygons per km2 on the no-change farmland scene: spectral 0.62, learned 7.41, hybrid 0.34 |
-| `results/levir_bit.json` | `eval/levir_eval.py` | **Run on 7 labelled sample tiles** from the BIT repository, not the test split. BIT F1 0.928 [0.908, 0.951] vs naive 0.303 [0.217, 0.400]. The published F1 89.31 is quoted, not reproduced. Train and validation tiles in that folder are excluded |
+| `results/levir_bit.json` | `eval/levir_eval.py data/levir_test --full-split` | **Run on the full official LEVIR-CD test split (128 images), labelled "reproduced"**: BIT F1 0.9025 [0.890, 0.912], IoU 0.822, vs naive 0.137. Published BIT: F1 0.8931, IoU 0.8068 (ours is about a point higher; the published value is inside our interval). Metrics are pooled over images; inference tiles 256 px with blended overlaps |
 | `results/m8_opera_2026_<event>.json` | `eval/m8_opera.py` | Not run: needs OPERA scenes (Earthdata). Frozen parameters, labels / check points / dry-season false alarms |
 
 Limits to say out loud: seven tiles is a smoke test, not a benchmark (the interval is wide); the radar before/after mode is
