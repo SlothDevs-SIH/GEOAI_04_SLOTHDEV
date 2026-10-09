@@ -20,8 +20,6 @@ import sys
 import time
 
 import numpy as np
-from PIL import Image
-from rasterio.transform import from_origin
 from scipy.ndimage import gaussian_filter
 from skimage.exposure import match_histograms
 from skimage.filters import threshold_otsu
@@ -30,29 +28,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 from engine import change_deep, config_ml  # noqa: E402
-from engine.ingest import Pair  # noqa: E402
 from eval import metrics  # noqa: E402
+from ml import levir_data  # noqa: E402
 
 PUBLISHED = {"f1": 0.8931, "iou": 0.8068, "source": "Chen, Qi, Shi (2021), IEEE TGRS, BIT on the LEVIR-CD test split"}
 
 
-def files(root):
-    """Image names to evaluate: labelled pairs only, and only `test_*` files when the folder mixes splits
-    (the BIT sample folder also holds train_* tiles the model was trained on, which must not be scored)."""
-    lst = os.path.join(root, "list", "test.txt")
-    if os.path.exists(lst):
-        names = [n.strip() for n in open(lst) if n.strip()]
-    else:
-        names = sorted(os.listdir(os.path.join(root, "A")))
-    names = [n for n in names if all(os.path.exists(os.path.join(root, d, n)) for d in ("A", "B", "label"))]
-    tests = [n for n in names if n.startswith("test_")]
-    return tests or names
-
-
-def read_pair(root, name) -> Pair:
-    rgb = lambda d: np.asarray(Image.open(os.path.join(root, d, name)).convert("RGB")).astype(np.float32).transpose(2, 0, 1) / 255.0  # noqa: E731
-    return Pair(before=rgb("A"), after=rgb("B"), transform=from_origin(0, 0, config_ml.BIT_PIXEL_M, config_ml.BIT_PIXEL_M),
-                crs="EPSG:32614", bands=("red", "green", "blue"))
+files = levir_data.list_pairs                      # kept under the old names for callers and tests
+read_pair = levir_data.read_pair
 
 
 def naive(pair):
@@ -69,11 +52,12 @@ def run(root, out, full_split=False, limit=None):
     t0, bit_tiles, naive_tiles = time.time(), [], []
     for n in names:
         pair = read_pair(root, n)
-        gt = np.asarray(Image.open(os.path.join(root, "label", n)).convert("L")) > 127
+        gt = levir_data.read_label(root, n)
         bit_tiles.append((change_deep.detect(pair, None)["candidate"], gt))
         naive_tiles.append((naive(pair), gt))
     km2 = sum(g.size for _, g in bit_tiles) * config_ml.BIT_PIXEL_M ** 2 / 1e6
-    res = {"dataset": "LEVIR-CD", "images": len(names), "scope": "full official test split" if full_split else
+    res = {"dataset": "LEVIR-CD", "license_note": "academic use only; imagery follows Google Earth terms",
+           "georeferenced": levir_data.find_georeference(root) is not None, "images": len(names), "scope": "full official test split" if full_split else
            f"{len(names)} sample tiles from the BIT repository (NOT the full test split)",
            "bit": metrics.evaluate(bit_tiles), "naive": metrics.evaluate(naive_tiles), "published_bit": PUBLISHED,
            "note": "reproduced" if full_split else "published, not reproduced",

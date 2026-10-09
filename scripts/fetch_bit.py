@@ -20,6 +20,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 from engine import config_ml  # noqa: E402
+from ml import levir_data  # noqa: E402
 
 REPO_DIR = os.path.join(config_ml.WEIGHTS, "BIT_CD")
 
@@ -45,8 +46,8 @@ def demo_pair(repo_dir=REPO_DIR, out_dir=os.path.join(ROOT, "demos", "levir-samp
     for side, folder in (("before", "A"), ("after", "B")):
         img = np.asarray(Image.open(os.path.join(repo_dir, "samples", folder, name)).convert("RGB"))
         with rasterio.open(os.path.join(out_dir, f"{side}.tif"), "w", driver="GTiff", height=img.shape[0],
-                           width=img.shape[1], count=3, dtype="uint8", crs="EPSG:32614",
-                           transform=from_origin(621000.0, 3350000.0, config_ml.BIT_PIXEL_M, config_ml.BIT_PIXEL_M)) as d:
+                           width=img.shape[1], count=3, dtype="uint8", crs=levir_data.PLACEHOLDER_CRS,
+                           transform=from_origin(*levir_data.PLACEHOLDER_ORIGIN, config_ml.BIT_PIXEL_M, config_ml.BIT_PIXEL_M)) as d:
             d.write(img.transpose(2, 0, 1))
     return out_dir
 

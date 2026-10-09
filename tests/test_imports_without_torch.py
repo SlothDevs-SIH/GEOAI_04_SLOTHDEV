@@ -11,7 +11,7 @@ BLOCKED = ["torch", "torchvision", "onnx", "onnxruntime", "onnxscript", "pystac_
            "asf_search", "einops"]
 MODULES = ["engine.change_learned", "engine.change_deep", "engine.s1", "engine.radar", "engine.radar_run",
            "engine.config_ml", "eval.metrics", "eval.oscd_baselines", "eval.levir_eval", "eval.m8_opera",
-           "eval.build_results", "eval.learned_false_alarms", "ml.oscd_data", "ml.m8_calibrate", "ml.fetch_s1_event",
+           "eval.build_results", "eval.learned_false_alarms", "ml.oscd_data", "ml.levir_data", "ml.m8_calibrate", "ml.fetch_s1_event",
            "ml.eval_variants_val"]
 TORCH_ONLY = ["ml.siamunet", "ml.train_siamunet", "ml.export_onnx"]
 

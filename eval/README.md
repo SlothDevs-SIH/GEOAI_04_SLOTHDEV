@@ -104,7 +104,7 @@ the 10 test-city labels from `hkristen/oscd` on Hugging Face (`... - Test Labels
 split from `satellite-image-deep-learning/LEVIR-CD` (`test.zip`). The test cities and the gate are used once: `--gate` refuses a second
 run unless `--force`, and `m8_opera.py` refuses to rescore an event.
 
-The Python tests need no data: `python -m pytest -q` (176 pass and 3 skip without torch, 190 with it).
+The Python tests need no data: `python -m pytest -q` (181 pass and 3 skip without torch, 195 with it).
 
 **Reading the Assam 2024 result.** The reference clearly helps on false alarms (0.13 km2 against 11.3 km2 on a flood-free scene). Two honest
 limits: (1) there is no ground truth for the flood itself, so 56 km2 is plausible but unverified, and the 3 dB change criterion remains a

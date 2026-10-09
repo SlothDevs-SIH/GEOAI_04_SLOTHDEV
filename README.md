@@ -55,8 +55,8 @@ The thresholds were fitted without labels, and the held-out splits were never us
 | Spectral | Sentinel-2 (≥ 4 bands incl. NIR, ≥ 5 m) | NDVI / NDBI / NDWI / SWIR-blue change vector, Otsu, type rules, false-alarm filters | **Working**, used by 3 demo scenes and live uploads |
 | Radar flood (M8) | Sentinel-1 VV/VH dB | Event-level threshold + region growing, JRC permanent-water mask, morphology | **Working**, evaluated on Sen1Floods11 |
 | Learned (M8) | Sentinel-1 | Gradient-boosted pixel classifier (`engine/weights/m8_gbm.joblib`) | Optional; better on the test split, worse on Bolivia |
-| OSCD-trained model | Sentinel-2 | Siamese U-Net in PyTorch, served with ONNX | **In progress** (not in this build) |
-| BIT deep model | High-res RGB (0.5 m) | Siamese transformer, evaluated on LEVIR-CD | Planned |
+| OSCD-trained model | Sentinel-2 | Siamese U-Net in PyTorch (1.09 M parameters), served with ONNX | **Built and measured** on the 10 OSCD test locations: F1 0.54 [0.34, 0.66] against 0.38 for spectral; better in all 10 locations, weak in 3 (Valencia, Norcia, Saclay). It raises about 12x more false alarms than spectral on our no-change farmland scene (7.4 vs 0.6 polygons per km2), so spectral stays the safer default there. Not yet wired into the API |
+| BIT deep model | High-res RGB (0.5 m) | Siamese transformer (authors' LEVIR-CD weights, fetched by script) | **Built and reproduced** on the full LEVIR-CD test split (128 images): F1 0.90 [0.89, 0.91] against 0.89 published. Not yet wired into the API |
 
 ## Architecture
 
