@@ -28,16 +28,16 @@ export default function DetectorSelect({ value, onChange, health, preview = fals
             <button key={m.id} type="button" role="radio" aria-checked={selected} disabled={disabled}
               data-testid={`mode-${m.id}`} aria-describedby={disabled ? `${uid}-why-${m.id}` : undefined}
               onClick={() => onChange(m.id)}
-              className={`press flex min-h-[48px] flex-col items-start justify-center rounded-sm border px-s12 py-s8 text-left disabled:cursor-not-allowed disabled:opacity-60 ${
+              className={`press flex min-h-[48px] min-w-0 flex-col items-start justify-center overflow-hidden rounded-sm border px-s12 py-s8 text-left disabled:cursor-not-allowed disabled:opacity-60 ${
                 selected ? "border-accent bg-accent-soft text-fg" : "border-line-strong bg-surface-alt text-secondary hover:bg-surface-hover"
               }`}>
-              <span className="flex items-center gap-s8 text-small">
-                <span aria-hidden="true" className={`inline-flex h-4 w-4 items-center justify-center rounded-full border-2 ${selected ? "border-accent" : "border-line-strong"}`}>
+              <span className="flex min-w-0 max-w-full items-start gap-s8 text-small">
+                <span aria-hidden="true" className={`mt-[2px] inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${selected ? "border-accent" : "border-line-strong"}`}>
                   {selected && <span className="h-2 w-2 rounded-full bg-accent" />}
                 </span>
-                {m.label}
+                <span className="min-w-0 [overflow-wrap:anywhere]">{m.label}</span>
               </span>
-              <span className="pl-6 text-micro text-muted">{m.short}</span>
+              <span className="min-w-0 pl-6 text-micro text-muted [overflow-wrap:anywhere]">{m.short}</span>
             </button>
           );
         })}

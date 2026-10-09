@@ -15,7 +15,7 @@ export function StatTile({ k, label, value, digits = 1, unit, note, index }: { k
   return (
     <View testID={`stat-${k}`} style={{ flexGrow: 1, flexBasis: "45%", backgroundColor: c.surfaceAlt, borderRadius: radius.sm, padding: space[3] }}>
       <Txt v="metric" style={{ fontSize: 22, lineHeight: 26 }}>{text}</Txt>
-      <Txt v="tiny" tone="muted">{label}{note ? <Txt v="tiny" tone="warning"> ({note})</Txt> : null}</Txt>
+      <Txt v="tiny" tone="secondary">{label}{note ? <Txt v="tiny" tone="warning"> ({note})</Txt> : null}</Txt>
     </View>
   );
 }
