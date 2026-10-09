@@ -1,0 +1,46 @@
+{
+ "id": "guwahati",
+ "name": "Guwahati, Assam: regional check",
+ "place": "Guwahati, Assam",
+ "event": "River sandbar change, not encroachment",
+ "kind": "regional",
+ "mode": "spectral",
+ "before_date": "2019-01-12",
+ "after_date": "2025-01-15",
+ "before_label": "Before \u00b7 Sentinel-2 \u00b7 2019-01-12",
+ "after_label": "After \u00b7 Sentinel-2 \u00b7 2025-01-15",
+ "source": "Sentinel-2 L2A (Copernicus)",
+ "corners": [
+  [
+   91.699177,
+   26.19003
+  ],
+  [
+   91.779926,
+   26.190737
+  ],
+  [
+   91.780661,
+   26.120051
+  ],
+  [
+   91.699961,
+   26.119346
+  ]
+ ],
+ "demo": true,
+ "after_filter": 51,
+ "raw_detections": 4932,
+ "scenes": {
+  "before": "S2A_46RCP_20190112_0_L2A",
+  "after": "S2B_46RCP_20250115_0_L2A"
+ },
+ "bbox": [
+  91.7,
+  26.12,
+  91.78,
+  26.19
+ ],
+ "preset": "encroachment",
+ "story": "Regional check (humid, river valley). The big water-loss polygons trace the Brahmaputra sandbar: real river change, but not encroachment. Haze over the hills produced few false alarms. Urban detections are tiny and sparse."
+}

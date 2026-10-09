@@ -88,3 +88,33 @@ def test_variant_evidence_is_carried_into_the_oscd_block_when_present(tmp_path):
     o = B.build(str(tmp_path))["oscd"]
     assert o["validation_variants"]["variants"]["hybrid"]["recall"]["value"] == 0.03
     assert o["false_alarms_by_variant"]["scenes"]["season-control"]["per_km2"]["learned"] == 7.4
+
+
+def per_city(*f1s, names=("a", "b", "c")):
+    return {n: {"f1": f, "precision": f, "recall": f, "iou": f / 2} for n, f in zip(names, f1s)}
+
+
+def test_per_location_table_counts_wins_lists_weak_locations_and_labels_regions(tmp_path):
+    base = {"test_cities": ["lasvegas", "norcia", "valencia"], "bootstrap": "x",
+            "methods": {"naive": {**methods(0.3)["naive"], "per_city": per_city(0.7, 0.04, 0.01, names=("lasvegas", "norcia", "valencia"))},
+                        "spectral": {**methods(0.3)["spectral"], "per_city": per_city(0.64, 0.005, 0.02, names=("lasvegas", "norcia", "valencia"))}}}
+    learned = {"learned": {**{k: CI(0.5) for k in ("precision", "recall", "f1", "iou")}, "ece": 0.1,
+                           "per_city": per_city(0.76, 0.11, 0.03, names=("lasvegas", "norcia", "valencia"))},
+               "threshold": 0.5, "default_method": "learned"}
+    put(tmp_path, "eval/results/oscd_baselines.json", base)
+    put(tmp_path, "eval/results/oscd_learned.json", learned)
+    pl = B.build(str(tmp_path))["oscd"]["per_location"]
+    assert pl["n_locations"] == 3 and pl["locations"]["lasvegas"]["region"] == "North America"
+    assert pl["locations"]["norcia"]["learned"]["f1"] == 0.11 and pl["locations"]["norcia"]["spectral"]["f1"] == 0.005
+    s = pl["summary"]
+    assert s["learned_beats_spectral"] == 3 and s["learned_beats_naive"] == 3 and s["spectral_beats_naive"] == 1
+    assert s["learned_weak_locations_f1_below_0_25"] == ["valencia", "norcia"] and s["learned_best_locations"][0] == "lasvegas"
+    assert "3 worldwide locations" in pl["claim"] and "works everywhere" not in pl["claim"].replace("never", "")
+
+
+def test_per_location_without_a_learned_model_only_compares_naive_and_spectral(tmp_path):
+    base = {"test_cities": ["a"], "bootstrap": "x", "methods": {"naive": {**methods(0.3)["naive"], "per_city": per_city(0.2, names=("a",))},
+                                                              "spectral": {**methods(0.3)["spectral"], "per_city": per_city(0.4, names=("a",))}}}
+    put(tmp_path, "eval/results/oscd_baselines.json", base)
+    pl = B.build(str(tmp_path))["oscd"]["per_location"]
+    assert pl["summary"] == {"spectral_beats_naive": 1} and pl["locations"]["a"]["region"] == "unknown"

@@ -22,5 +22,5 @@ COPY web/public/ web/public/
 COPY --from=web /web/dist web/dist
 ENV RUNS_DIR=/tmp/runs PORT=7860
 EXPOSE 7860
-HEALTHCHECK CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:7860/health')"
+HEALTHCHECK CMD python -c "import os, urllib.request; urllib.request.urlopen('http://localhost:%s/health' % os.environ.get('PORT', '7860'))"
 CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT}"]

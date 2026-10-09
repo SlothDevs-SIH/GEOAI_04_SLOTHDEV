@@ -1,15 +1,16 @@
 import { useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import CompareMap from "../components/map/CompareMap";
+import SensitivityLab from "../components/panel/SensitivityLab";
 import { Card, ChangeCard, ChangeList, DropCounts, ExportMenu, FilterBar, ImpactPanel, Legend } from "../components/panel/Panels";
 import { useRaw, useScene } from "../hooks/useScene";
 import { DEFAULT_FILTERS, type FilterState, counterText, mapFilter, passes } from "../lib/filters";
 import { num } from "../lib/format";
 import { useReview } from "../store/review";
 
-export default function Result() {
+export default function Result({ job = false }: { job?: boolean }) {
   const { id = "" } = useParams();
-  const { data, error, loading } = useScene(id);
+  const { data, error, loading } = useScene(id, job);
   const [params, setParams] = useSearchParams();
   const filterOn = params.get("filter") !== "off";
   const selected = params.get("sel") ? Number(params.get("sel")) : undefined;
@@ -90,6 +91,7 @@ export default function Result() {
         <ChangeCard p={sel} base={data.base} status={sel ? status(sel.id) : "pending"} onReview={(st) => sel && setReview(id, sel.id, st)} />
         <ChangeList items={visible} status={status} selected={selected} onSelect={(fid) => setParam("sel", String(fid))} f={f} setF={setF} />
         <FilterBar f={f} setF={setF} types={types} />
+        {!radar && <SensitivityLab base={data.base} />}
         <ExportMenu scene={data} confirmed={confirmed} />
         <Card title="Limits">
           <ul className="list-disc pl-4 text-xs text-slate-600">{s.limits.map((l) => <li key={l}>{l}</li>)}</ul>

@@ -96,7 +96,7 @@ Ayush **adds** these keys (existing keys are never renamed or removed):
 ```json
 {
   "oscd": {
-    "split": { "train_cities": 11, "val_cities": ["..."], "test_cities": 10 },
+    "split": { "train_locations": 11, "val_locations": ["..."], "test_locations": 10 },
     "methods": {
       "naive":    { "precision": {"value": 0.0, "ci95": [0.0, 0.0]}, "recall": {}, "f1": {}, "iou": {} },
       "spectral": {},
@@ -113,7 +113,7 @@ Ayush **adds** these keys (existing keys are never renamed or removed):
 ```
 
 The `not_measured` list in the file shrinks as items are measured. Rules: numbers only come from
-code that ran; `ci95` is a bootstrap interval; test cities are used once.
+code that ran; `ci95` is a bootstrap interval; test locations are used once.
 
 ---
 

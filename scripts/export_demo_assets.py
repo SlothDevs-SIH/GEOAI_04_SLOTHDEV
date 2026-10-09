@@ -243,6 +243,9 @@ def main():
     for k in ("corners",):
         for e in index:
             e.pop(k, None)
+    old_path = f"{OUT}/index.json"
+    if os.path.exists(old_path):   # keep the regional checks published by scripts/export_regions_demo.py
+        index += [e for e in json.load(open(old_path)) if e.get("kind") == "regional"]
     json.dump(index, open(f"{OUT}/index.json", "w"), indent=1)
 
 

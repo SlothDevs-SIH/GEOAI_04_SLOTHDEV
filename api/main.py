@@ -28,7 +28,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from engine import radar
+from engine import aoi, preview, radar
 from engine.config import params_for
 
 VERSION = "1.0.0"
@@ -53,9 +53,22 @@ pool = ThreadPoolExecutor(max_workers=int(os.environ.get("JOB_WORKERS", "2")))
 lock = threading.Lock()
 
 
+def _retry(fn, attempts=20, wait=0.02):
+    """Windows cannot replace or open a file another thread has open for a moment; retry briefly instead of failing a job."""
+    for i in range(attempts):
+        try:
+            return fn()
+        except PermissionError:
+            if i == attempts - 1:
+                raise
+            time.sleep(wait)
+
+
 def _json(path):
-    with open(path) as f:
-        return json.load(f)
+    def read():
+        with open(path) as f:
+            return json.load(f)
+    return _retry(read)
 
 
 # ---------- health and measured results ----------
@@ -63,7 +76,7 @@ def _json(path):
 @api.get("/health")
 def health():
     learned = os.path.exists(os.path.join(ROOT, "engine", "weights", "m8_gbm.joblib"))
-    return {"ok": True, "version": VERSION, "modes": ["spectral", "radar"],
+    return {"ok": True, "version": VERSION, "modes": ["spectral", "radar"], "fetch_s2": True,
             "models": {"learned": learned, "deep": False}}
 
 
@@ -149,11 +162,12 @@ def _set(job_id, **kw):
         tmp = p + ".tmp"
         with open(tmp, "w") as f:
             json.dump(j, f, default=str)
-        os.replace(tmp, p)
+        _retry(lambda: os.replace(tmp, p))
     return j
 
 
-def _run(job_id, before, after, preset, mode, before_date, after_date, min_area_m2):
+def _run(job_id, before, after, preset, mode, before_date, after_date, min_area_m2, info=None, extra_warnings=(),
+         extra_after=(), persistence=0):
     from engine import run
     out = os.path.join(RUNS, job_id)
     try:
@@ -167,12 +181,19 @@ def _run(job_id, before, after, preset, mode, before_date, after_date, min_area_
         if min_area_m2 is not None:
             p = replace(p, min_area_m2=float(min_area_m2))
         res = run.analyze(before, after, preset=preset, before_date=before_date, after_date=after_date,
-                          worldcover_cache=os.path.join(out, "worldcover.tif"), params=p)
+                          worldcover_cache=os.path.join(out, "worldcover.tif"), params=p,
+                          extra_after_paths=list(extra_after), persistence=persistence)
         _set(job_id, stage="vectorising", progress=0.8)
         res.gdf["review_status"] = "pending"
         run.write_outputs(res, out, inputs=[before, after], title=f"GEOAI 04 · {preset}")
         res.raw.to_file(os.path.join(out, "result_raw.geojson"), driver="GeoJSON")
-        _set(job_id, status="done", stage="done", progress=1.0, warnings=res.summary.get("warnings", []))
+        notes = list(extra_warnings) + list(res.summary.get("warnings", []))
+        try:   # the swipe-map files; a failure here must not lose the analysis itself
+            preview.write_scene_files(res, out, {"id": job_id, "before_date": before_date, "after_date": after_date,
+                                                 **(info or {})})
+        except Exception as e:  # noqa: BLE001
+            notes.append(f"map preview not written: {type(e).__name__}: {e}")
+        _set(job_id, status="done", stage="done", progress=1.0, warnings=notes)
     except Exception as e:  # report the failure on the job instead of losing it in a worker thread
         _set(job_id, status="error", error=f"{type(e).__name__}: {e}", trace=traceback.format_exc()[-2000:])
 
@@ -225,6 +246,101 @@ async def analyze(before: UploadFile | None = File(None), after: UploadFile | No
          created=time.time())
     pool.submit(_run, job_id, b, a, preset, mode, before_date, after_date, min_area_m2)
     return {"job_id": job_id}
+
+
+# ---------- any area: a box and two dates, fetched from Sentinel-2 ----------
+
+class FetchBody(BaseModel):
+    bbox: list[float]
+    before_date: str
+    after_date: str
+    preset: str = "encroachment"
+    window_days: int = 20
+    min_area_m2: float | None = None
+    composite: int = 1      # build each image as the median of this many clear scenes (1 = single scene)
+    persistence: int = 0    # 0 = off; 2 to 4 = a change must appear in this many later images
+
+
+def _check_fetch(body: FetchBody):
+    if body.preset not in PRESETS:
+        raise HTTPException(400, f"preset must be one of {', '.join(PRESETS)}")
+    if not 1 <= body.window_days <= 45:
+        raise HTTPException(400, "window_days must be between 1 and 45")
+    if not 1 <= body.composite <= 5:
+        raise HTTPException(400, "composite must be between 1 and 5 scenes")
+    if body.persistence not in (0, 2, 3, 4):
+        raise HTTPException(400, "persistence must be 0 (off) or 2 to 4 later images")
+    if body.persistence and body.preset == "flood":
+        raise HTTPException(400, "persistence is not used for floods: flood water recedes, so it would remove real change")
+    try:
+        aoi.validate_bbox(body.bbox)
+        aoi.parse_date(body.before_date, "before date")
+        aoi.parse_date(body.after_date, "after date")
+    except aoi.AoiError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@api.post("/fetch-s2/preview")
+def fetch_preview(body: FetchBody):
+    """Which scenes would be used (date, cloud over the box), without downloading the bands."""
+    _check_fetch(body)
+    try:
+        return aoi.preview(body.bbox, body.before_date, body.after_date, body.window_days)
+    except aoi.AoiError as e:
+        raise HTTPException(400, str(e)) from e
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, f"could not reach the satellite archive: {type(e).__name__}: {e}") from e
+
+
+def _run_fetch(job_id: str, body: dict):
+    out = os.path.join(RUNS, job_id)
+    try:
+        _set(job_id, status="running", stage="fetching", progress=0.05)
+        meta = aoi.fetch_pair(body["bbox"], body["before_date"], body["after_date"], out, body["window_days"],
+                              composite=body["composite"], persistence=body["persistence"])
+        _set(job_id, fetch=meta, progress=0.3)
+        info = {"name": "Your area", "place": "{:.3f}, {:.3f} (lat, lon)".format(
+                    (body["bbox"][1] + body["bbox"][3]) / 2, (body["bbox"][0] + body["bbox"][2]) / 2),
+                "event": f"{body['preset']} between {meta['before']['date']} and {meta['after']['date']}",
+                "kind": body["preset"], "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket"}
+        _run(job_id, os.path.join(out, "before.tif"), os.path.join(out, "after.tif"), body["preset"], "spectral",
+             meta["before"]["date"], meta["after"]["date"], body.get("min_area_m2"), info, meta["warnings"],
+             meta.get("extra_after", []), body["persistence"])
+    except aoi.AoiError as e:
+        _set(job_id, status="error", error=str(e))
+    except Exception as e:  # noqa: BLE001
+        _set(job_id, status="error", error=f"{type(e).__name__}: {e}", trace=traceback.format_exc()[-2000:])
+
+
+@api.post("/fetch-s2")
+def fetch_s2(body: FetchBody):
+    """Analyse any area: fetch the two scenes for a box and dates, then run the normal engine as a job."""
+    _check_fetch(body)
+    job_id = uuid.uuid4().hex[:16]
+    os.makedirs(os.path.join(RUNS, job_id))
+    _set(job_id, id=job_id, status="queued", stage="queued", progress=0.0, warnings=[], mode="spectral",
+         preset=body.preset, bbox=body.bbox, before_date=body.before_date, after_date=body.after_date,
+         created=time.time())
+    pool.submit(_run_fetch, job_id, body.model_dump())
+    return {"job_id": job_id}
+
+
+FILE_TYPES = {".json": "application/json", ".geojson": "application/geo+json", ".webp": "image/webp",
+              ".gpkg": "application/geopackage+sqlite3", ".csv": "text/csv",
+              ".kml": "application/vnd.google-earth.kml+xml", ".pdf": "application/pdf"}
+
+
+@api.get("/jobs/{job_id}/files/{path:path}")
+def job_file(job_id: str, path: str):
+    """The swipe-map files of a finished job, in the same layout as a demo scene (exports/ maps to the job folder)."""
+    d = os.path.realpath(_done(job_id))
+    rel = path[len("exports/"):] if path.startswith("exports/") else path
+    p = os.path.realpath(os.path.join(d, rel))
+    ext = os.path.splitext(p)[1].lower()
+    if (not p.startswith(d + os.sep) or not os.path.isfile(p) or ext not in FILE_TYPES
+            or os.path.basename(p) in ("job.json", "review.json")):
+        raise HTTPException(404, "file not found")
+    return FileResponse(p, media_type=FILE_TYPES[ext])
 
 
 @api.get("/jobs/{job_id}")

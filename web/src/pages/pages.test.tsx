@@ -20,9 +20,9 @@ beforeEach(() => {
 });
 
 describe("Scenes", () => {
-  it("lists the four demo scenes and the upload card", async () => {
+  it("lists the demo scenes (four tuned, three regional checks) and the analyse card", async () => {
     at("/", <Scenes />);
-    await waitFor(() => expect(screen.getAllByTestId("scene-card")).toHaveLength(4));
+    await waitFor(() => expect(screen.getAllByTestId("scene-card")).toHaveLength(7));
     expect(screen.getByText("Try your own")).toBeInTheDocument();
   });
 });

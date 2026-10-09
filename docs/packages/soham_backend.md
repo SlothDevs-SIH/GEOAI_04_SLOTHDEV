@@ -1,7 +1,30 @@
 # Package: `soham_backend` (product quality, stack visibility, deployment)
 
-**Owner:** Soham · **Branch:** `soham_backend` (create from `main`) · **Size:** about 24 hours of work across the 8 tasks below
+**Owner:** Soham · **Branch:** `soham_backend` (create from `main`) · **Size:** about 32 hours of work across the 9 tasks below (S9 added: the product must work for any area in India)
 **Read first:** [`CONTRACTS.md`](CONTRACTS.md) · [`../DECISIONS.md`](../DECISIONS.md) · **Partner package:** [`ayush_backend.md`](ayush_backend.md)
+
+---
+
+## What is in this branch (`soham_backend`, 9 Oct 2026, evening)
+
+**Everything in this package is built and tested except the live deployment and the demo video, which need the team accounts and a recording.**
+
+| New | Where |
+|---|---|
+| Analyse any area: box + two dates, scene choice, live jobs, swipe map for results | `engine/aoi.py`, `engine/preview.py`, `api/main.py` (`/fetch-s2`, `/fetch-s2/preview`, `/jobs/{id}/files`), `web/src/pages/Analyse.tsx`, `web/src/components/map/AreaPicker.tsx` |
+| Radar upload tab | `web/src/pages/Analyse.tsx` |
+| Median composites and persistence (off by default, measured) | `engine/composite.py`, `engine/persistence.py`, `eval/composites.py` -> `eval/composites.json` |
+| Live sensitivity lab (exact parity with the server) | `engine/sensitivity.py`, `web/src/lib/sensitivity.ts`, `web/src/components/panel/SensitivityLab.tsx`, `scripts/export_sensitivity.py` |
+| Offline PWA (about 23 MB cached) | `web/vite.config.ts`, `web/e2e/offline.spec.ts` |
+| Tech stack table and architecture diagram on the About page | `web/src/pages/About.tsx`, `docs/img/geoai04_architecture.png` |
+| Regional checks (six regions run and reviewed, three published as demo scenes) | `eval/regions.py`, `eval/regions.json`, `scripts/export_regions_demo.py`, `docs/img/qa_region_*.jpg` |
+| Visual QA tool | `scripts/qa_overlay.py` |
+| Deployment guide, Render fallback, container verified | `docs/DEPLOY.md`, `render.yaml`, `Dockerfile` |
+| Demo script and pre-submission check | `docs/DEMO_SCRIPT.md`, `scripts/clean_clone_check.py` |
+
+**Checks at this commit:** 98 backend tests, 49 web unit tests and 4 browser end-to-end tests (including offline) pass; `ruff` and `eslint` are clean; the production build succeeds; the container builds and runs healthy. The demo source images were re-downloaded and the engine reproduces the published numbers exactly (2,185 to 265; 6,830 to 475; 3,083 to 22).
+
+**Fixed along the way:** a Windows file race that made half of the API job tests flaky; the radar upload temp-file bug; a silent-zeros risk when a satellite pass does not cover the chosen box.
 
 ---
 
@@ -88,6 +111,20 @@ flood extent from one date". Add a Vitest component test.
 | Config | `ALLOWED_ORIGINS` for the Vercel domain; no secrets in the repo |
 | Done when | The live site and `/health` URL work, and both URLs are in the README |
 
+### S9. Any area in India (about 8 h) → core, added 9 Oct
+The demo scenes are only examples. The product must analyse **any area in India** (and anywhere Sentinel-2 reaches).
+
+| Piece | Detail |
+|---|---|
+| `POST /fetch-s2` | Body: bounding box (west, south, east, north), before date, after date, preset. Finds the MGRS tile (`mgrs`), searches scenes within about 15 days of each date (`s2.search`), keeps the **least cloudy scene whose data footprint covers the box**, reads the box windows, then runs the normal job. Returns a `job_id` |
+| Limits | Cap the box (about 15 km by 15 km inside one tile at first). A box that spans two tiles or is too big gets a plain-language `400`. Larger areas = tiling = future work |
+| Web: area picker | Analyse page: draw a rectangle on the MapLibre map, choose two dates, **preview the chosen scenes (date, cloud %)** before running. Keep the upload option |
+| Cloud advice | If the best scene is cloudy over the box, show a warning; for a flood in monsoon, suggest the radar mode |
+| More demo scenes | Add **3 to 4 scenes from different regions and climates** (for example arid Rajasthan, Delhi NCR, a coastal city, the humid south). Visually check each with `scripts/qa_overlay.py` |
+| Evidence | Add per-scene false alarms per km2 for the new scenes to `eval/ablation.json`; say "validated on N regions" in the README, never "works everywhere" |
+| Tests | Unit: a latitude and longitude in several Indian regions maps to the right MGRS tile; oversized and two-tile boxes are rejected; scene choice prefers low cloud and full coverage (mocked search). One `integration` test (network) fetches a small real box |
+| Done when | A user can draw a box in any Indian region, pick dates and get a result, and the new demo scenes pass visual QA |
+
 ### S8. Submission pack (about 3 h)
 README live links and a screenshot, demo video (3 minutes, recorded on the deployed site), the
 stack slide, a clean-clone test (fresh venv, install, tests, one CLI run), the checklist in
@@ -99,9 +136,9 @@ stack slide, a clean-clone test (fresh venv, install, tests, one CLI run), the c
 
 | When | Milestone |
 |---|---|
-| 18:30 | S1 done; S2 started |
-| 21:00 | S2, S4 and S5 done; S3 working on Pune |
-| 00:00 | **Merge-ready:** S3, S6 (core), S7 done; tests and lint green; a short "what is in this branch" note at the top of this file |
+| 18:30 | S1 done; S2 started; S9 design agreed |
+| 21:00 | S2, S4 and S5 done; S9 `/fetch-s2` working; S3 working on one scene |
+| 00:00 | **Merge-ready:** S3, S7 and S9 done (S6 PWA if time; the slider is optional); tests and lint green; a short "what is in this branch" note at the top of this file |
 | 03:00 | Freeze |
 
 **Interim rule:** commit small and often; keep `soham_backend` green (`pytest`, `ruff`, `npm test`).
@@ -115,6 +152,59 @@ stack slide, a clean-clone test (fresh venv, install, tests, one CLI run), the c
 - [ ] Composites and persistence are measured in `eval/ablation.json` (kept or switched off by evidence).
 - [ ] The About page shows the tech stack (used now vs in progress) and the architecture diagram.
 - [ ] The Analyse page offers radar uploads.
-- [ ] The PWA works offline; the permalink test passes.
+- [ ] A user can analyse **any area in India** by drawing a box and choosing dates (S9), with a size cap and clear errors; at least 3 more regional demo scenes pass visual QA.
+- [ ] The PWA works offline and the permalink test passes (or the PWA is explicitly cut).
 - [ ] The site is live on Vercel and the API has a host, or the fallback is documented.
 - [ ] Submission pack complete; repo public; no edits to the partner's files.
+
+---
+
+## 6. Progress log
+
+### S1: health check (done, 9 Oct evening)
+- Backend: `pytest` **37 passed**, `ruff` clean.
+- Web: `npm ci`, `lint`, `typecheck`, **19 tests passed**, `npm run build` succeeds. The Playwright smoke test (`npm run e2e`) was **not run** locally.
+
+### S2: visual QA of the demo outputs (the four scenes below are demo examples, not the product's limit) (findings, thresholds NOT yet changed)
+Tool: `python scripts/qa_overlay.py` writes `docs/img/qa_<scene>.jpg` (left before, right after with polygons; colour = change type, line thickness = tier).
+
+| Scene | What the picture shows | Verdict |
+|---|---|---|
+| **Navi Mumbai airport** (265 polygons, 218 ha built-up gain, 33 ha water loss) | Large polygons sit on the earthworks and platform; water-loss polygons follow the former stream channel through the site | **Looks right** |
+| **Pune / Hinjewadi** (475 polygons, 142 ha) | Large clusters (north-west and north-east) sit on construction. But **many tiny 3 to 10 pixel boxes** are scattered over existing town and fields; 309 of the 475 are `low` tier | **Mostly plausible, but cluttered.** Polygons of at least 1,000 m² keep **91% of the changed area with 30% fewer polygons** (at least 2,000 m²: 76% of the area, 62% fewer) |
+| **Season control** (22 polygons, 12 ha) | The after image is much drier and browner, yet few polygons appear. **A long straight strip runs along a highway** (likely real road works or a registration edge effect) and a few clusters sit on dark patches | **Works as a seasonal filter, but it is not a pure "nothing changed" control** |
+| **Assam flood, radar** (37 polygons, 139 ha) | Polygons trace the dark water along and around the river meander | **Plausible.** Ask Ayush to confirm the JRC permanent-water mask is applied in this demo (the outlines hug the river) |
+
+**Recommendations (waiting for the team's decision, because they change headline numbers):**
+1. **Raise the minimum mapping unit** for the encroachment preset from 300 m² to **1,000 m²** (10 pixels, a normal choice for 10 m data), or keep 300 m² but **hide the `low` tier by default** in the web app. Either removes clutter, not real change.
+2. **Reword the season-control claim.** Say "a scene with no large new buildings; remaining detections may include real small changes such as road works", so the false-alarm number (0.62 per km²) is presented as an **upper bound**.
+3. **Do not compare against my local Pune stack.** My copy under `demos/` was fetched before Ayush's Sentinel-2 offset fix and gives 237 polygons instead of 475. The files under `web/public/demos/` are the correct ones.
+
+### Progress after S2 (9 Oct, evening)
+
+| Task | State | Evidence |
+|---|---|---|
+| **S9 any area in India** | **Done** (backend and web) | `engine/aoi.py`, `POST /fetch-s2` and `/fetch-s2/preview`, `GET /jobs/{id}/files`, area picker on the Analyse page, `/job/:id` swipe map. Real archive check: scene selection works for Delhi NCR, Jaipur, Chennai, Kochi, Guwahati and Bengaluru (clear scenes found for each; preview about 23 s after parallelising the lookups, down from about 100 s) |
+| **S5 radar upload** | **Done** | "Radar flood (Sentinel-1)" tab, one-file upload, honest note (single date, open water only) |
+| **S4 stack visibility** | **Done** | About page: tech stack table (Used now / In progress / Planned) and the architecture diagram; `docs/img/geoai04_architecture.png` in the README |
+| **S3 composites and persistence** | **Done, measured: keep OFF by default** | `eval/composites.py` -> `eval/composites.json`. Season control: single 11 polygons (0.31 per km2), median of 3: 16 (worse), persistence 2: **8 (-27%)**, both 14. Pune: single 475 polygons / 142 ha; persistence 435 / 121 ha; median of 3: 438 / 125 ha; both 401 / 111 ha. So persistence removes some false alarms **and about 15% of real changed area**; median composites did not help. One test area each, so this is a measurement, not a guarantee |
+| **S6 offline PWA** | **Done** | 216 files (about 9 MB) cached; offline badge; Playwright test opens the demo with the network off |
+| **S7 deployment** | **Prepared; needs your accounts** | `docs/DEPLOY.md`, `render.yaml`, Dockerfile health check follows `$PORT`; container build result below |
+| **S8 submission pack** | In progress | `scripts/clean_clone_check.py` written; README and video still to do |
+
+**Evidence for `eval/results.json` (Ayush owns that file):** please add `eval/composites.json` as a `composites` key in `build_results.py`.
+
+### Progress, later on 9 Oct (evening)
+
+| Task | State | Evidence |
+|---|---|---|
+| **X1 live sensitivity lab** (optional) | **Done** | `engine/sensitivity.py` (data + Python mirror), `web/src/lib/sensitivity.ts` (the same algorithm in the browser), `SensitivityLab` card on the Result page. A fixture made by the Python engine proves the browser gives **identical counts and pixel totals at 9 slider settings**; at the default settings it reproduces the server's own count. It is an interactive preview, the server result stays the source of truth |
+| **S9 regional validation** | **Done, with an honest verdict** | `eval/regions.py` ran the full pipeline on Delhi NCR, Jaipur, Chennai, Kochi, Guwahati and Bengaluru, all reviewed by eye (`docs/img/qa_region_*.jpg`, notes in `eval/regions.json`). Plausible in fast-growing urban areas. **Known confusers: river channels and sandbars (Yamuna, Brahmaputra) and bare soil in arid regions.** Three regions are published as "Regional check" demo scenes, with their limits in the story; the engine's limits text now mentions rivers and bare soil |
+| **Robustness fix** | **Done** | Windows file race in the job state made about half of the API fetch tests flaky (job state replaced while polled). Fixed with a short retry; 6 of 6 repeated runs pass |
+| **S7 deployment** | **Container verified** | See `docs/DEPLOY.md` section 3: image builds, runs healthy, and completed a live Delhi analysis (1,831 raw to 59 real changes); about 480 MiB memory for a 4 km box |
+| **S8 submission pack** | In progress | README, `docs/DEMO_SCRIPT.md`, `scripts/clean_clone_check.py` are done; still to do: record the video, put the live URLs in the README, run the clean-clone check on the final commit |
+
+**Open decisions for the team (nothing changed without them):**
+1. Pune clutter: minimum area 300 m2 to 1,000 m2, or hide the `low` tier by default (the Sensitivity lab already lets a user see the effect).
+2. Reword the season-control false-alarm number as an upper bound.
+3. Do the regional checks stay on the home page, or only in the docs?

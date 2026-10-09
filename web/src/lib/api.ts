@@ -42,6 +42,65 @@ export async function loadScene(id: string): Promise<SceneData> {
   throw lastErr instanceof Error ? lastErr : new Error(`scene ${id} not found`);
 }
 
+/** A finished live job, opened like a demo scene: the API writes the same files under /jobs/<id>/files. */
+export async function loadJobScene(jobId: string): Promise<SceneData> {
+  const base = `${API_URL}/jobs/${jobId}/files`;
+  const [meta, summary, filtered] = await Promise.all([
+    getJSON<SceneMeta>(`${base}/meta.json`),
+    getJSON<Summary>(`${base}/summary.json`),
+    getJSON<FeatureCollection<ChangeProps>>(`${base}/result_filtered.geojson`),
+  ]);
+  return { meta, summary, filtered, base };
+}
+
+export interface FetchRequest {
+  bbox: [number, number, number, number]; // west, south, east, north
+  before_date: string;
+  after_date: string;
+  preset: string;
+  composite?: number; // median of this many clear images per date (1 = the single clearest image)
+  persistence?: number; // 0 = off; 2 to 4 = a change must appear in this many later images
+}
+
+export interface ScenePick {
+  scene: string;
+  date: string;
+  tile_cloud_pct: number;
+  aoi_invalid_pct: number;
+  days_from_target: number;
+}
+
+export interface FetchPreview {
+  bbox: number[];
+  size_km: [number, number];
+  before: ScenePick;
+  after: ScenePick;
+  warnings: string[];
+}
+
+export interface JobState {
+  status: string;
+  stage?: string;
+  progress?: number;
+  warnings?: string[];
+  error?: string;
+  fetch?: { before: ScenePick; after: ScenePick };
+}
+
+async function postJSON<T>(path: string, body: unknown): Promise<T> {
+  const r = await fetch(`${API_URL}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error((d as { detail?: string }).detail ?? `${r.status} ${r.statusText}`);
+  return d as T;
+}
+
+/** Which scenes would be used for this box and these dates (no bands are downloaded). */
+export const fetchPreview = (req: FetchRequest) => postJSON<FetchPreview>("/fetch-s2/preview", req);
+/** Start an analysis of any box: the server fetches both scenes, then runs the normal engine as a job. */
+export const startFetch = (req: FetchRequest) => postJSON<{ job_id: string }>("/fetch-s2", req);
+export const getJob = (id: string) => getJSON<JobState>(`${API_URL}/jobs/${id}`);
+export const getJobSummary = <T = unknown>(id: string) => getJSON<T>(`${API_URL}/jobs/${id}/summary`);
+
 export const loadRaw = (base: string) => getJSON<FeatureCollection>(`${base}/result_raw.geojson`);
 
 export interface Metrics {

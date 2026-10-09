@@ -104,5 +104,89 @@
   "demo": true,
   "after_filter": 22,
   "raw_detections": 3083
+ },
+ {
+  "id": "delhi-ncr",
+  "name": "Delhi NCR (Noida): regional check",
+  "place": "Delhi NCR (Noida)",
+  "event": "Urban growth, with a known river false alarm",
+  "kind": "regional",
+  "mode": "spectral",
+  "before_date": "2019-01-05",
+  "after_date": "2025-01-23",
+  "before_label": "Before \u00b7 Sentinel-2 \u00b7 2019-01-05",
+  "after_label": "After \u00b7 Sentinel-2 \u00b7 2025-01-23",
+  "source": "Sentinel-2 L2A (Copernicus)",
+  "demo": true,
+  "after_filter": 290,
+  "raw_detections": 5082,
+  "scenes": {
+   "before": "S2B_43RGM_20190105_1_L2A",
+   "after": "S2B_43RGM_20250123_0_L2A"
+  },
+  "bbox": [
+   77.31,
+   28.5,
+   77.39,
+   28.57
+  ],
+  "preset": "encroachment",
+  "story": "Regional check (semi-arid, dense urban growth). Mixed. New development and the landfill edge look real, but a long strip along the Yamuna riverbed is flagged as built-up gain (a moving river channel and sandbars, not construction)."
+ },
+ {
+  "id": "bengaluru",
+  "name": "Bengaluru (Whitefield): regional check",
+  "place": "Bengaluru (Whitefield)",
+  "event": "Fast-growing urban fringe",
+  "kind": "regional",
+  "mode": "spectral",
+  "before_date": "2019-02-18",
+  "after_date": "2025-02-06",
+  "before_label": "Before \u00b7 Sentinel-2 \u00b7 2019-02-18",
+  "after_label": "After \u00b7 Sentinel-2 \u00b7 2025-02-06",
+  "source": "Sentinel-2 L2A (Copernicus)",
+  "demo": true,
+  "after_filter": 272,
+  "raw_detections": 6117,
+  "scenes": {
+   "before": "S2B_43PGQ_20190218_0_L2A",
+   "after": "S2B_43PGQ_20250206_0_L2A"
+  },
+  "bbox": [
+   77.72,
+   12.95,
+   77.8,
+   13.02
+  ],
+  "preset": "encroachment",
+  "story": "Regional check (tropical plateau, urban growth). Plausible for a fast-growing urban fringe: clusters on new buildings and earthworks, plus many small detections that are partly noise."
+ },
+ {
+  "id": "guwahati",
+  "name": "Guwahati, Assam: regional check",
+  "place": "Guwahati, Assam",
+  "event": "River sandbar change, not encroachment",
+  "kind": "regional",
+  "mode": "spectral",
+  "before_date": "2019-01-12",
+  "after_date": "2025-01-15",
+  "before_label": "Before \u00b7 Sentinel-2 \u00b7 2019-01-12",
+  "after_label": "After \u00b7 Sentinel-2 \u00b7 2025-01-15",
+  "source": "Sentinel-2 L2A (Copernicus)",
+  "demo": true,
+  "after_filter": 51,
+  "raw_detections": 4932,
+  "scenes": {
+   "before": "S2A_46RCP_20190112_0_L2A",
+   "after": "S2B_46RCP_20250115_0_L2A"
+  },
+  "bbox": [
+   91.7,
+   26.12,
+   91.78,
+   26.19
+  ],
+  "preset": "encroachment",
+  "story": "Regional check (humid, river valley). The big water-loss polygons trace the Brahmaputra sandbar: real river change, but not encroachment. Haze over the hills produced few false alarms. Urban detections are tiny and sparse."
  }
 ]

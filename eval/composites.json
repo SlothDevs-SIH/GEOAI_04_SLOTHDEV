@@ -1,0 +1,195 @@
+{
+ "generated_utc": "2026-10-09T11:57:56+00:00",
+ "areas": {
+  "season-control (Saswad farmland)": {
+   "note": "different seasons on purpose: crops change, nothing large is built",
+   "bbox": [
+    74.0,
+    18.33,
+    74.06,
+    18.38
+   ],
+   "before": "2024-11-01",
+   "after": "2025-03-25",
+   "variants": {
+    "single": {
+     "raw_detections": 3451,
+     "after_filter": 11,
+     "changed_ha": 1.9,
+     "area_km2": 35.48,
+     "detections_per_km2": 0.31,
+     "persistence": null,
+     "composite_of": null,
+     "scenes": {
+      "before": "S2A_43QCA_20241030_0_L2A",
+      "after": "S2B_43QCA_20250324_0_L2A",
+      "extra_after": []
+     },
+     "warnings": []
+    },
+    "composite3": {
+     "raw_detections": 3374,
+     "after_filter": 16,
+     "changed_ha": 2.6,
+     "area_km2": 35.48,
+     "detections_per_km2": 0.45,
+     "persistence": null,
+     "composite_of": [
+      "S2A_43QCA_20241030_0_L2A",
+      "S2B_43QCA_20241025_0_L2A",
+      "S2A_43QCA_20241119_0_L2A"
+     ],
+     "scenes": {
+      "before": "S2A_43QCA_20241030_0_L2A",
+      "after": "S2B_43QCA_20250324_0_L2A",
+      "extra_after": []
+     },
+     "warnings": []
+    },
+    "persistence2": {
+     "raw_detections": 3451,
+     "after_filter": 8,
+     "changed_ha": 1.5,
+     "area_km2": 35.48,
+     "detections_per_km2": 0.23,
+     "persistence": {
+      "k": 2,
+      "scenes": 2,
+      "removed_px": 11275,
+      "raw_blobs_single_scene": 3451
+     },
+     "composite_of": null,
+     "scenes": {
+      "before": "S2A_43QCA_20241030_0_L2A",
+      "after": "S2B_43QCA_20250324_0_L2A",
+      "extra_after": [
+       "2025-03-19"
+      ]
+     },
+     "warnings": []
+    },
+    "composite3+persistence2": {
+     "raw_detections": 3374,
+     "after_filter": 14,
+     "changed_ha": 1.6,
+     "area_km2": 35.48,
+     "detections_per_km2": 0.39,
+     "persistence": {
+      "k": 2,
+      "scenes": 2,
+      "removed_px": 9588,
+      "raw_blobs_single_scene": 3374
+     },
+     "composite_of": [
+      "S2A_43QCA_20241030_0_L2A",
+      "S2B_43QCA_20241025_0_L2A",
+      "S2A_43QCA_20241119_0_L2A"
+     ],
+     "scenes": {
+      "before": "S2A_43QCA_20241030_0_L2A",
+      "after": "S2B_43QCA_20250324_0_L2A",
+      "extra_after": [
+       "2025-03-19"
+      ]
+     },
+     "warnings": []
+    }
+   }
+  },
+  "pune-hinjewadi (real construction)": {
+   "note": "same season, years apart: real urban growth",
+   "bbox": [
+    73.68,
+    18.56,
+    73.76,
+    18.62
+   ],
+   "before": "2019-01-25",
+   "after": "2025-02-17",
+   "variants": {
+    "single": {
+     "raw_detections": 6830,
+     "after_filter": 475,
+     "changed_ha": 141.7,
+     "area_km2": 56.88,
+     "detections_per_km2": 8.35,
+     "persistence": null,
+     "composite_of": null,
+     "scenes": {
+      "before": "S2B_43QCA_20190125_1_L2A",
+      "after": "S2C_43QCA_20250217_0_L2A",
+      "extra_after": []
+     },
+     "warnings": []
+    },
+    "composite3": {
+     "raw_detections": 7051,
+     "after_filter": 438,
+     "changed_ha": 125.2,
+     "area_km2": 56.88,
+     "detections_per_km2": 7.7,
+     "persistence": null,
+     "composite_of": [
+      "S2B_43QCA_20190125_1_L2A",
+      "S2B_43QCA_20190105_0_L2A",
+      "S2B_43QCA_20190115_0_L2A"
+     ],
+     "scenes": {
+      "before": "S2B_43QCA_20190125_1_L2A",
+      "after": "S2C_43QCA_20250217_0_L2A",
+      "extra_after": []
+     },
+     "warnings": []
+    },
+    "persistence2": {
+     "raw_detections": 6830,
+     "after_filter": 435,
+     "changed_ha": 121.1,
+     "area_km2": 56.88,
+     "detections_per_km2": 7.65,
+     "persistence": {
+      "k": 2,
+      "scenes": 2,
+      "removed_px": 11995,
+      "raw_blobs_single_scene": 6830
+     },
+     "composite_of": null,
+     "scenes": {
+      "before": "S2B_43QCA_20190125_1_L2A",
+      "after": "S2C_43QCA_20250217_0_L2A",
+      "extra_after": [
+       "2025-02-12"
+      ]
+     },
+     "warnings": []
+    },
+    "composite3+persistence2": {
+     "raw_detections": 7051,
+     "after_filter": 401,
+     "changed_ha": 111.1,
+     "area_km2": 56.88,
+     "detections_per_km2": 7.05,
+     "persistence": {
+      "k": 2,
+      "scenes": 2,
+      "removed_px": 11953,
+      "raw_blobs_single_scene": 7051
+     },
+     "composite_of": [
+      "S2B_43QCA_20190125_1_L2A",
+      "S2B_43QCA_20190105_0_L2A",
+      "S2B_43QCA_20190115_0_L2A"
+     ],
+     "scenes": {
+      "before": "S2B_43QCA_20190125_1_L2A",
+      "after": "S2C_43QCA_20250217_0_L2A",
+      "extra_after": [
+       "2025-02-12"
+      ]
+     },
+     "warnings": []
+    }
+   }
+  }
+ }
+}

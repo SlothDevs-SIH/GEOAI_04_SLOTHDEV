@@ -15,3 +15,7 @@ engine/weights/bit_levir.pt
 engine/weights/BIT_CD/
 # ...but the small trained models ARE committed (docs/packages/CONTRACTS.md Seam 6)
 !engine/weights/siamunet_oscd.pt
+eval/cache/
+
+# source image stacks and their metadata are fetched locally by scripts/fetch_demo_scenes.py
+/demos/

@@ -64,6 +64,7 @@ def detect(pair, p: Params):
     ]
     for name, m in rules:
         t[m] = CODE[name]
+    type_raw = t.copy()               # the type every pixel would get, before the threshold decides who counts as changed
     t[~candidate] = CODE["none"]
-    return dict(magnitude=magnitude, candidate=candidate, type_map=t, deltas=d, ib=ib, ia=ia,
+    return dict(magnitude=magnitude, candidate=candidate, type_map=t, type_raw=type_raw, deltas=d, ib=ib, ia=ia,
                 threshold=thr, valid=valid, cva_scale=scale)

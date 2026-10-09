@@ -1,6 +1,6 @@
 {
- "generated_utc": "2026-10-09T13:23:21+00:00",
- "commit": "1eb11ae",
+ "generated_utc": "2026-10-09T13:39:03+00:00",
+ "commit": "980eb34",
  "seed": 0,
  "m8_experiments": {
   "dataset": "Sen1Floods11 v1.1 hand-labelled, official splits",
@@ -705,6 +705,238 @@
   "ece": 0.0761,
   "bootstrap": "95% percentile interval over test cities, 2000 resamples",
   "learned_trained": true,
+  "per_location": {
+   "locations": {
+    "brasilia": {
+     "region": "South America",
+     "naive": {
+      "f1": 0.0703,
+      "precision": 0.0369,
+      "recall": 0.7224,
+      "iou": 0.0364
+     },
+     "spectral": {
+      "f1": 0.1082,
+      "precision": 0.4254,
+      "recall": 0.062,
+      "iou": 0.0572
+     },
+     "learned": {
+      "f1": 0.4877,
+      "precision": 0.3829,
+      "recall": 0.6715,
+      "iou": 0.3225
+     }
+    },
+    "chongqing": {
+     "region": "Asia (East)",
+     "naive": {
+      "f1": 0.4193,
+      "precision": 0.3282,
+      "recall": 0.5805,
+      "iou": 0.2653
+     },
+     "spectral": {
+      "f1": 0.1698,
+      "precision": 0.4652,
+      "recall": 0.1039,
+      "iou": 0.0928
+     },
+     "learned": {
+      "f1": 0.5905,
+      "precision": 0.6298,
+      "recall": 0.5558,
+      "iou": 0.4189
+     }
+    },
+    "dubai": {
+     "region": "Asia (Middle East)",
+     "naive": {
+      "f1": 0.4489,
+      "precision": 0.3617,
+      "recall": 0.5916,
+      "iou": 0.2894
+     },
+     "spectral": {
+      "f1": 0.3995,
+      "precision": 0.7101,
+      "recall": 0.278,
+      "iou": 0.2496
+     },
+     "learned": {
+      "f1": 0.558,
+      "precision": 0.5723,
+      "recall": 0.5444,
+      "iou": 0.387
+     }
+    },
+    "lasvegas": {
+     "region": "North America",
+     "naive": {
+      "f1": 0.6991,
+      "precision": 0.7321,
+      "recall": 0.6689,
+      "iou": 0.5374
+     },
+     "spectral": {
+      "f1": 0.6398,
+      "precision": 0.7882,
+      "recall": 0.5384,
+      "iou": 0.4703
+     },
+     "learned": {
+      "f1": 0.7642,
+      "precision": 0.7054,
+      "recall": 0.8336,
+      "iou": 0.6183
+     }
+    },
+    "milano": {
+     "region": "Europe",
+     "naive": {
+      "f1": 0.0073,
+      "precision": 0.1607,
+      "recall": 0.0037,
+      "iou": 0.0036
+     },
+     "spectral": {
+      "f1": 0.0792,
+      "precision": 0.0913,
+      "recall": 0.0699,
+      "iou": 0.0412
+     },
+     "learned": {
+      "f1": 0.3616,
+      "precision": 0.7556,
+      "recall": 0.2377,
+      "iou": 0.2207
+     }
+    },
+    "montpellier": {
+     "region": "Europe",
+     "naive": {
+      "f1": 0.5331,
+      "precision": 0.4888,
+      "recall": 0.5863,
+      "iou": 0.3634
+     },
+     "spectral": {
+      "f1": 0.3399,
+      "precision": 0.7117,
+      "recall": 0.2233,
+      "iou": 0.2048
+     },
+     "learned": {
+      "f1": 0.7536,
+      "precision": 0.6867,
+      "recall": 0.8348,
+      "iou": 0.6046
+     }
+    },
+    "norcia": {
+     "region": "Europe",
+     "naive": {
+      "f1": 0.0361,
+      "precision": 0.0187,
+      "recall": 0.4825,
+      "iou": 0.0184
+     },
+     "spectral": {
+      "f1": 0.0055,
+      "precision": 0.0044,
+      "recall": 0.0073,
+      "iou": 0.0028
+     },
+     "learned": {
+      "f1": 0.1071,
+      "precision": 0.0577,
+      "recall": 0.7522,
+      "iou": 0.0566
+     }
+    },
+    "rio": {
+     "region": "South America",
+     "naive": {
+      "f1": 0.3185,
+      "precision": 0.2347,
+      "recall": 0.4953,
+      "iou": 0.1894
+     },
+     "spectral": {
+      "f1": 0.173,
+      "precision": 0.5602,
+      "recall": 0.1023,
+      "iou": 0.0947
+     },
+     "learned": {
+      "f1": 0.5341,
+      "precision": 0.4434,
+      "recall": 0.6714,
+      "iou": 0.3643
+     }
+    },
+    "saclay_w": {
+     "region": "Europe",
+     "naive": {
+      "f1": 0.0221,
+      "precision": 0.0113,
+      "recall": 0.458,
+      "iou": 0.0112
+     },
+     "spectral": {
+      "f1": 0.0176,
+      "precision": 0.0297,
+      "recall": 0.0126,
+      "iou": 0.0089
+     },
+     "learned": {
+      "f1": 0.1976,
+      "precision": 0.1133,
+      "recall": 0.775,
+      "iou": 0.1097
+     }
+    },
+    "valencia": {
+     "region": "Europe",
+     "naive": {
+      "f1": 0.0113,
+      "precision": 0.0057,
+      "recall": 0.4912,
+      "iou": 0.0057
+     },
+     "spectral": {
+      "f1": 0.019,
+      "precision": 0.0104,
+      "recall": 0.1094,
+      "iou": 0.0096
+     },
+     "learned": {
+      "f1": 0.0285,
+      "precision": 0.0149,
+      "recall": 0.3158,
+      "iou": 0.0145
+     }
+    }
+   },
+   "n_locations": 10,
+   "metric_note": "per-location scores on the test cities, one tile each",
+   "summary": {
+    "spectral_beats_naive": 3,
+    "learned_beats_spectral": 10,
+    "learned_beats_naive": 10,
+    "learned_weak_locations_f1_below_0_25": [
+     "valencia",
+     "norcia",
+     "saclay_w"
+    ],
+    "learned_best_locations": [
+     "lasvegas",
+     "montpellier",
+     "chongqing"
+    ]
+   },
+   "claim": "evaluated on 10 worldwide locations; some work and some do not, see the per-location table"
+  },
   "validation_variants": {
    "cities": [
     "hongkong",
@@ -972,7 +1204,7 @@
   "note": "scored with frozen parameters; Planetary Computer sentinel-1-rtc (10 m, anonymous)"
  },
  "speed_s_per_km2": {
-  "spectral": 0.019,
+  "spectral": 0.025,
   "learned": 0.003,
   "deep": 2.2
  },

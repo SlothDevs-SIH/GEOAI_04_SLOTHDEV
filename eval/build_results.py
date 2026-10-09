@@ -45,6 +45,43 @@ def false_alarms(root=ROOT):
     return {"scenes": out, "method": "spectral, encroachment preset"}
 
 
+# Where each OSCD test location is (dataset facts), so a per-location table can say which regions work.
+REGION = {"brasilia": "South America", "rio": "South America", "montpellier": "Europe", "norcia": "Europe",
+          "saclay_w": "Europe", "valencia": "Europe", "milano": "Europe", "dubai": "Asia (Middle East)",
+          "chongqing": "Asia (East)", "lasvegas": "North America"}
+
+
+def per_location(base, learned):
+    """OSCD results per test location (not only pooled), from the per-city scores the evaluations already wrote.
+
+    One tile per location, so no interval here (the pooled results carry the bootstrap). Reports which method wins
+    in how many locations and lists the weak ones, so the claim can be "evaluated on N worldwide locations", never
+    "works everywhere".
+    """
+    methods = {k: v.get("per_city", {}) for k, v in base["methods"].items()}
+    if learned:
+        methods["learned"] = learned["learned"].get("per_city", {})
+    cities = sorted(set.intersection(*(set(m) for m in methods.values()))) if methods else []
+    rows = {}
+    for c in cities:
+        row = {"region": REGION.get(c, "unknown")}
+        for name, m in methods.items():
+            row[name] = {k: m[c][k] for k in ("f1", "precision", "recall", "iou")}
+        rows[c] = row
+    out = {"locations": rows, "n_locations": len(rows), "metric_note": "per-location scores on the test cities, one tile each"}
+    if rows:
+        f1 = lambda c, m: rows[c][m]["f1"]  # noqa: E731
+        beats = lambda a, b: sum(f1(c, a) > f1(c, b) for c in rows)  # noqa: E731
+        s = {"spectral_beats_naive": beats("spectral", "naive")}
+        if learned:
+            s.update(learned_beats_spectral=beats("learned", "spectral"), learned_beats_naive=beats("learned", "naive"),
+                     learned_weak_locations_f1_below_0_25=sorted((c for c in rows if f1(c, "learned") < 0.25), key=lambda c: f1(c, "learned")),
+                     learned_best_locations=sorted(rows, key=lambda c: -f1(c, "learned"))[:3])
+        out["summary"] = s
+        out["claim"] = f"evaluated on {len(rows)} worldwide locations; some work and some do not, see the per-location table"
+    return out
+
+
 def oscd_block(root=ROOT):
     """Seam 3 "oscd": held-out methods with 95% intervals. Present only once the baselines have been run."""
     base, learned = load("eval/results/oscd_baselines.json", root), load("eval/results/oscd_learned.json", root)
@@ -62,6 +99,7 @@ def oscd_block(root=ROOT):
             "default_rule": "learned only if it beats spectral on the test cities (used once); spectral otherwise",
             "threshold": learned["threshold"] if learned else None, "ece": learned["learned"].get("ece") if learned else None,
             "bootstrap": base["bootstrap"], "learned_trained": bool(learned),
+            "per_location": per_location(base, learned),
             **({"validation_variants": var} if var else {}), **({"false_alarms_by_variant": fa} if fa else {})}
 
 

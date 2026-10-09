@@ -1,0 +1,278 @@
+{
+ "regions": {
+  "delhi-ncr": {
+   "label": "Delhi NCR (Noida)",
+   "climate": "semi-arid, dense urban growth",
+   "bbox": [
+    77.31,
+    28.5,
+    77.39,
+    28.57
+   ],
+   "before": {
+    "scene": "S2B_43RGM_20190105_1_L2A",
+    "date": "2019-01-05",
+    "tile_cloud_pct": 1.17,
+    "aoi_invalid_pct": 0.0,
+    "days_from_target": -15,
+    "processing_baseline": "05.00",
+    "dn_offset_removed": 0
+   },
+   "after": {
+    "scene": "S2B_43RGM_20250123_0_L2A",
+    "date": "2025-01-23",
+    "tile_cloud_pct": 13.79,
+    "aoi_invalid_pct": 0.0,
+    "days_from_target": 3,
+    "processing_baseline": "05.11",
+    "dn_offset_removed": 0
+   },
+   "warnings": [],
+   "raw_detections": 5082,
+   "after_filter": 290,
+   "changed_ha": 125.1,
+   "area_km2": 63.12,
+   "by_type": {
+    "built_up_gain": 277,
+    "water_loss": 13
+   },
+   "by_tier": {
+    "critical": 8,
+    "high": 27,
+    "medium": 71,
+    "low": 184
+   },
+   "runtime_s": 2.06,
+   "picture": "docs/img/qa_region_delhi-ncr.jpg",
+   "reviewed_by_eye": "Mixed. New development and the landfill edge look real, but a long strip along the Yamuna riverbed is flagged as built-up gain (a moving river channel and sandbars, not construction)."
+  },
+  "jaipur": {
+   "label": "Jaipur edge, Rajasthan",
+   "climate": "arid",
+   "bbox": [
+    75.72,
+    26.78,
+    75.8,
+    26.85
+   ],
+   "before": {
+    "scene": "S2B_43REK_20190105_1_L2A",
+    "date": "2019-01-05",
+    "tile_cloud_pct": 0.01,
+    "aoi_invalid_pct": 0.0,
+    "days_from_target": -15,
+    "processing_baseline": "05.00",
+    "dn_offset_removed": 0
+   },
+   "after": {
+    "scene": "S2B_43REK_20250123_0_L2A",
+    "date": "2025-01-23",
+    "tile_cloud_pct": 13.0,
+    "aoi_invalid_pct": 0.0,
+    "days_from_target": 3,
+    "processing_baseline": "05.11",
+    "dn_offset_removed": 0
+   },
+   "warnings": [],
+   "raw_detections": 9386,
+   "after_filter": 198,
+   "changed_ha": 37.6,
+   "area_km2": 62.4,
+   "by_type": {
+    "built_up_gain": 198
+   },
+   "by_tier": {
+    "high": 6,
+    "medium": 41,
+    "low": 151
+   },
+   "runtime_s": 1.63,
+   "picture": "docs/img/qa_region_jaipur.jpg",
+   "reviewed_by_eye": "Mostly scattered small detections in an arid scene; a few clusters on warehouse and industrial areas look real. Bare soil can look like construction, and thin haze in the after image adds some noise."
+  },
+  "chennai": {
+   "label": "Chennai OMR coast",
+   "climate": "tropical coastal",
+   "bbox": [
+    80.2,
+    12.88,
+    80.27,
+    12.95
+   ],
+   "before": {
+    "scene": "S2B_44PMV_20190225_0_L2A",
+    "date": "2019-02-25",
+    "tile_cloud_pct": 14.02,
+    "aoi_invalid_pct": 1.29,
+    "days_from_target": 24,
+    "processing_baseline": "02.11",
+    "dn_offset_removed": 0
+   },
+   "after": {
+    "scene": "S2B_44PMV_20250213_0_L2A",
+    "date": "2025-02-13",
+    "tile_cloud_pct": 0.85,
+    "aoi_invalid_pct": 0.01,
+    "days_from_target": 12,
+    "processing_baseline": "05.11",
+    "dn_offset_removed": 0
+   },
+   "warnings": [],
+   "raw_detections": 8727,
+   "after_filter": 106,
+   "changed_ha": 27.2,
+   "area_km2": 59.13,
+   "by_type": {
+    "built_up_gain": 94,
+    "water_loss": 12
+   },
+   "by_tier": {
+    "critical": 1,
+    "high": 3,
+    "medium": 33,
+    "low": 69
+   },
+   "runtime_s": 0.95,
+   "picture": "docs/img/qa_region_chennai.jpg",
+   "reviewed_by_eye": "Sparse and plausible: small detections on new buildings; water-loss polygons sit on filled or drained ponds. The large wetland change in the north is mostly not flagged."
+  },
+  "kochi": {
+   "label": "Kochi, Kerala",
+   "climate": "humid, heavy vegetation",
+   "bbox": [
+    76.3,
+    9.97,
+    76.37,
+    10.03
+   ],
+   "before": {
+    "scene": "S2A_43PFM_20190124_0_L2A",
+    "date": "2019-01-24",
+    "tile_cloud_pct": 4.6,
+    "aoi_invalid_pct": 0.14,
+    "days_from_target": -8,
+    "processing_baseline": "02.11",
+    "dn_offset_removed": 0
+   },
+   "after": {
+    "scene": "S2B_43PFM_20250117_0_L2A",
+    "date": "2025-01-17",
+    "tile_cloud_pct": 6.06,
+    "aoi_invalid_pct": 0.0,
+    "days_from_target": -15,
+    "processing_baseline": "05.11",
+    "dn_offset_removed": 0
+   },
+   "warnings": [],
+   "raw_detections": 6428,
+   "after_filter": 66,
+   "changed_ha": 19.5,
+   "area_km2": 51.36,
+   "by_type": {
+    "built_up_gain": 62,
+    "water_loss": 4
+   },
+   "by_tier": {
+    "high": 9,
+    "medium": 10,
+    "low": 47
+   },
+   "runtime_s": 0.88,
+   "picture": "docs/img/qa_region_kochi.jpg",
+   "reviewed_by_eye": "Conservative in dense humid vegetation: few detections, mostly on construction sites and earthworks."
+  },
+  "guwahati": {
+   "label": "Guwahati, Assam",
+   "climate": "humid, river valley",
+   "bbox": [
+    91.7,
+    26.12,
+    91.78,
+    26.19
+   ],
+   "before": {
+    "scene": "S2A_46RCP_20190112_0_L2A",
+    "date": "2019-01-12",
+    "tile_cloud_pct": 0.03,
+    "aoi_invalid_pct": 0.01,
+    "days_from_target": -3,
+    "processing_baseline": "02.11",
+    "dn_offset_removed": 0
+   },
+   "after": {
+    "scene": "S2B_46RCP_20250115_0_L2A",
+    "date": "2025-01-15",
+    "tile_cloud_pct": 4.93,
+    "aoi_invalid_pct": 0.0,
+    "days_from_target": 0,
+    "processing_baseline": "05.11",
+    "dn_offset_removed": 0
+   },
+   "warnings": [],
+   "raw_detections": 4932,
+   "after_filter": 51,
+   "changed_ha": 74.6,
+   "area_km2": 63.19,
+   "by_type": {
+    "built_up_gain": 36,
+    "water_loss": 15
+   },
+   "by_tier": {
+    "critical": 5,
+    "high": 5,
+    "medium": 9,
+    "low": 32
+   },
+   "runtime_s": 1.78,
+   "picture": "docs/img/qa_region_guwahati.jpg",
+   "reviewed_by_eye": "The big water-loss polygons trace the Brahmaputra sandbar: real river change, but not encroachment. Haze over the hills produced few false alarms. Urban detections are tiny and sparse."
+  },
+  "bengaluru": {
+   "label": "Bengaluru (Whitefield)",
+   "climate": "tropical plateau, urban growth",
+   "bbox": [
+    77.72,
+    12.95,
+    77.8,
+    13.02
+   ],
+   "before": {
+    "scene": "S2B_43PGQ_20190218_0_L2A",
+    "date": "2019-02-18",
+    "tile_cloud_pct": 0.08,
+    "aoi_invalid_pct": 0.08,
+    "days_from_target": 17,
+    "processing_baseline": "02.11",
+    "dn_offset_removed": 0
+   },
+   "after": {
+    "scene": "S2B_43PGQ_20250206_0_L2A",
+    "date": "2025-02-06",
+    "tile_cloud_pct": 0.0,
+    "aoi_invalid_pct": 0.0,
+    "days_from_target": 5,
+    "processing_baseline": "05.11",
+    "dn_offset_removed": 0
+   },
+   "warnings": [],
+   "raw_detections": 6117,
+   "after_filter": 272,
+   "changed_ha": 68.6,
+   "area_km2": 68.76,
+   "by_type": {
+    "built_up_gain": 270,
+    "water_loss": 2
+   },
+   "by_tier": {
+    "critical": 1,
+    "high": 15,
+    "medium": 67,
+    "low": 189
+   },
+   "runtime_s": 4.04,
+   "picture": "docs/img/qa_region_bengaluru.jpg",
+   "reviewed_by_eye": "Plausible for a fast-growing urban fringe: clusters on new buildings and earthworks, plus many small detections that are partly noise."
+  }
+ },
+ "generated_utc": "2026-10-09T12:08:40+00:00"
+}

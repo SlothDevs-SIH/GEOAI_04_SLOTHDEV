@@ -112,3 +112,30 @@ literature default; (2) before/after reports more, smaller polygons than single-
 the water that was already there splits big connected water bodies into fragments. "Flood extent" here means new water beyond the normal
 river, not total water. Both runs share the same event threshold (Otsu on the flood scene, -11.3 dB) and the same frozen parameters. The dry
 scene shares months with the references (Jan to Mar), so it does not test monsoon-season look-alikes.
+
+## OSCD per location (generalisation beyond our demo scenes)
+
+The 10 OSCD test locations are spread over four continents, so they are our evidence that the method is not tuned to three Maharashtra
+scenes. Pooled scores hide the spread, so `results.json` (`oscd.per_location`) and this table report every location. One tile per location,
+so there is no interval per row (the pooled results carry the bootstrap). Sorted by the learned model's F1:
+
+| Location | Region | Naive F1 | Spectral F1 | Learned F1 | Learned P / R |
+|---|---|---|---|---|---|
+| lasvegas | North America | 0.70 | 0.64 | **0.76** | 0.71 / 0.83 |
+| montpellier | Europe | 0.53 | 0.34 | **0.75** | 0.69 / 0.83 |
+| chongqing | Asia (East) | 0.42 | 0.17 | **0.59** | 0.63 / 0.56 |
+| dubai | Asia (Middle East) | 0.45 | 0.40 | **0.56** | 0.57 / 0.54 |
+| rio | South America | 0.32 | 0.17 | **0.53** | 0.44 / 0.67 |
+| brasilia | South America | 0.07 | 0.11 | **0.49** | 0.38 / 0.67 |
+| milano | Europe | 0.01 | 0.08 | **0.36** | 0.76 / 0.24 |
+| saclay_w | Europe | 0.02 | 0.02 | **0.20** | 0.11 / 0.78 |
+| norcia | Europe | 0.04 | 0.01 | **0.11** | 0.06 / 0.75 |
+| valencia | Europe | 0.01 | 0.02 | **0.03** | 0.01 / 0.32 |
+
+What this shows, and what it does not:
+- **Learned beats spectral and naive in all 10 locations.** It is strong in Las Vegas, Montpellier, Chongqing and Dubai (F1 0.56 to 0.76) and
+  **weak in Valencia (0.03), Norcia (0.11) and Saclay (0.20)**: low precision there, i.e. it flags much that the labels do not call change.
+- **Spectral beats naive in only 3 of 10 locations** on F1. Its pooled advantage (0.38 against 0.24) comes from a few locations: it is built
+  to keep false alarms low and gives up recall (pooled recall 0.29), which F1 punishes. Say "fewer false alarms", not "better F1".
+- Locations differ a lot in how much changed (OSCD labels are about 98% no-change), so scores are not comparable across rows as a ranking of
+  difficulty. The claim we can make is "evaluated on 10 worldwide locations; some work and some do not", not "works everywhere".
