@@ -54,12 +54,15 @@ def oscd_block(root=ROOT):
     methods = {k: {m: v[m] for m in ("precision", "recall", "f1", "iou")} for k, v in base["methods"].items()}
     if learned:
         methods["learned"] = {m: learned["learned"][m] for m in ("precision", "recall", "f1", "iou")}
+    var = load("eval/results/oscd_val_variants.json", root)
+    fa = load("eval/results/learned_false_alarms.json", root)
     return {"split": {"train_cities": len(meta.get("trained_on", [])) or None, "val_cities": meta.get("val_cities"),
                       "test_cities": len(base["test_cities"])},
             "methods": methods, "default_method": learned["default_method"] if learned else "spectral",
             "default_rule": "learned only if it beats spectral on the test cities (used once); spectral otherwise",
             "threshold": learned["threshold"] if learned else None, "ece": learned["learned"].get("ece") if learned else None,
-            "bootstrap": base["bootstrap"], "learned_trained": bool(learned)}
+            "bootstrap": base["bootstrap"], "learned_trained": bool(learned),
+            **({"validation_variants": var} if var else {}), **({"false_alarms_by_variant": fa} if fa else {})}
 
 
 def levir_block(root=ROOT):

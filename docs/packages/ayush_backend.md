@@ -12,9 +12,9 @@
 
 | Task | Built | Measured on real data? |
 |---|---|---|
-| A1 | `eval/metrics.py` (P/R/F1/IoU, bootstrap CIs over tiles, ECE), `ml/oscd_data.py`, `eval/oscd_baselines.py` | **No.** OSCD's host is blocked in this environment. Run `python eval/oscd_baselines.py <OSCD root>` on your laptop |
-| A2 | `ml/siamunet.py` (1.09 M params), `ml/train_siamunet.py` (+ `--gate`, run-once test gate) | **No weights trained.** Needs OSCD and ideally the RTX 4050: `python ml/train_siamunet.py <OSCD root>`, then `--gate`, then `python ml/export_onnx.py` |
-| A3 | `engine/change_learned.py` (ONNX Runtime, torch fallback, fail-soft), `ml/export_onnx.py` (parity check), `engine/config_ml.py` | Plumbing verified with random weights; **no trained model is shipped**, so `change_learned.status()` says unavailable |
+| A1 | `eval/metrics.py` (P/R/F1/IoU, bootstrap CIs over tiles, ECE), `ml/oscd_data.py`, `eval/oscd_baselines.py` | **Yes** (run on the laptop, 9 Oct): naive F1 0.24 [0.08, 0.45], spectral 0.38 [0.13, 0.52] on the 10 test cities |
+| A2 | `ml/siamunet.py` (1.09 M params), `ml/train_siamunet.py` (+ `--gate`, run-once test gate) | **Yes** (RTX 4050): stopped at epoch 36, best epoch 26 (validation F1 0.45). Gate, test cities used once: learned F1 0.54 [0.34, 0.66] vs spectral 0.38, so the default is `learned` by the pre-set rule, but see the false-alarm caveat in `eval/README.md` |
+| A3 | `engine/change_learned.py` (ONNX Runtime, torch fallback, fail-soft), `ml/export_onnx.py` (parity check), `engine/config_ml.py` | **Trained model shipped** (`siamunet_oscd.{pt,onnx,json}`); ONNX matches PyTorch to 1e-5; runs on all demo scenes in about 1 s each |
 | A4 | `engine/change_deep.py` (BIT), `scripts/fetch_bit.py`, `eval/levir_eval.py` | **Yes, on 7 labelled sample tiles** (not the test split): BIT F1 0.928 [0.908, 0.951], naive 0.303. Labelled "published, not reproduced". The full LEVIR-CD split could not be downloaded |
 | A5 | `engine/s1.py`, radar before/after in `engine/radar.py`, `engine/radar_run.py` (Seam 2), `ml/m8_calibrate.py`, `engine/params_m8.json`, `eval/m8_opera.py` | **No.** Synthetic scenes only: no pre-event radar exists in Sen1Floods11, and Planetary Computer / Earthdata are not reachable here |
 | A6 | `eval/build_results.py` Seam 3 keys (written only when their result file exists), `requirements-ml.txt` | n/a |

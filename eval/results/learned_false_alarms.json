@@ -1,0 +1,51 @@
+{
+ "backend": "onnx",
+ "threshold": 0.85,
+ "preset": "encroachment",
+ "scenes": {
+  "season-control": {
+   "what": "no real change (farmland)",
+   "area_km2": 35.48,
+   "polygons": {
+    "spectral": 22,
+    "learned": 263,
+    "hybrid": 12
+   },
+   "per_km2": {
+    "spectral": 0.62,
+    "learned": 7.41,
+    "hybrid": 0.34
+   }
+  },
+  "navi-mumbai-airport": {
+   "what": "large construction",
+   "area_km2": 35.73,
+   "polygons": {
+    "spectral": 265,
+    "learned": 119,
+    "hybrid": 69
+   },
+   "per_km2": {
+    "spectral": 7.42,
+    "learned": 3.33,
+    "hybrid": 1.93
+   }
+  },
+  "pune-hinjewadi": {
+   "what": "city-edge construction",
+   "area_km2": 56.88,
+   "polygons": {
+    "spectral": 475,
+    "learned": 599,
+    "hybrid": 305
+   },
+   "per_km2": {
+    "spectral": 8.35,
+    "learned": 10.53,
+    "hybrid": 5.36
+   }
+  }
+ },
+ "finding": "On the no-change farmland scene the learned model alone raises about 12x more polygons per km2 than spectral; the hybrid removes them but, on the OSCD validation cities, also removes most real change (recall 0.03). The model was trained only on urban change.",
+ "commit": "0439b5d"
+}

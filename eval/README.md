@@ -59,8 +59,10 @@ Every file below is written by code in this repo; a missing file means that eval
 
 | File | Script | Status in this build |
 |---|---|---|
-| `results/oscd_baselines.json` | `eval/oscd_baselines.py ROOT` | Not run: OSCD host blocked here. Naive and spectral on the 10 test cities with 95% bootstrap intervals over cities |
-| `results/oscd_learned.json` | `ml/train_siamunet.py ROOT --gate` | Not run: no GPU or OSCD here. Test cities are used once; learned becomes the default only if its test F1 beats spectral |
+| `results/oscd_baselines.json` | `eval/oscd_baselines.py ROOT` | **Run** (on the laptop, real OSCD). Test cities, F1 with 95% intervals over cities: naive 0.24 [0.08, 0.45], spectral 0.38 [0.13, 0.52] |
+| `results/oscd_learned.json` | `ml/train_siamunet.py ROOT --gate` | **Run once** (RTX 4050): learned test F1 0.54 [0.34, 0.66], precision 0.45, recall 0.67, ECE 0.076; beats spectral, so `default_method` is `learned` by the pre-set rule. The intervals overlap with spectral's |
+| `results/oscd_val_variants.json` | `ml/eval_variants_val.py ROOT` | **Run** on the 3 validation cities: spectral F1 0.06, learned 0.36, hybrid 0.05 (recall 0.03): the hybrid is rejected |
+| `results/learned_false_alarms.json` | `eval/learned_false_alarms.py` | **Run**: polygons per km2 on the no-change farmland scene: spectral 0.62, learned 7.41, hybrid 0.34 |
 | `results/levir_bit.json` | `eval/levir_eval.py` | **Run on 7 labelled sample tiles** from the BIT repository, not the test split. BIT F1 0.928 [0.908, 0.951] vs naive 0.303 [0.217, 0.400]. The published F1 89.31 is quoted, not reproduced. Train and validation tiles in that folder are excluded |
 | `results/m8_opera_2026_<event>.json` | `eval/m8_opera.py` | Not run: needs OPERA scenes (Earthdata). Frozen parameters, labels / check points / dry-season false alarms |
 
@@ -68,3 +70,11 @@ Limits to say out loud: seven tiles is a smoke test, not a benchmark (the interv
 tested on synthetic scenes only, because Sen1Floods11 has no pre-event radar, so its 3 dB change criterion is a literature
 default and is not measured here; OSCD is small and hard (published frozen-backbone baselines are roughly F1 41 to 53), so
 expect modest learned numbers and a spectral default if the learned model does not win on the test cities.
+
+**Read this before choosing the demo default.** The learned model wins on OSCD (urban change) but raises about 12x more
+false alarms per km2 than spectral on our farmland no-change scene, because it was trained only on urban change. The
+hybrid (model proposes, spectral rules must agree) fixes the farmland scene but loses almost all real change on OSCD, so
+it is not a fix. A milder variant that keeps the seasonal filter active only reduced the farmland scene from 7.4 to 4.1
+per km2 and was not kept. The honest position: learned is the better detector for urban change, spectral is the safer
+false-alarm-first mode for farmland-like scenes, and both are offered. Learned speed in `results.json` (0.003 s/km2) was
+timed on the GPU with PyTorch; ONNX on CPU is about 0.03 s/km2.

@@ -71,3 +71,12 @@ def test_existing_keys_are_kept(tmp_path):
     put(tmp_path, "eval/results/m8_sen1floods11_india.json", {"chips": 68})
     r = B.build(str(tmp_path))
     assert r["m8_india"] == {"chips": 68} and {"m8_experiments", "false_alarms", "ablation", "generated_utc", "commit"} <= set(r)
+
+
+def test_variant_evidence_is_carried_into_the_oscd_block_when_present(tmp_path):
+    put(tmp_path, "eval/results/oscd_baselines.json", {"test_cities": ["a"], "methods": methods(0.4), "bootstrap": "x"})
+    put(tmp_path, "eval/results/oscd_val_variants.json", {"variants": {"hybrid": {"recall": CI(0.03)}}})
+    put(tmp_path, "eval/results/learned_false_alarms.json", {"scenes": {"season-control": {"per_km2": {"learned": 7.4}}}})
+    o = B.build(str(tmp_path))["oscd"]
+    assert o["validation_variants"]["variants"]["hybrid"]["recall"]["value"] == 0.03
+    assert o["false_alarms_by_variant"]["scenes"]["season-control"]["per_km2"]["learned"] == 7.4
