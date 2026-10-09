@@ -1,0 +1,106 @@
+{
+ "cities": [
+  "hongkong",
+  "mumbai",
+  "paris"
+ ],
+ "split": "validation (not the test cities)",
+ "backend": "onnx",
+ "threshold": 0.85,
+ "variants": {
+  "spectral": {
+   "precision": {
+    "value": 0.0729,
+    "ci95": [
+     0.0463,
+     0.1675
+    ]
+   },
+   "recall": {
+    "value": 0.0541,
+    "ci95": [
+     0.053,
+     0.0895
+    ]
+   },
+   "f1": {
+    "value": 0.0621,
+    "ci95": [
+     0.0499,
+     0.0805
+    ]
+   },
+   "iou": {
+    "value": 0.0321,
+    "ci95": [
+     0.0256,
+     0.0419
+    ]
+   },
+   "tiles": 3
+  },
+  "learned": {
+   "precision": {
+    "value": 0.4258,
+    "ci95": [
+     0.0427,
+     0.5829
+    ]
+   },
+   "recall": {
+    "value": 0.314,
+    "ci95": [
+     0.1666,
+     0.4501
+    ]
+   },
+   "f1": {
+    "value": 0.3614,
+    "ci95": [
+     0.074,
+     0.4608
+    ]
+   },
+   "iou": {
+    "value": 0.2206,
+    "ci95": [
+     0.0384,
+     0.2994
+    ]
+   },
+   "tiles": 3
+  },
+  "hybrid": {
+   "precision": {
+    "value": 0.3286,
+    "ci95": [
+     0.0356,
+     0.8669
+    ]
+   },
+   "recall": {
+    "value": 0.0296,
+    "ci95": [
+     0.0176,
+     0.0524
+    ]
+   },
+   "f1": {
+    "value": 0.0542,
+    "ci95": [
+     0.0344,
+     0.0719
+    ]
+   },
+   "iou": {
+    "value": 0.0279,
+    "ci95": [
+     0.0175,
+     0.0373
+    ]
+   },
+   "tiles": 3
+  }
+ },
+ "note": "3 validation cities: intervals are very wide; learned is slightly optimistic (val cities picked the epoch and threshold)"
+}
