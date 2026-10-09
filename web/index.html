@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GEOAI 04 Flood Monitor</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--ink:#14181f;--muted:#5b6472;--line:#dde1e7;--accent:#0b63ce;
+--crit:#b5179e;--high:#e03131;--med:#f08a24;--low:#e0b100;--ok:#12805c;--raw:#ff8c00}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0f1318;--panel:#171c23;--ink:#e8ecf1;--muted:#9aa4b2;--line:#2a313b;--accent:#5aa2ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{display:flex;align-items:center;gap:16px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+header h1{font-size:17px;margin:0}header .sub{color:var(--muted);font-size:13px}
+.badge{font-size:11px;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+main{display:grid;grid-template-columns:250px minmax(0,1fr) 320px;gap:16px;padding:16px 20px;max-width:1500px;margin:0 auto}
+@media (max-width:1100px){main{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+.card h2{font-size:13px;margin:0 0 10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.chip{display:block;width:100%;text-align:left;padding:8px 10px;margin:0 0 6px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);cursor:pointer}
+.chip.active{border-color:var(--accent);outline:2px solid var(--accent)}
+.chip small{color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+@media (max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.kpi b{display:block;font-size:22px}.kpi span{color:var(--muted);font-size:12px}
+.controls{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.toggle{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.toggle input{width:16px;height:16px}
+.big{font-weight:600;padding:8px 12px;border-radius:8px;border:2px solid var(--accent)}
+.viewer{position:relative;width:min(100%,620px);aspect-ratio:1;margin:0 auto;border-radius:10px;overflow:hidden;background:#000;touch-action:none}
+.viewer img,.viewer svg{position:absolute;inset:0;width:100%;height:100%;image-rendering:auto}
+#opt{clip-path:inset(0 50% 0 0)}
+.divider{position:absolute;top:0;bottom:0;width:3px;background:#fff;left:50%;cursor:ew-resize;box-shadow:0 0 6px #0008}
+.divider::after{content:"◀ ▶";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;color:#000;font-size:11px;padding:3px 6px;border-radius:99px;white-space:nowrap}
+.lbl{position:absolute;top:8px;padding:2px 8px;border-radius:6px;background:#000a;color:#fff;font-size:12px}
+.lbl.l{left:8px}.lbl.r{right:8px}
+svg polygon{stroke-width:1.6;cursor:pointer}svg polygon.sel{stroke:#fff!important;stroke-width:3}
+.legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:8px;justify-content:center}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-2px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-weight:500}td.num{text-align:right;font-variant-numeric:tabular-nums}
+.list{max-height:300px;overflow:auto}.row{cursor:pointer}.row:hover{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.tier{font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;color:#fff;text-transform:uppercase}
+.detail p{margin:4px 0}.muted{color:var(--muted)}.good{color:var(--ok);font-weight:600}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+button.dl{margin-top:8px;padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>🛰️ GEOAI 04 · Flood Monitor (M8 radar mode)</h1>
+  <div class="sub">Sentinel-1 radar sees through monsoon cloud · real data: Brahmaputra flood, Assam · 12 Aug 2016</div></div>
+  <span class="badge">Team Slothdevs · prototype</span>
+  <span class="badge" id="srcBadge">Data: Sen1Floods11 (hand-labelled) · Copernicus Sentinel-1/2</span>
+</header>
+<main>
+  <section>
+    <div class="card"><h2>Scenes (Assam, India)</h2><div id="chips"></div>
+      <p class="note">Each scene is a 5 km × 5 km Sentinel-1 radar chip with a same-day Sentinel-2 optical image and expert hand labels.</p></div>
+    <div class="card" style="margin-top:12px"><h2>Whole event (68 scenes)</h2><div id="overall"></div></div>
+  </section>
+  <section>
+    <div class="kpis" id="kpis"></div>
+    <div class="controls">
+      <label class="toggle big"><input type="checkbox" id="filter" checked> False-alarm filter</label>
+      <label class="toggle"><input type="checkbox" id="labels"> Show expert labels</label>
+      <label class="toggle"><input type="checkbox" id="polys" checked> Flood polygons</label>
+      <span class="muted" id="counter"></span>
+    </div>
+    <div class="viewer" id="viewer">
+      <img id="rad" alt="Sentinel-1 radar">
+      <img id="opt" alt="Sentinel-2 optical">
+      <img id="raw" alt="" style="display:none">
+      <img id="lab" alt="" style="display:none">
+      <svg id="svg" viewBox="0 0 512 512" preserveAspectRatio="none"></svg>
+      <div class="divider" id="div"></div>
+      <span class="lbl l">Optical (Sentinel-2, same day)</span><span class="lbl r">Radar (Sentinel-1)</span>
+    </div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--crit)"></i>Critical ≥ 50 ha</span><span><i class="sw" style="background:var(--high)"></i>High ≥ 10 ha</span>
+      <span><i class="sw" style="background:var(--med)"></i>Medium ≥ 2 ha</span><span><i class="sw" style="background:var(--low)"></i>Low</span>
+      <span><i class="sw" style="background:var(--raw)"></i>Raw detections (filter off)</span><span><i class="sw" style="background:#00dc78"></i>Expert labels</span>
+    </div>
+    <div class="card" style="margin-top:12px"><h2>Accuracy on this scene vs expert labels (flood water, permanent rivers excluded)</h2><div id="scoreTbl"></div>
+      <p class="note">IoU = overlap with the expert's flood map (1.0 = perfect). Precision = share of our detections that are real flood. Thresholds were fitted without using any labels.</p></div>
+  </section>
+  <section>
+    <div class="card"><h2>Flood polygons, ranked</h2><div class="list" id="list"></div>
+      <button class="dl" id="dl">⬇ Download GeoJSON</button></div>
+    <div class="card detail" style="margin-top:12px"><h2>Selected polygon</h2><div id="detail"><p class="muted">Click a polygon on the map or in the list.</p></div></div>
+    <div class="card" style="margin-top:12px"><h2>Why radar · honest limits</h2>
+      <p class="note">Monsoon floods happen under cloud, where optical satellites are blind. Calm flood water reflects radar away from the satellite, so it shows up dark.</p>
+      <p class="note">Output is an <b>open-water flood-extent estimate</b>: flooded crops and streets can look bright on radar and may be missed. Single-date result shown; the full M8 compares before/after scenes.</p></div>
+  </section>
+</main>
+<script src="demo_data.js"></script>
+<script>
+const D=window.M8, $=id=>document.getElementById(id);
+const TC={critical:'var(--crit)',high:'var(--high)',medium:'var(--med)',low:'var(--low)'};
+let cur=0, sel=null;
+const fmt=n=>n.toLocaleString('en-IN');
+function overall(){const r=D.results,n=r.naive_per_chip_otsu.flood_only,m=r.m8.flood_only;
+ $('overall').innerHTML=`<table><tr><th></th><th>Naive</th><th>M8</th></tr>
+ <tr><td>IoU</td><td class=num>${n.iou}</td><td class="num good">${m.iou}</td></tr>
+ <tr><td>Precision</td><td class=num>${n.precision}</td><td class="num good">${m.precision}</td></tr>
+ <tr><td>Recall</td><td class=num>${n.recall}</td><td class=num>${m.recall}</td></tr>
+ <tr><td>Detections</td><td class=num>${fmt(r.raw_blobs_naive)}</td><td class="num good">${fmt(r.polygons_m8)}</td></tr></table>
+ <p class=note>Event water threshold ${r.event_threshold_vv_db} dB (fitted from radar only). Runtime ${r.runtime_s} s for 68 scenes on a CPU.</p>`}
+function chips(){$('chips').innerHTML=D.chips.map((c,i)=>`<button class="chip ${i==cur?'active':''}" data-i=${i}>${c.id.replace('India_','Scene ')}<br><small>${c.polygons.length} flood polygons · expert water ${c.water_pct}%</small></button>`).join('');
+ document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{cur=+b.dataset.i;sel=null;render()})}
+function render(){const c=D.chips[cur];chips();
+ $('rad').src=c.radar;$('opt').src=c.optical||c.radar;$('raw').src=c.raw_mask;$('lab').src=c.label_mask;
+ const f=$('filter').checked, area=c.polygons.reduce((s,p)=>s+p.props.area_ha,0);
+ $('raw').style.display=f?'none':'block';$('svg').style.display=(f&&$('polys').checked)?'block':'none';$('lab').style.display=$('labels').checked?'block':'none';
+ $('counter').innerHTML=f?`<b>${fmt(c.raw_blobs)}</b> raw detections → <b class=good>${c.polygons.length}</b> real flood polygons`:`Filter OFF: <b>${fmt(c.raw_blobs)}</b> raw detections (naive per-scene threshold)`;
+ const sm=c.score_m8.flood_only,sn=c.score_naive.flood_only;
+ $('kpis').innerHTML=`<div class=kpi><b>${area.toFixed(1)} ha</b><span>flooded area detected</span></div>
+ <div class=kpi><b>${c.polygons.length}</b><span>flood polygons</span></div>
+ <div class=kpi><b>${c.polygons.filter(p=>p.props.tier=='critical'||p.props.tier=='high').length}</b><span>critical + high</span></div>
+ <div class=kpi><b class=good>${sm.precision}</b><span>precision (naive ${sn.precision})</span></div>`;
+ $('scoreTbl').innerHTML=`<table><tr><th>Method</th><th>IoU</th><th>Precision</th><th>Recall</th><th>False-alarm pixels</th></tr>
+ <tr><td>Naive (per-scene threshold, no filters)</td><td class=num>${sn.iou}</td><td class=num>${sn.precision}</td><td class=num>${sn.recall}</td><td class=num>${fmt(sn.fp)}</td></tr>
+ <tr><td><b>M8 (event threshold + filters)</b></td><td class="num good">${sm.iou}</td><td class="num good">${sm.precision}</td><td class=num>${sm.recall}</td><td class="num good">${fmt(sm.fp)}</td></tr></table>`;
+ $('svg').innerHTML=c.polygons.map((p,i)=>p.rings.map(r=>`<polygon data-i=${i} class="${sel===i?'sel':''}" points="${r.map(x=>x.join(',')).join(' ')}" fill="${TC[p.props.tier]}" fill-opacity=".45" stroke="${TC[p.props.tier]}"/>`).join('')).join('');
+ document.querySelectorAll('#svg polygon').forEach(e=>e.onclick=()=>{sel=+e.dataset.i;render()});
+ $('list').innerHTML=`<table><tr><th>#</th><th>Tier</th><th class=num>Area (ha)</th><th class=num>Conf.</th></tr>`+c.polygons.slice(0,60).map((p,i)=>`<tr class=row data-i=${i}><td>${p.props.id}</td><td><span class=tier style="background:${TC[p.props.tier]}">${p.props.tier}</span></td><td class=num>${p.props.area_ha}</td><td class=num>${p.props.confidence}</td></tr>`).join('')+`</table>`;
+ document.querySelectorAll('.row').forEach(e=>e.onclick=()=>{sel=+e.dataset.i;render()});
+ if(sel!==null){const p=c.polygons[sel].props;$('detail').innerHTML=`<p><span class=tier style="background:${TC[p.tier]}">${p.tier}</span> <b>Polygon #${p.id}</b> · open-water flood</p>
+ <p><b>${p.area_ha} ha</b> (${fmt(Math.round(p.area_m2))} m²)</p><p>Confidence ${p.confidence}${p.needs_review?' · <b>needs review</b>':''}</p>
+ <p class=muted>Why: ${p.reason}</p><p>📍 ${p.centroid_lat}, ${p.centroid_lon} · <a target=_blank href="https://www.google.com/maps?q=${p.centroid_lat},${p.centroid_lon}">open in Maps</a></p>`}
+ else $('detail').innerHTML='<p class=muted>Click a polygon on the map or in the list.</p>'}
+['filter','labels','polys'].forEach(i=>$(i).onchange=render);
+(function swipe(){const v=$('viewer'),d=$('div');let drag=false;
+ const set=x=>{const r=v.getBoundingClientRect();const p=Math.max(0,Math.min(100,(x-r.left)/r.width*100));d.style.left=p+'%';$('opt').style.clipPath=`inset(0 ${100-p}% 0 0)`};
+ d.onpointerdown=e=>{drag=true;d.setPointerCapture(e.pointerId)};d.onpointermove=e=>drag&&set(e.clientX);d.onpointerup=()=>drag=false})();
+$('dl').onclick=()=>{const c=D.chips[cur],[w,s,e,n]=c.bounds,dx=(e-w)/512,dy=(n-s)/512;
+ const gj={type:'FeatureCollection',features:c.polygons.map(p=>({type:'Feature',properties:p.props,geometry:{type:'Polygon',coordinates:p.rings.map(r=>r.map(([x,y])=>[+(w+x*dx).toFixed(6),+(n-y*dy).toFixed(6)]))}}))};
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(gj)],{type:'application/geo+json'}));a.download=c.id+'_m8_flood.geojson';a.click()};
+overall();render();
+</script>
+</body>
+</html>

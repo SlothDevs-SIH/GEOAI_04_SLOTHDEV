@@ -1,0 +1,34 @@
+{
+ "dataset": "Sen1Floods11 v1.1 hand-labelled chips, India (Assam, Brahmaputra flood), Sentinel-1 IW GRD 2016-08-12, descending orbit 77",
+ "chips": 68,
+ "event_threshold_vv_db": -14.06,
+ "labels_used_for_fitting": false,
+ "naive_per_chip_otsu": {
+  "all_water": {
+   "iou": 0.219,
+   "precision": 0.232,
+   "recall": 0.79
+  },
+  "flood_only": {
+   "iou": 0.175,
+   "precision": 0.187,
+   "recall": 0.744
+  }
+ },
+ "m8": {
+  "all_water": {
+   "iou": 0.341,
+   "precision": 0.775,
+   "recall": 0.378
+  },
+  "flood_only": {
+   "iou": 0.413,
+   "precision": 0.775,
+   "recall": 0.47
+  }
+ },
+ "raw_blobs_naive": 129765,
+ "polygons_m8": 2341,
+ "runtime_s": 38.6,
+ "note": "Single-date water mapping (no pre-event radar in Sen1Floods11): a lower bound for M8 change detection."
+}
