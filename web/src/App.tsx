@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { HashRouter, NavLink, Route, Routes } from "react-router-dom";
 import About from "./pages/About";
 import Accuracy from "./pages/Accuracy";
@@ -6,6 +7,27 @@ import Result from "./pages/Result";
 import Scenes from "./pages/Scenes";
 
 const NAV: [string, string][] = [["/", "Scenes"], ["/analyse", "Analyse"], ["/accuracy", "Accuracy"], ["/about", "About"]];
+
+/** Shown when the browser is offline: the demo scenes still work from the cache, live analysis does not. */
+export function OfflineBadge() {
+  const [online, setOnline] = useState(() => navigator.onLine);
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+  if (online) return null;
+  return (
+    <span className="rounded border border-amber-400 bg-amber-50 px-2 text-[11px] text-amber-900" data-testid="offline-badge" role="status">
+      Offline · demo data
+    </span>
+  );
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,7 +39,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <NavLink key={to} to={to} end={to === "/"} className={({ isActive }) => (isActive ? "font-semibold text-accent" : "text-slate-600")}>{label}</NavLink>
           ))}
         </nav>
-        <span className="ml-auto rounded border border-slate-300 px-2 text-[11px] text-slate-500">Team Slothdevs</span>
+        <span className="ml-auto flex items-center gap-2">
+          <OfflineBadge />
+          <span className="rounded border border-slate-300 px-2 text-[11px] text-slate-500">Team Slothdevs</span>
+        </span>
       </header>
       <main>{children}</main>
     </div>
