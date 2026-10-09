@@ -59,12 +59,20 @@ def test_levir_is_never_called_reproduced_unless_the_file_says_so(tmp_path):
     assert not any("LEVIR" in x for x in B.build(str(tmp_path))["not_measured"])
 
 
-def test_opera_events_are_collected(tmp_path):
-    put(tmp_path, "eval/results/m8_opera_2026_assam.json", {"event": "assam", "labels": {"iou": 0.5}})
-    put(tmp_path, "eval/results/m8_opera_2026_kerala.json", {"event": "kerala"})
+def test_opera_events_are_collected_and_close_the_opera_gap(tmp_path):
+    put(tmp_path, "eval/results/m8_opera_2026_assam.json", {"event": "assam", "source": "NASA OPERA RTC-S1 (30 m, Earthdata)"})
+    put(tmp_path, "eval/results/m8_opera_2026_kerala.json", {"event": "kerala", "source": "NASA OPERA RTC-S1 (30 m, Earthdata)"})
     r = B.build(str(tmp_path))
     assert [e["event"] for e in r["m8_change"]["events"]] == ["assam", "kerala"]
     assert not any("OPERA" in x for x in r["not_measured"])
+
+
+def test_a_planetary_computer_event_is_measured_but_does_not_pretend_to_be_opera(tmp_path):
+    put(tmp_path, "eval/results/m8_mpc_assam_2024.json", {"event": "assam_2024", "source": "Planetary Computer sentinel-1-rtc (10 m, anonymous)"})
+    r = B.build(str(tmp_path))
+    assert r["m8_change"]["events"][0]["event"] == "assam_2024" and "Planetary Computer" in r["m8_change"]["note"]
+    gap = [x for x in r["not_measured"] if "OPERA" in x]
+    assert len(gap) == 1 and "Planetary Computer event is measured instead" in gap[0]
 
 
 def test_existing_keys_are_kept(tmp_path):

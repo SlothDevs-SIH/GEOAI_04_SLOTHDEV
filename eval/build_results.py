@@ -10,7 +10,7 @@ Inputs (all produced by scripts in this repo):
   eval/results/oscd_baselines.json                 eval/oscd_baselines.py     -> "oscd" (naive, spectral)
   eval/results/oscd_learned.json                   ml/train_siamunet.py --gate -> "oscd" (learned, default_method)
   eval/results/levir_bit.json                      eval/levir_eval.py         -> "levir"
-  eval/results/m8_opera_2026_<event>.json          eval/m8_opera.py           -> "m8_change"
+  eval/results/m8_opera_2026_<event>.json, m8_mpc_<event>.json   eval/m8_opera.py   -> "m8_change"
 Keys follow docs/packages/CONTRACTS.md Seam 3. A key is written only when its result file exists: numbers come
 from code that ran, never from a placeholder, and `not_measured` lists what is still missing.
 """
@@ -74,8 +74,12 @@ def levir_block(root=ROOT):
 
 
 def m8_change_block(root=ROOT):
-    events = [json.load(open(p)) for p in sorted(glob.glob(os.path.join(root, "eval", "results", "m8_opera_2026_*.json")))]
-    return {"events": events, "note": "scored with frozen parameters on 2026 OPERA events"} if events else None
+    pats = ("m8_opera_2026_*.json", "m8_mpc_*.json")
+    events = [json.load(open(p)) for pat in pats for p in sorted(glob.glob(os.path.join(root, "eval", "results", pat)))]
+    if not events:
+        return None
+    note = ("scored with frozen parameters; " + ", ".join(sorted({e.get("source", "?") for e in events})))
+    return {"events": events, "note": note}
 
 
 def speed_block(root=ROOT, oscd=None):
@@ -116,8 +120,9 @@ def build(root=ROOT) -> dict:
     if "levir" not in res or res["levir"]["note"] != "reproduced":
         nm.append("BIT on the full LEVIR-CD test split (the published F1 89.31 is quoted, not reproduced"
                   + (f"; we measured {res['levir']['images']} labelled sample tiles" if "levir" in res else "") + ")")
-    if "m8_change" not in res:
-        nm.append("M8 before/after change on NASA OPERA RTC-S1 2026 events (needs Earthdata access, V-M8-2)")
+    if not any("OPERA" in e.get("source", "") for e in res.get("m8_change", {}).get("events", [])):
+        nm.append("M8 before/after change on NASA OPERA RTC-S1 2026 events (needs Earthdata access, V-M8-2)"
+                  + ("; a Planetary Computer event is measured instead" if "m8_change" in res else ""))
     res["not_measured"] = nm
     return res
 

@@ -6,7 +6,11 @@ bands (normalised); output: [N, 1, H, W] change logits. H and W must be divisibl
 """
 from __future__ import annotations
 
-import torch
+try:
+    import torch
+except ImportError as e:  # the trainers and the exporter need PyTorch; the engine and the evals do not
+    raise ImportError("PyTorch is required for this tool: pip install -r requirements-ml.txt "
+                      "(use the CUDA build from pytorch.org for a GPU)") from e
 from torch import nn
 
 N_BANDS = 5

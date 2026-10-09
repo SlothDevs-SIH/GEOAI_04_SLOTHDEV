@@ -22,7 +22,11 @@ import sys
 import time
 
 import numpy as np
-import torch
+try:
+    import torch
+except ImportError as e:  # the trainers and the exporter need PyTorch; the engine and the evals do not
+    raise ImportError("PyTorch is required for this tool: pip install -r requirements-ml.txt "
+                      "(use the CUDA build from pytorch.org for a GPU)") from e
 from torch import nn
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

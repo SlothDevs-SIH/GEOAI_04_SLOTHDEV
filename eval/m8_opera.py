@@ -1,8 +1,9 @@
-"""Run the FROZEN radar parameters on one flood event and score them (V-M8-2 test events: NASA OPERA RTC-S1, 2026).
+"""Run the FROZEN radar parameters on one flood event and score them (V-M8-2: NASA OPERA RTC-S1 2026; or, with
+--source mpc, a Planetary Computer event from before its April 2026 cut-off, fetched by ml/fetch_s1_event.py).
 
 python eval/m8_opera.py --event assam_2026 --after AFTER.tif --before REF1.tif REF2.tif REF3.tif \
        [--labels FLOOD_MASK.tif] [--points CHECKS.geojson] [--dry-after DRY.tif]
-  -> eval/results/m8_opera_2026_<event>.json
+  -> eval/results/m8_opera_2026_<event>.json   (--source opera)   or   eval/results/m8_mpc_<event>.json   (--source mpc)
 
 Inputs are 2-band VV/VH dB GeoTIFFs (see engine/s1.py to fetch and convert). Scoring, each optional:
   --labels   a raster flood mask for the event (e.g. from GFM / Copernicus EMS), nonzero = flooded:
@@ -71,15 +72,20 @@ def score_points(path, chip, mask):
             "false_positive_rate": round(sum(hit[False]) / len(hit[False]), 3) if hit[False] else None}
 
 
+SOURCES = {"opera": ("m8_opera_2026", "NASA OPERA RTC-S1 (30 m, Earthdata)"),
+           "mpc": ("m8_mpc", "Planetary Computer sentinel-1-rtc (10 m, anonymous)")}
+
+
 def run(event, after, before, labels=None, points=None, dry_after=None, out_dir=os.path.join(ROOT, "eval", "results"),
-        force=False, threshold_db=None):
-    out = os.path.join(out_dir, f"m8_opera_2026_{event}.json")
+        force=False, threshold_db=None, source="opera"):
+    prefix, source_name = SOURCES[source]
+    out = os.path.join(out_dir, f"{prefix}_{event}.json")
     if os.path.exists(out) and not force:
         raise SystemExit(f"{out} exists: this event was already scored. Pass --force to rerun (recorded).")
     p = radar_run.frozen_params()
     chip, mask, drops, thr = detect(after, before, p, threshold_db)
     km2 = float(chip["valid"].sum() * radar_run._pixel_m2(chip) / 1e6)
-    res = {"event": event, "after": os.path.basename(after), "reference_scenes": [os.path.basename(b) for b in before],
+    res = {"event": event, "source": source_name, "after": os.path.basename(after), "reference_scenes": [os.path.basename(b) for b in before],
            "params": {**p, "threshold_db": round(thr, 2)}, "params_source": "engine/params_m8.json (frozen; not tuned here)",
            "area_km2": round(km2, 2), "flooded_km2_detected": round(float(mask.sum() * radar_run._pixel_m2(chip) / 1e6), 2),
            "dropped": drops, "forced_rerun": bool(force)}
@@ -108,6 +114,7 @@ def run(event, after, before, labels=None, points=None, dry_after=None, out_dir=
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--event", required=True)
+    ap.add_argument("--source", choices=sorted(SOURCES), default="opera", help="which archive the scenes came from")
     ap.add_argument("--after", required=True)
     ap.add_argument("--before", nargs="+", required=True)
     ap.add_argument("--labels")
@@ -116,4 +123,4 @@ if __name__ == "__main__":
     ap.add_argument("--threshold-db", type=float)
     ap.add_argument("--force", action="store_true")
     a = ap.parse_args()
-    print(json.dumps(run(a.event, a.after, a.before, a.labels, a.points, a.dry_after, force=a.force, threshold_db=a.threshold_db), indent=1))
+    print(json.dumps(run(a.event, a.after, a.before, a.labels, a.points, a.dry_after, force=a.force, threshold_db=a.threshold_db, source=a.source), indent=1))

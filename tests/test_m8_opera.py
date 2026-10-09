@@ -68,3 +68,11 @@ def test_labels_outside_coverage_are_ignored_not_counted_as_dry(event):
     r = m8_opera.run("cov", out_dir=str(tmp / "res"), threshold_db=THR, **{**kw, "points": None, "dry_after": None})
     assert r["labels"]["covered_km2"] == pytest.approx(0.25, abs=0.01)         # only the 50 x 50 px block is covered
     assert r["labels"]["precision"] == 0.0 and r["labels"]["recall"] == 0.0
+
+
+def test_source_switch_names_the_result_file_and_records_where_the_scenes_came_from(event):
+    kw, tmp = event
+    r = m8_opera.run("assam_2024", out_dir=str(tmp / "res"), threshold_db=THR, source="mpc", **{**kw, "points": None, "labels": None})
+    assert (tmp / "res" / "m8_mpc_assam_2024.json").exists() and "Planetary Computer" in r["source"]
+    assert m8_opera.run("x", out_dir=str(tmp / "res"), threshold_db=THR, **{**kw, "points": None, "labels": None})["source"].startswith("NASA OPERA")
+    assert (tmp / "res" / "m8_opera_2026_x.json").exists()

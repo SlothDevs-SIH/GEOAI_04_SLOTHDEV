@@ -78,3 +78,29 @@ it is not a fix. A milder variant that keeps the seasonal filter active only red
 per km2 and was not kept. The honest position: learned is the better detector for urban change, spectral is the safer
 false-alarm-first mode for farmland-like scenes, and both are offered. Learned speed in `results.json` (0.003 s/km2) was
 timed on the GPU with PyTorch; ONNX on CPU is about 0.03 s/km2.
+
+## Reproduce every number
+
+Seeds are fixed (bootstrap seed 0, training seed 0, the validation cities are chosen by seed 0) and every result file
+records the commit it came from. Commands run from the repository root; datasets go under `data/`, which git ignores.
+
+| Result | Command | Needs | Time |
+|---|---|---|---|
+| `results.json` (assembles everything below) | `python eval/build_results.py` | the result files only | seconds |
+| Radar flood, Sen1Floods11 splits | `python scripts/fetch_m8_chips.py data/sen1floods11` then `python ml/m8_experiments.py data/sen1floods11` | public bucket, no login | about 8 min |
+| Radar demo scene, Assam | `python scripts/build_m8_demo.py data/sen1floods11` | the chips above | seconds |
+| False-alarm ablation | `python eval/ablation.py` | `python scripts/fetch_demo_scenes.py` first | seconds |
+| OSCD baselines (naive, spectral) | `python eval/oscd_baselines.py data/oscd` | OSCD images, train labels and test labels | about 1 min |
+| Learned model | `python ml/train_siamunet.py data/oscd`, then `... --gate` (once), then `python ml/export_onnx.py` | OSCD, GPU recommended | minutes on an RTX 4050 |
+| Validation comparison | `python ml/eval_variants_val.py data/oscd` | the trained model | about 1 min |
+| Learned false alarms on the demo scenes | `python eval/learned_false_alarms.py` | demo scenes, trained model | seconds |
+| BIT on LEVIR-CD | `python scripts/fetch_bit.py`, then `python eval/levir_eval.py data/levir_test --full-split` | the 128-image LEVIR-CD test split | minutes |
+| Radar before/after on a real event | `python ml/fetch_s1_event.py ...` then `python eval/m8_opera.py --source mpc ...` | Planetary Computer (no account) | minutes |
+| Radar on 2026 OPERA events | `python eval/m8_opera.py --source opera ...` | Earthdata token in `.env` | minutes |
+
+Where the data comes from: OSCD images and train labels from the Kaggle copy `soumikrakshit/onera-satellite-change-detection-dataset`;
+the 10 test-city labels from `hkristen/oscd` on Hugging Face (`... - Test Labels.zip`), unzipped next to the images; LEVIR-CD test
+split from `satellite-image-deep-learning/LEVIR-CD` (`test.zip`). The test cities and the gate are used once: `--gate` refuses a second
+run unless `--force`, and `m8_opera.py` refuses to rescore an event.
+
+The Python tests need no data: `python -m pytest -q` (89 pass without torch, 109 with it).

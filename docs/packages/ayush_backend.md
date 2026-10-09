@@ -148,8 +148,23 @@ Data decisions are in `M8_RADAR_FLOOD_DATA.md`. **M8 stays either way** (see `DE
 
 ## 5. Definition of done
 
-- [ ] `eval/results.json` holds held-out OSCD numbers with 95% confidence intervals for naive, spectral and learned, and the default is decided on validation only.
-- [ ] `change_learned.detect` and `change_deep.detect` follow Seam 1 and fail soft; ONNX parity passes.
-- [ ] LEVIR-CD test-split numbers exist, labelled reproduced or published.
-- [ ] `radar_run.run` follows Seams 2, 4 and 5, or the failed checks are written down and single-date stays.
-- [ ] `ruff` and `pytest` are green without torch installed; no edits to the partner's files.
+- [x] `eval/results.json` holds held-out OSCD numbers with 95% confidence intervals for naive, spectral and learned. The learned model's epoch and threshold were chosen on the validation cities; the default method was decided once on the test cities by the rule written down beforehand (learned wins: F1 0.54 vs 0.38), with the farmland false-alarm caveat recorded next to it.
+- [x] `change_learned.detect` and `change_deep.detect` follow Seam 1 and fail soft; ONNX parity passes (max difference 1.2e-5).
+- [x] LEVIR-CD test-split numbers exist and are labelled **reproduced** (128 images, F1 0.9025).
+- [x] `radar_run.run` follows Seams 2, 4 and 5; single-date stays as the fallback. The live access checks are written down (V-M8-1: 403 from the build environment; V-M8-2: not tried).
+- [x] `ruff` and `pytest` are green without torch installed (89 pass, 3 skip; 109 with torch); every engine, eval and ml module imports without torch except the three PyTorch tools, which say how to install it (`tests/test_imports_without_torch.py`). No edits to the partner's files. A clean checkout rebuilds the committed `results.json` exactly.
+
+**Not done, and why:** the radar before/after mode has not been scored on a real event. Sen1Floods11 has no pre-event radar, Planetary
+Computer is blocked from the build environment, and there is no Earthdata token. The tooling is built and tested end to end on synthetic
+scenes and fake STAC data; run it on the laptop (commands in `eval/README.md`, "Reproduce every number", and below).
+
+**Run the real before/after test (laptop, no account needed):**
+```
+python -m engine.s1 --check mpc                                        # V-M8-1: must print "ok": true
+python ml/fetch_s1_event.py --bbox 93.7 26.5 93.9 26.7 --event-date 2024-07-05 --out data/s1_events/assam_2024
+python eval/m8_opera.py --source mpc --event assam_2024 --after data/s1_events/assam_2024/after.tif --before data/s1_events/assam_2024/ref1.tif data/s1_events/assam_2024/ref2.tif data/s1_events/assam_2024/ref3.tif --dry-after data/s1_events/assam_2024/dry_after.tif
+python eval/build_results.py
+```
+It has no hand labels, so what it measures is: how many polygons the before/after mode keeps against single-date mapping, and the false alarms
+per km2 on a dry-season pair. It does not give an IoU. Planetary Computer's sentinel-1-rtc coverage of Assam is unverified: if the search
+returns no scenes the check says so, and the answer is "not available there", not a code error.
