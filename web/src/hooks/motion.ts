@@ -8,7 +8,7 @@ const sub = (cb: () => void) => {
 };
 /** True when the user asked for less motion: every animation then changes instantly or cross-fades (A5). */
 export const useReducedMotion = (): boolean =>
-  useSyncExternalStore(sub, () => !!window.matchMedia?.(Q).matches, () => false);
+  useSyncExternalStore(sub, () => !!window.matchMedia?.(Q)?.matches, () => false);
 
 /** Animates a number from its previous value to `target` (A-03 counter 600 ms, A-05 impact tiles 700 ms). */
 export function useCountUp(target: number, duration = 600, delay = 0): number {

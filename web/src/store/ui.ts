@@ -3,9 +3,7 @@ import { create } from "zustand";
 export type ThemePref = "system" | "light" | "dark";
 export type Resolved = "light" | "dark";
 
-const KEY = "geoai04.theme";
-
-const systemDark = () => typeof window === "undefined" || !window.matchMedia || window.matchMedia("(prefers-color-scheme: dark)").matches;
+const systemDark = () => typeof window === "undefined" || !window.matchMedia || !!window.matchMedia("(prefers-color-scheme: dark)")?.matches;
 
 export function resolveTheme(pref: ThemePref): Resolved {
   return pref === "system" ? (systemDark() ? "dark" : "light") : pref;
@@ -66,7 +64,7 @@ export const useUi = create<UiState>((set) => ({
 }));
 
 if (typeof window !== "undefined" && window.matchMedia) {
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
+  window.matchMedia("(prefers-color-scheme: dark)")?.addEventListener?.("change", () => {
     const { themePreference, setTheme } = useUi.getState();
     if (themePreference === "system") setTheme("system");
   });

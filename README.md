@@ -1,3 +1,13 @@
+---
+title: GEOAI 04 - Change Detection
+emoji: 🛰️
+colorFrom: indigo
+colorTo: blue
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # GEOAI 04: Change Detection that Ignores False Alarms
 
 **FUSION 2026 · GeoAI track · Problem statement GEOAI 04 · Team Slothdevs**

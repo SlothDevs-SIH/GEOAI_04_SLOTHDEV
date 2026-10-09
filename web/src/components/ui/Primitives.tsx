@@ -107,11 +107,11 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
 /** A-04 accessible switch (role=switch, 48 px target). */
 export function Switch({ checked, onChange, label, testid, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; testid?: string; disabled?: boolean }) {
   return (
-    <label className="flex min-h-[48px] cursor-pointer items-center gap-s8 text-small text-fg">
+    <div className="flex min-h-[48px] items-center gap-s8 text-small text-fg">
       <button type="button" role="switch" aria-checked={checked} aria-label={label} data-testid={testid} disabled={disabled}
         onClick={() => onChange(!checked)} className="switch press disabled:opacity-50" />
-      <span>{label}</span>
-    </label>
+      <span onClick={() => { if (!disabled) onChange(!checked); }} className={disabled ? "opacity-50 select-none" : "cursor-pointer select-none"}>{label}</span>
+    </div>
   );
 }
 
