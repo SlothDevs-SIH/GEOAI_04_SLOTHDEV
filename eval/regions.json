@@ -89,6 +89,52 @@
    "runtime_s": 1.63,
    "picture": "docs/img/qa_region_jaipur.jpg",
    "reviewed_by_eye": null
+  },
+  "chennai": {
+   "label": "Chennai OMR coast",
+   "climate": "tropical coastal",
+   "bbox": [
+    80.2,
+    12.88,
+    80.27,
+    12.95
+   ],
+   "before": {
+    "scene": "S2B_44PMV_20190225_0_L2A",
+    "date": "2019-02-25",
+    "tile_cloud_pct": 14.02,
+    "aoi_invalid_pct": 1.29,
+    "days_from_target": 24,
+    "processing_baseline": "02.11",
+    "dn_offset_removed": 0
+   },
+   "after": {
+    "scene": "S2B_44PMV_20250213_0_L2A",
+    "date": "2025-02-13",
+    "tile_cloud_pct": 0.85,
+    "aoi_invalid_pct": 0.01,
+    "days_from_target": 12,
+    "processing_baseline": "05.11",
+    "dn_offset_removed": 0
+   },
+   "warnings": [],
+   "raw_detections": 8727,
+   "after_filter": 106,
+   "changed_ha": 27.2,
+   "area_km2": 59.13,
+   "by_type": {
+    "built_up_gain": 94,
+    "water_loss": 12
+   },
+   "by_tier": {
+    "critical": 1,
+    "high": 3,
+    "medium": 33,
+    "low": 69
+   },
+   "runtime_s": 0.95,
+   "picture": "docs/img/qa_region_chennai.jpg",
+   "reviewed_by_eye": null
   }
  },
  "generated_utc": "2026-10-09T12:08:40+00:00"

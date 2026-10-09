@@ -35,6 +35,10 @@
 | 8 | **Evidence tools**: ablation (which rule removed how many false alarms), results file served to the Accuracy page | **[built]** | `eval/` |
 | 9 | **Quality gates**: 37 backend tests, web tests, Playwright smoke test, GitHub Actions CI, Dockerfile | **[built]** | `tests/`, `web/`, `.github/` |
 | 10 | **Plans and research**: master plan, options study, prior-art survey of 9 past projects, M8 data decision | **[built]** | `docs/` |
+| 11 | **Analyse any area**: draw a box anywhere in India, pick two dates; the server finds the two clearest Sentinel-2 images, runs the engine, and opens the result on the swipe map. Checked against the live archive for six regions | **[built]**, tested | `engine/aoi.py`, `api/`, `web/` |
+| 12 | **Offline PWA**: the site and demo scenes cache after one visit; an end-to-end test opens the demo with the network off | **[built]**, tested | `web/` |
+| 13 | **Tech stack on the About page** with an honest status for every layer, plus the architecture diagram | **[built]** | `web/src/pages/About.tsx` |
+| 14 | **Container verified**: the image builds, runs healthy and completes a live analysis (1,831 raw to 59 real changes for a Delhi box) | **[verified locally]** | `Dockerfile`, `docs/DEPLOY.md` |
 
 **Numbers we can quote (each [measured] and saved in `eval/results.json`):**
 
@@ -70,11 +74,11 @@
 | R2 | **ONNX serving** | Export the model to ONNX so the server does not need PyTorch | Ayush | Next |
 | R3 | **BIT deep mode + LEVIR-CD evaluation** | Building change on 0.5 m imagery; the official PDF lists LEVIR-CD | Ayush | Next |
 | R4 | **Radar before/after mode + OPERA test** | Move radar from one date to change detection; test on 2026 events | Ayush | Next; live checks pending |
-| R5 | **Composites + persistence** | Median of several clear scenes; keep a change only if it repeats | Soham | Next |
-| R6 | **Visual QA of demo results** | Check polygons on real ground; tune thresholds on the demo scenes only | Soham | Next |
-| R7 | **Tech-stack visibility** | Stack card and diagram on the About page; stack slide for the deck | Soham | Next |
-| R8 | **Offline PWA + radar upload** | Demo works with no network; radar option in the Analyse page | Soham | Next |
-| R9 | **Live deployment** | Vercel for the site; a Hugging Face Docker Space (Render as fallback) for the API | Soham | Next |
+| R5 | **Composites + persistence** | Median of several clear scenes; keep a change only if it repeats | Soham | **Built and measured; off by default** (persistence: -27% false detections on a control area, -15% real changed area; median composites did not help) |
+| R6 | **Visual QA of demo results** | Check polygons on real ground; tune thresholds on the demo scenes only | Soham | **Done** (findings logged; threshold changes await a team decision) |
+| R7 | **Tech-stack visibility** | Stack card and diagram on the About page; stack slide for the deck | Soham | **Done** (site); slide text is in module 4.0 |
+| R8 | **Offline PWA + radar upload** | Demo works with no network; radar option in the Analyse page | Soham | **Done** |
+| R9 | **Live deployment** | Vercel for the site; a Hugging Face Docker Space (Render as fallback) for the API | Soham | **Prepared** (container verified, guide written); needs the team accounts |
 | R10 | **Browser-first sensitivity slider (optional)** | Drag a threshold and watch false alarms vanish, computed in the page | Soham | Optional |
 
 ### 3.2 Frontend parts
@@ -91,7 +95,7 @@
 | Permalink + QR, PDF export | URL state, fpdf2 and qrcode | In use |
 | Live sensitivity slider (optional) | Web Worker + in-browser compute | Optional |
 
-| R11 | **Analyse any area in India** | Draw a box, pick two dates, get a result; more demo scenes from other regions and climates | Soham | **Core, next** |
+| R11 | **Analyse any area in India** | Draw a box, pick two dates, get a result; more demo scenes from other regions and climates | Soham | **Built**; regional checks in progress (not yet validated everywhere) |
 
 **Say:** "The four scenes you see are examples. The engine works on any Sentinel-2 pair, so we are adding a box-and-dates picker to analyse any area in India. We will say exactly how many regions we validated on, not that it works everywhere."
 
