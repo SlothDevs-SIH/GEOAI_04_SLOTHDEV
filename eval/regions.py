@@ -35,6 +35,22 @@ REGIONS = {
 }
 
 
+# Human review of each picture (docs/img/qa_region_<name>.jpg), 9 Oct 2026. Edit when the code or the pictures change.
+NOTES = {
+    "delhi-ncr": "Mixed. New development and the landfill edge look real, but a long strip along the Yamuna riverbed is "
+                 "flagged as built-up gain (a moving river channel and sandbars, not construction).",
+    "jaipur": "Mostly scattered small detections in an arid scene; a few clusters on warehouse and industrial areas look real. "
+              "Bare soil can look like construction, and thin haze in the after image adds some noise.",
+    "chennai": "Sparse and plausible: small detections on new buildings; water-loss polygons sit on filled or drained ponds. "
+               "The large wetland change in the north is mostly not flagged.",
+    "kochi": "Conservative in dense humid vegetation: few detections, mostly on construction sites and earthworks.",
+    "guwahati": "The big water-loss polygons trace the Brahmaputra sandbar: real river change, but not encroachment. "
+                "Haze over the hills produced few false alarms. Urban detections are tiny and sparse.",
+    "bengaluru": "Plausible for a fast-growing urban fringe: clusters on new buildings and earthworks, plus many small "
+                 "detections that are partly noise.",
+}
+
+
 def main(names):
     impact.worldcover_on_grid = lambda *a, **k: None
     out_path = os.path.join(ROOT, "eval", "regions.json")
@@ -60,7 +76,7 @@ def main(names):
                 "raw_detections": s["raw_detections"], "after_filter": s["after_filter"],
                 "changed_ha": round(s["total_area_m2"] / 1e4, 1), "area_km2": s["area_km2"],
                 "by_type": s["by_type"], "by_tier": tiers, "runtime_s": s["runtime_s"],
-                "picture": f"docs/img/qa_region_{name}.jpg", "reviewed_by_eye": None,
+                "picture": f"docs/img/qa_region_{name}.jpg", "reviewed_by_eye": NOTES.get(name),
             }
             r = out["regions"][name]
             print(f"   raw {r['raw_detections']} -> {r['after_filter']} polygons, {r['changed_ha']} ha in {r['area_km2']} km2, "

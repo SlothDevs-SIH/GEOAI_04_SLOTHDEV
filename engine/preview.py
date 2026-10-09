@@ -82,6 +82,10 @@ def write_scene_files(res, out_dir: str, info: dict) -> dict:
     if os.path.exists(src):
         shutil.copy(src, f"{out_dir}/result_filtered.geojson")
     write_crops(rgb_b, rgb_a, res.gdf, pair.transform, pair.crs, out_dir)
+    params = res.summary.get("params") or {}
+    if params:   # data for the live sensitivity slider (a failure here must not lose the rest)
+        from . import sensitivity
+        sensitivity.write(res, out_dir, params["keep_types"], params["min_area_m2"])
     bd, ad = info.get("before_date") or "before", info.get("after_date") or "after"
     meta = {
         "id": info.get("id", "analysis"), "name": info.get("name", "Your analysis"),

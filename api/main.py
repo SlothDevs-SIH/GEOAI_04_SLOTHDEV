@@ -53,9 +53,22 @@ pool = ThreadPoolExecutor(max_workers=int(os.environ.get("JOB_WORKERS", "2")))
 lock = threading.Lock()
 
 
+def _retry(fn, attempts=20, wait=0.02):
+    """Windows cannot replace or open a file another thread has open for a moment; retry briefly instead of failing a job."""
+    for i in range(attempts):
+        try:
+            return fn()
+        except PermissionError:
+            if i == attempts - 1:
+                raise
+            time.sleep(wait)
+
+
 def _json(path):
-    with open(path) as f:
-        return json.load(f)
+    def read():
+        with open(path) as f:
+            return json.load(f)
+    return _retry(read)
 
 
 # ---------- health and measured results ----------
@@ -149,7 +162,7 @@ def _set(job_id, **kw):
         tmp = p + ".tmp"
         with open(tmp, "w") as f:
             json.dump(j, f, default=str)
-        os.replace(tmp, p)
+        _retry(lambda: os.replace(tmp, p))
     return j
 
 

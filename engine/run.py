@@ -23,7 +23,9 @@ from .config import params_for
 
 LIMITS_OPTICAL = ["Optical imagery cannot see through cloud; flagged areas with cloud are removed, not analysed.",
                   "Change type comes from spectral index rules (no training); check critical changes on the ground.",
-                  "10 m pixels cannot resolve single small buildings or people."]
+                  "10 m pixels cannot resolve single small buildings or people.",
+                  "Rivers, sandbars and lake edges move between dates and can be flagged as change; bare soil in dry "
+                  "regions can look like construction. Check flagged areas near water."]
 
 
 @dataclass
