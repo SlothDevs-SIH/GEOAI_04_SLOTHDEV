@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme {
+  --color-crit: #b5179e;
+  --color-high: #e03131;
+  --color-med: #f08a24;
+  --color-low: #c99700;
+  --color-accent: #0b63ce;
+}
+
+:root { color-scheme: light; }
+body { margin: 0; background: #f6f7f9; color: #14181f; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.maplibregl-map { font: inherit; }

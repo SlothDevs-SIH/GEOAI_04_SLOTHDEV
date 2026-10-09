@@ -1,0 +1,10 @@
+[tool.ruff]
+line-length = 120
+extend-exclude = ["web", "data", "prototype"]
+
+[tool.ruff.lint]
+# pyflakes + pycodestyle errors (ruff's classic defaults), pinned so newer ruff releases don't change CI
+select = ["E4", "E7", "E9", "F"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

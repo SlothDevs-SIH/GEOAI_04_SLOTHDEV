@@ -1,6 +1,6 @@
 # Web prototype (round 1)
 
-**Fastest:** open `index.html` in a browser (double-click). Everything it shows is precomputed by the real engine into `demo_data.js`.
+**Fastest:** open `prototype/round1/index.html` in a browser (double-click). Everything it shows is precomputed by the real engine into `demo_data.js`.
 
 **With the backend:**
 ```bash

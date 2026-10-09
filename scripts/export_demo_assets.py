@@ -9,7 +9,6 @@ flood chip (Sen1Floods11, fetched by scripts/fetch_m8_chips.py) writes web/publi
 and web/public/demos/index.json.
 """
 import argparse
-import io
 import json
 import os
 import shutil
