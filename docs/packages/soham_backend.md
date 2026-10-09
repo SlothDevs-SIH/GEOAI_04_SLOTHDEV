@@ -118,3 +118,26 @@ stack slide, a clean-clone test (fresh venv, install, tests, one CLI run), the c
 - [ ] The PWA works offline; the permalink test passes.
 - [ ] The site is live on Vercel and the API has a host, or the fallback is documented.
 - [ ] Submission pack complete; repo public; no edits to the partner's files.
+
+---
+
+## 6. Progress log
+
+### S1: health check (done, 9 Oct evening)
+- Backend: `pytest` **37 passed**, `ruff` clean.
+- Web: `npm ci`, `lint`, `typecheck`, **19 tests passed**, `npm run build` succeeds. The Playwright smoke test (`npm run e2e`) was **not run** locally.
+
+### S2: visual QA of the demo outputs (findings, thresholds NOT yet changed)
+Tool: `python scripts/qa_overlay.py` writes `docs/img/qa_<scene>.jpg` (left before, right after with polygons; colour = change type, line thickness = tier).
+
+| Scene | What the picture shows | Verdict |
+|---|---|---|
+| **Navi Mumbai airport** (265 polygons, 218 ha built-up gain, 33 ha water loss) | Large polygons sit on the earthworks and platform; water-loss polygons follow the former stream channel through the site | **Looks right** |
+| **Pune / Hinjewadi** (475 polygons, 142 ha) | Large clusters (north-west and north-east) sit on construction. But **many tiny 3 to 10 pixel boxes** are scattered over existing town and fields; 309 of the 475 are `low` tier | **Mostly plausible, but cluttered.** Polygons of at least 1,000 m² keep **91% of the changed area with 30% fewer polygons** (at least 2,000 m²: 76% of the area, 62% fewer) |
+| **Season control** (22 polygons, 12 ha) | The after image is much drier and browner, yet few polygons appear. **A long straight strip runs along a highway** (likely real road works or a registration edge effect) and a few clusters sit on dark patches | **Works as a seasonal filter, but it is not a pure "nothing changed" control** |
+| **Assam flood, radar** (37 polygons, 139 ha) | Polygons trace the dark water along and around the river meander | **Plausible.** Ask Ayush to confirm the JRC permanent-water mask is applied in this demo (the outlines hug the river) |
+
+**Recommendations (waiting for the team's decision, because they change headline numbers):**
+1. **Raise the minimum mapping unit** for the encroachment preset from 300 m² to **1,000 m²** (10 pixels, a normal choice for 10 m data), or keep 300 m² but **hide the `low` tier by default** in the web app. Either removes clutter, not real change.
+2. **Reword the season-control claim.** Say "a scene with no large new buildings; remaining detections may include real small changes such as road works", so the false-alarm number (0.62 per km²) is presented as an **upper bound**.
+3. **Do not compare against my local Pune stack.** My copy under `demos/` was fetched before Ayush's Sentinel-2 offset fix and gives 237 polygons instead of 475. The files under `web/public/demos/` are the correct ones.
