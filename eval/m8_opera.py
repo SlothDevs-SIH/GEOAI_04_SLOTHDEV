@@ -44,6 +44,18 @@ def detect(after, before, p, thr=None):
     return chip, mask, drops, thr
 
 
+def single_date(chip, thr, p):
+    """The same event or scene mapped without a reference (open water on the after image only)."""
+    m, _, _ = radar.flood_mask(chip, thr, strict_db=p["strict_db"], loose_db=p["loose_db"], min_area_m2=p["min_area_m2"],
+                               px_area_m2=radar_run._pixel_m2(chip))
+    return m
+
+
+def summarise(mask, chip):
+    from scipy.ndimage import label as cc
+    return {"polygons": int(cc(mask)[1]), "flooded_km2": round(float(mask.sum() * radar_run._pixel_m2(chip) / 1e6), 2)}
+
+
 def label_on_grid(path, chip):
     """(flooded, covered) boolean rasters on the chip grid. Pixels the label does not cover are ignored."""
     h, w = chip["vv"].shape
@@ -89,6 +101,8 @@ def run(event, after, before, labels=None, points=None, dry_after=None, out_dir=
            "params": {**p, "threshold_db": round(thr, 2)}, "params_source": "engine/params_m8.json (frozen; not tuned here)",
            "area_km2": round(km2, 2), "flooded_km2_detected": round(float(mask.sum() * radar_run._pixel_m2(chip) / 1e6), 2),
            "dropped": drops, "forced_rerun": bool(force)}
+    res["before_after"] = summarise(mask, chip)
+    res["single_date"] = summarise(single_date(chip, thr, p), chip)       # what mapping the same event without a reference gives
     if labels:
         gt, covered = label_on_grid(labels, chip)
         v = chip["valid"] & covered
@@ -97,12 +111,14 @@ def run(event, after, before, labels=None, points=None, dry_after=None, out_dir=
     if points:
         res["points"] = {"source": os.path.basename(points), **score_points(points, chip, mask)}
     if dry_after:
-        _, dry_mask, _, _ = detect(dry_after, before, p, thr)               # same threshold: it is an event parameter
-        from scipy.ndimage import label as cc
-        n = int(cc(dry_mask)[1])
+        dry_chip, dry_mask, _, _ = detect(dry_after, before, p, thr)       # same threshold: it is an event parameter
+        n = summarise(dry_mask, dry_chip)["polygons"]
+        sd = summarise(single_date(dry_chip, thr, p), dry_chip)             # single-date on a scene with no flood at all
         res["dry_season_pair"] = {"after": os.path.basename(dry_after), "false_alarm_polygons": n,
                                   "false_alarms_per_km2": round(n / max(km2, 1e-6), 3),
-                                  "false_alarm_km2": round(float(dry_mask.sum() * radar_run._pixel_m2(chip) / 1e6), 4)}
+                                  "false_alarm_km2": round(float(dry_mask.sum() * radar_run._pixel_m2(chip) / 1e6), 4),
+                                  "single_date_polygons": sd["polygons"], "single_date_per_km2": round(sd["polygons"] / max(km2, 1e-6), 3),
+                                  "single_date_km2": sd["flooded_km2"]}
     res["commit"] = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, cwd=ROOT).stdout.strip()
     res["note"] = "open-water flood extent against the stated reference, single event; not a general accuracy claim"
     os.makedirs(out_dir, exist_ok=True)

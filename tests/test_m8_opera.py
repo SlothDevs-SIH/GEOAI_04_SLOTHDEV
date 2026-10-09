@@ -38,6 +38,9 @@ def test_scores_labels_points_and_dry_season_false_alarms(event, tmp_path):
     p = r["points"]
     assert p["flooded_points"] == 2 and p["flooded_detected"] == 2 and p["dry_points"] == 2 and p["dry_flagged"] == 0
     assert r["dry_season_pair"]["false_alarm_polygons"] == 0                # the lake is dark on both dates: not new water
+    # single-date mapping on the same data cannot tell lake or tarmac from a flood: that is what the reference buys
+    assert r["before_after"]["polygons"] == 1 and r["single_date"]["polygons"] == 3
+    assert r["dry_season_pair"]["single_date_polygons"] == 2 and r["dry_season_pair"]["single_date_per_km2"] > 0
     assert r["params_source"].startswith("engine/params_m8.json") and r["params"]["strict_db"] == 3.0
     saved = json.loads((tmp / "res" / "m8_opera_2026_synthetic.json").read_text())
     assert saved["event"] == "synthetic" and saved["area_km2"] > 0
