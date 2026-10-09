@@ -41,6 +41,30 @@ class Scene:
     source: str = "mpc"
 
 
+def load_dotenv(paths=None) -> list:
+    """Read KEY=VALUE lines from a `.env` file into os.environ, without overriding variables that are already set.
+
+    Looks in the current folder, then in the repository root. Values are never printed or logged. Returns the
+    names (not the values) that were set, so a caller can say "loaded EARTHDATA_TOKEN from .env".
+    """
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    names = []
+    for path in paths or (os.path.join(os.getcwd(), ".env"), os.path.join(root, ".env")):
+        if not os.path.isfile(path):
+            continue
+        with open(path, encoding="utf-8-sig") as f:                      # utf-8-sig: Notepad may add a BOM
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, val = line.partition("=")
+                key, val = key.strip().removeprefix("export ").strip(), val.strip().strip('"').strip("'")
+                if key and val and key not in os.environ:
+                    os.environ[key] = val
+                    names.append(key)
+    return names
+
+
 def to_db(linear) -> np.ndarray:
     """Linear power to dB. Zeros, negatives and non-finite values become NaN first (never -inf)."""
     a = np.asarray(linear, np.float32)
@@ -144,6 +168,7 @@ def search_opera(bbox, start, end, results=None) -> list[Scene]:
 
 def download_opera(results, dest_dir, token=None):
     """Download ASF results with an Earthdata token from the argument or EARTHDATA_TOKEN. Never prints the token."""
+    load_dotenv()
     token = token or os.environ.get("EARTHDATA_TOKEN")
     if not token:
         raise PermissionError("EARTHDATA_TOKEN is not set (create a free Earthdata Login and a token; keep it in .env)")
@@ -174,8 +199,9 @@ def check_mpc(bbox=ASSAM_BOX, start="2024-11-01", end="2025-03-31", workdir=None
 
 def check_opera(bbox=ASSAM_BOX, start="2026-06-01", end="2026-08-31") -> dict:
     """V-M8-2: with a token in EARTHDATA_TOKEN, search OPERA RTC-S1 over the box. (Download is a separate step.)"""
+    load_dotenv()
     if not os.environ.get("EARTHDATA_TOKEN"):
-        return {"ok": False, "error": "EARTHDATA_TOKEN is not set"}
+        return {"ok": False, "error": "EARTHDATA_TOKEN is not set (put EARTHDATA_TOKEN=... in a file named .env in the project folder)"}
     try:
         scenes = search_opera(bbox, start, end)
         return {"ok": bool(scenes), "scenes": len(scenes), "first": scenes[0].id if scenes else None}

@@ -112,4 +112,34 @@ def test_opera_search_parses_results_and_download_needs_a_token(monkeypatch, tmp
     monkeypatch.delenv("EARTHDATA_TOKEN", raising=False)
     with pytest.raises(PermissionError, match="EARTHDATA_TOKEN"):
         s1.download_opera(fake, str(tmp_path))
-    assert s1.check_opera() == {"ok": False, "error": "EARTHDATA_TOKEN is not set"}
+    monkeypatch.chdir(tmp_path)                                  # no .env here
+    monkeypatch.setattr(s1.os.path, "isfile", lambda p: False)   # nor in the repository root
+    r = s1.check_opera()
+    assert r["ok"] is False and "EARTHDATA_TOKEN is not set" in r["error"]
+
+
+def test_dotenv_is_loaded_without_overriding_and_never_echoed(tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_text("\ufeff# comment\nEARTHDATA_TOKEN=\"abc.def.ghi\"\nexport OTHER=value with spaces\nEMPTY=\nnot a line\nPRESET=from_file\n",
+                   encoding="utf-8")
+    for k in ("EARTHDATA_TOKEN", "OTHER", "EMPTY"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("PRESET", "already_set")
+    names = s1.load_dotenv([str(env)])
+    import os
+    assert os.environ["EARTHDATA_TOKEN"] == "abc.def.ghi" and os.environ["OTHER"] == "value with spaces"
+    assert os.environ["PRESET"] == "already_set"                  # a real environment variable wins over the file
+    assert "EMPTY" not in os.environ and sorted(names) == ["EARTHDATA_TOKEN", "OTHER"]
+    assert "abc.def.ghi" not in repr(names)                       # only names come back, never values
+    for k in ("EARTHDATA_TOKEN", "OTHER"):
+        monkeypatch.delenv(k, raising=False)
+
+
+def test_a_token_in_dotenv_reaches_the_opera_check(tmp_path, monkeypatch):
+    (tmp_path / ".env").write_text("EARTHDATA_TOKEN=tok\n")
+    monkeypatch.delenv("EARTHDATA_TOKEN", raising=False)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(s1, "search_opera", lambda *a, **k: [])    # no network: just prove the token was found
+    r = s1.check_opera()
+    assert r == {"ok": False, "scenes": 0, "first": None}
+    monkeypatch.delenv("EARTHDATA_TOKEN", raising=False)
