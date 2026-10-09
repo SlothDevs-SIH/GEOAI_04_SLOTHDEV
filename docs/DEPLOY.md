@@ -63,7 +63,18 @@ docker run --rm -p 7860:7860 geoai04:test
 # then: http://localhost:7860/  and  http://localhost:7860/health
 ```
 
-(Result is recorded below after the run.)
+**Result (run on this laptop, 9 Oct 2026):** the image builds (1.5 GB on disk) and the container reports `healthy`. Verified inside it:
+
+| Check | Result |
+|---|---|
+| `/health`, `/api/health`, `/demos`, the site at `/` | all 200 |
+| PWA files (`sw.js`, manifest) and a demo image | all 200 |
+| `POST /fetch-s2` with a box that is too big | 400 with a plain message |
+| `POST /fetch-s2/preview` (Delhi NCR, real archive, from inside the container) | correct scenes in about 27 s |
+| **A full live analysis** of a 4 km box in Delhi NCR (2019 vs 2025) | fetched in about 40 s, analysed in 2 s: **1,831 raw detections to 59 real changes**; the swipe-map files, PDF and GeoPackage were all served |
+| Memory | about 220 MiB idle; **about 480 MiB at the end of the 4 km job** |
+
+**What the memory number means for hosting:** a Render free instance has about 512 MB, so it can run a small box but a larger one (up to the 15 km limit) is likely to run out of memory. A Hugging Face Space (16 GB) has no such problem. Prefer Option A; with Option B, tell users to draw small boxes.
 
 ---
 

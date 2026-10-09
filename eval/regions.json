@@ -1,0 +1,95 @@
+{
+ "regions": {
+  "delhi-ncr": {
+   "label": "Delhi NCR (Noida)",
+   "climate": "semi-arid, dense urban growth",
+   "bbox": [
+    77.31,
+    28.5,
+    77.39,
+    28.57
+   ],
+   "before": {
+    "scene": "S2B_43RGM_20190105_1_L2A",
+    "date": "2019-01-05",
+    "tile_cloud_pct": 1.17,
+    "aoi_invalid_pct": 0.0,
+    "days_from_target": -15,
+    "processing_baseline": "05.00",
+    "dn_offset_removed": 0
+   },
+   "after": {
+    "scene": "S2B_43RGM_20250123_0_L2A",
+    "date": "2025-01-23",
+    "tile_cloud_pct": 13.79,
+    "aoi_invalid_pct": 0.0,
+    "days_from_target": 3,
+    "processing_baseline": "05.11",
+    "dn_offset_removed": 0
+   },
+   "warnings": [],
+   "raw_detections": 5082,
+   "after_filter": 290,
+   "changed_ha": 125.1,
+   "area_km2": 63.12,
+   "by_type": {
+    "built_up_gain": 277,
+    "water_loss": 13
+   },
+   "by_tier": {
+    "critical": 8,
+    "high": 27,
+    "medium": 71,
+    "low": 184
+   },
+   "runtime_s": 2.06,
+   "picture": "docs/img/qa_region_delhi-ncr.jpg",
+   "reviewed_by_eye": null
+  },
+  "jaipur": {
+   "label": "Jaipur edge, Rajasthan",
+   "climate": "arid",
+   "bbox": [
+    75.72,
+    26.78,
+    75.8,
+    26.85
+   ],
+   "before": {
+    "scene": "S2B_43REK_20190105_1_L2A",
+    "date": "2019-01-05",
+    "tile_cloud_pct": 0.01,
+    "aoi_invalid_pct": 0.0,
+    "days_from_target": -15,
+    "processing_baseline": "05.00",
+    "dn_offset_removed": 0
+   },
+   "after": {
+    "scene": "S2B_43REK_20250123_0_L2A",
+    "date": "2025-01-23",
+    "tile_cloud_pct": 13.0,
+    "aoi_invalid_pct": 0.0,
+    "days_from_target": 3,
+    "processing_baseline": "05.11",
+    "dn_offset_removed": 0
+   },
+   "warnings": [],
+   "raw_detections": 9386,
+   "after_filter": 198,
+   "changed_ha": 37.6,
+   "area_km2": 62.4,
+   "by_type": {
+    "built_up_gain": 198
+   },
+   "by_tier": {
+    "high": 6,
+    "medium": 41,
+    "low": 151
+   },
+   "runtime_s": 1.63,
+   "picture": "docs/img/qa_region_jaipur.jpg",
+   "reviewed_by_eye": null
+  }
+ },
+ "generated_utc": "2026-10-09T12:08:40+00:00"
+}

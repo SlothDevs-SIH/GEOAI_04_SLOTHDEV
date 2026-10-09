@@ -32,8 +32,8 @@ def rings(geom):
     return []
 
 
-def qa(scene):
-    d = os.path.join(DEMOS, scene)
+def draw_panel(d, path):
+    """Draw before / after+polygons for any folder in the demo-scene layout. Returns the tier counts."""
     meta = json.load(open(os.path.join(d, "meta.json")))
     bbox = meta.get("bbox") or [min(c[0] for c in meta["corners"]), min(c[1] for c in meta["corners"]),
                                 max(c[0] for c in meta["corners"]), max(c[1] for c in meta["corners"])]
@@ -54,16 +54,21 @@ def qa(scene):
     canvas = Image.new("RGB", (before.width * 2 + 10, before.height), (30, 30, 30))
     canvas.paste(before, (0, 0))
     canvas.paste(after, (before.width + 10, 0))
-    os.makedirs(OUT, exist_ok=True)
-    path = os.path.join(OUT, f"qa_{scene}.jpg")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     canvas.save(path, quality=88)
     tiers = {}
     for f in fc["features"]:
         t = f["properties"].get("tier", "?")
         tiers[t] = tiers.get(t, 0) + 1
-    print(f"{scene}: {len(fc['features'])} polygons, tiers {tiers}")
     for k, v in sorted(stats.items(), key=lambda kv: -kv[1]["ha"]):
         print(f"   {k:16s} {v['n']:4d} polygons  {v['ha']:8.1f} ha")
+    return tiers
+
+
+def qa(scene):
+    path = os.path.join(OUT, f"qa_{scene}.jpg")
+    tiers = draw_panel(os.path.join(DEMOS, scene), path)
+    print(f"{scene}: {sum(tiers.values())} polygons, tiers {tiers}")
     return path
 
 
