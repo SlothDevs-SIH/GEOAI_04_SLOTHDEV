@@ -50,7 +50,21 @@ this file, **this file wins**.
 | Flood story | **Radar (Assam monsoon 2016).** Optical stories stay as Navi Mumbai and Pune (encroachment) and Saswad (season control). State on stage: open-water extent from one date, not before/after change; a 2016 event; flooded crops and streets can be missed. |
 | Radar upload in the UI | The Analyse page's upload form does not offer radar yet (about 15 minutes of work): a task in `soham_backend.md`. |
 
-## 5. Data and demo scenes
+## 5. Scope: any area in India (and anywhere Sentinel-2 reaches)
+
+**Decision (from the team):** the website must work for **any area in India**, not only the demo scenes.
+Pune, Navi Mumbai, Assam and Saswad are **demo scenes**, chosen because they have clear change; they are not the product's limit.
+
+What this requires (tracked as task S9 in `docs/packages/soham_backend.md`):
+- An **area and dates picker**: draw a box anywhere in India, choose two dates, and the server fetches the two least-cloudy Sentinel-2 scenes and runs the engine. Today the Analyse page only accepts uploaded GeoTIFFs.
+- **More demo scenes from different Indian regions and climates** (for example arid Rajasthan, Delhi NCR, a coastal city, the humid south), each visually checked.
+- **Honest limits:** the rules and thresholds were tuned on three Maharashtra scenes. Until they are checked on other regions we say "validated on N regions", never "works everywhere". The OSCD test locations (worldwide) give extra evidence of generalisation.
+- **Size cap** per request (a box of about 15 km by 15 km inside one Sentinel-2 tile at first); larger areas need tiling and are future work.
+- Monsoon cloud: when a region is too cloudy in optical, the app should suggest the **radar** mode for floods.
+
+---
+
+## 6. Data and demo scenes
 
 | Topic | Decision |
 |---|---|
@@ -59,7 +73,7 @@ this file, **this file wins**.
 | Tier meaning | Default: hectares-based tiers. `main` already tunes them for 10 m scenes in `engine/attributes.py`. |
 | Visual QA | I check the demo outputs (see `soham_backend.md` task S2). |
 
-## 6. Hosting and deployment
+## 7. Hosting and deployment
 
 | | Hugging Face Space | Render free |
 |---|---|---|
@@ -69,7 +83,7 @@ this file, **this file wins**.
 
 **Decision:** the site is static-first, so the live API is not critical. **Soham creates a Hugging Face Docker Space first** (the Dockerfile on `main` already uses port 7860; he is logged in). If that is not allowed or fails, use **Render** (spectral and radar only). The site goes on **Vercel**.
 
-## 7. Repository and process
+## 8. Repository and process
 
 | Topic | Decision |
 |---|---|
@@ -77,6 +91,26 @@ this file, **this file wins**.
 | Pushing | Only when told. |
 | Node.js | Yes, Node 20 or later (22 in CI). |
 
-## 8. Why a web app (for the pitch)
+## 9. Why a web app (for the pitch)
 
 The official statement asks for an **interactive split-view (before/after) web map**. A link also works on any device with no install and can be opened by judges directly. The demo is static-first, so it works even if the server sleeps.
+
+---
+
+## 10. Dataset facts checked against the sources (9 Oct)
+
+| | **LEVIR-CD** (page opened) | **OSCD** (original source opened; the Kaggle page could not be read) |
+|---|---|---|
+| What | Building change, binary labels | Urban change (new buildings and roads), pixel-level labels |
+| Imagery | Google Earth, **0.5 m**, 1024 x 1024 patches | **Sentinel-2**, **13 bands** at 10, 20 or 60 m |
+| Size | **637 pairs**, 31,333 annotated building change instances, 20 regions in Texas | **24 image pairs** at locations worldwide |
+| Dates | 2002 to 2018 (5 to 14 years between the two images) | 2015 to 2018 |
+| Split | Not stated on the page | **14 train / 10 test** pairs; test labels are public |
+| Georeferencing | **A March 2023 update added latitude and longitude per sample** | Not verified (check the Kaggle download) |
+| Licence | **Academic use only; commercial use prohibited**; Google Earth terms apply | Not stated |
+| Not verified | Whether images are RGB on the page (the prototype used 3-channel images) | File format and georeferencing of the Kaggle mirror |
+
+**Corrections:**
+- OSCD pairs are **locations**, not cities. The plans now say "locations".
+- The earlier note that LEVIR "ships with no coordinates" may be out of date; Ayush checks whether his download includes the 2023 update.
+- The README credits must say LEVIR-CD is for academic use and follows Google Earth terms.

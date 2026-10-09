@@ -38,8 +38,8 @@ this.** Your detectors plug in through **Seam 1** (same dict as `change_spectral
 | Piece | Detail |
 |---|---|
 | Install | `pip install -r requirements-ml.txt` (torch with CUDA for the 4050, torchvision, onnx, onnxruntime, einops) |
-| Download | OSCD on your laptop (Kaggle `soumikrakshit/onera-satellite-change-detection-dataset`; the host was blocked in the earlier build environment). Official split: **14 train / 10 test cities** |
-| `ml/oscd_data.py` | Read the 13-band pairs; keep the 5 bands the engine uses (B02, B03, B04, B08, B11); normalise per band; **128 px patches** with stride; random flips and 90° rotations; **hold out 3 train cities as validation** |
+| Download | OSCD on your laptop (Kaggle `soumikrakshit/onera-satellite-change-detection-dataset`; the host was blocked in the earlier build environment). Official split: **14 train / 10 test locations** (the source says "locations", not cities). **Verify on download:** file format, whether the images are georeferenced, and the licence (not stated); resample the 20 m B11 band to 10 m |
+| `ml/oscd_data.py` | Read the 13-band pairs; keep the 5 bands the engine uses (B02, B03, B04, B08, B11); normalise per band; **128 px patches** with stride; random flips and 90° rotations; **hold out 3 train locations as validation** |
 | `eval/metrics.py` | Precision, recall, F1, IoU on the change class; **bootstrap 95% confidence intervals** over test tiles with a fixed seed; expected calibration error |
 | `eval/oscd_baselines.py` | Run the **naive** (raw difference + Otsu) and the **spectral** engine (`engine.change_spectral` + `filters`) on the 10 test cities |
 | Tests | Loader shapes; validation cities never appear in train; metrics on hand-made arrays; skip cleanly without torch (`pytest.importorskip`) |
