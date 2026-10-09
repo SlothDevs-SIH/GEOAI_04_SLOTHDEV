@@ -1,6 +1,6 @@
 {
- "generated_utc": "2026-10-09T13:20:41+00:00",
- "commit": "a4e2f83",
+ "generated_utc": "2026-10-09T13:23:21+00:00",
+ "commit": "1eb11ae",
  "seed": 0,
  "m8_experiments": {
   "dataset": "Sen1Floods11 v1.1 hand-labelled, official splits",
@@ -947,14 +947,25 @@
      "already_water_before": 132358,
      "backscatter_drop_too_small": 108475
     },
-    "forced_rerun": false,
+    "forced_rerun": true,
+    "before_after": {
+     "polygons": 977,
+     "flooded_km2": 56.43
+    },
+    "single_date": {
+     "polygons": 606,
+     "flooded_km2": 82.48
+    },
     "dry_season_pair": {
      "after": "dry_after.tif",
      "false_alarm_polygons": 29,
      "false_alarms_per_km2": 0.065,
-     "false_alarm_km2": 0.1291
+     "false_alarm_km2": 0.1291,
+     "single_date_polygons": 230,
+     "single_date_per_km2": 0.515,
+     "single_date_km2": 11.32
     },
-    "commit": "a4e2f83",
+    "commit": "1eb11ae",
     "note": "open-water flood extent against the stated reference, single event; not a general accuracy claim"
    }
   ],
