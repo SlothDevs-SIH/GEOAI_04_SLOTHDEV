@@ -32,6 +32,8 @@ def run(name, cmd, cwd, results, env=None):
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):   # tool output can contain any character; never crash while printing it
+        stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--skip-web", action="store_true")
     ap.add_argument("--keep", action="store_true", help="keep the temp folder for inspection")
