@@ -1,0 +1,9 @@
+public/demos
+public/eval
+public/architecture.png
+public/icon-*.png
+dist
+node_modules
+.expo
+test-results
+playwright-report

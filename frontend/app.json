@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "GEOAI 04",
+    "slug": "geoai04",
+    "scheme": "geoai04",
+    "version": "1.0.0",
+    "orientation": "default",
+    "userInterfaceStyle": "automatic",
+    "platforms": ["web", "android", "ios"],
+    "web": { "bundler": "metro", "output": "single", "favicon": "./assets/favicon.png" },
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": false }
+  }
+}
