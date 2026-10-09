@@ -117,6 +117,43 @@ After 03:00 only: bug fixes, tests, docs, polish, rehearsal. Anything unfinished
 
 ---
 
+## 2a. Task changes from the locked scope (9 Oct 2026)
+
+These replace or extend the matching rows above. Decisions: **core** B4 + B1, M7, M9, M3, M1, F3, X5, X3; **optional layer** B3 + X1; **gated** M8 (details in [`TECH_OPTIONS.md`](TECH_OPTIONS.md) section 0).
+
+| Role | Added tasks | Target time |
+|---|---|---|
+| **R2** | `engine/composite.py`, `engine/persistence.py`, `engine/quality.py` (Block 2); `eval/ablation.py` (Block 2 to 3) | by 23:00 |
+| **R1** | `eval/bootstrap.py` for 95 % confidence intervals on the OSCD test cities; after the 21:00 decision gate, `ml/export_onnx.py` + `test_onnx_parity.py` (optional, only if C2 is met) | CIs by 00:00; ONNX by 02:00 |
+| **R3** | **X5** evidence panel and **X3** offline PWA (Block 3); permalink state + QR code; **X1** sensitivity lab only after C2 and ONNX parity | X5, X3 by 02:00; X1 by 03:00 or cut |
+| **R4** | Sentinel-1 **data-access spike** (2 h, after C2, about 23:00 to 01:00): find a before and after radar scene over the flood area and read a small window. Pass: R2 builds `engine/radar.py` in Block 3. Fail: drop M8 | decision by 01:00 |
+
+**M8 rule:** start it only when the whole pipeline (CLI, API, static demos, deployed site, tests in CI) works end to end. If it is not done by the 03:00 feature freeze, cut it.
+
+**B3 rule:** the browser engine is an add-on. If it slips, the site still works from static demo data and the API.
+
+**Core additions (13:30):** permalink, QR code and PDF export are back in the core scope (R3: permalink and QR, PDF button; R2: `engine/report.py` with fpdf2 and prebuilt demo PDFs).
+
+**Moved to the cut list:** Hindi PDF and language switch, deck.gl, permits and no-build zones, WorldPop.
+
+---
+
+## 2b. Presentation prototype and data hand-off (added 9 Oct, 13:30)
+
+**Presentation round at about 14:00.** The PPT is managed by two other members; the backend is owned by the server-side owner. Goal for the round: **a basic UI that can be screenshotted or shown live**, not the full app.
+
+| Item | What | Owner | By |
+|---|---|---|---|
+| **P1** | `web/` skeleton: Vite + React + Tailwind, Scenes page and Result page layout, swipe map with a **hand-made fixture** (a few tier-coloured polygons over two before/after images), legend, ranked list, the raw/filtered toggle with counter | R3 | 14:00 (screenshots for the deck even if the live demo is rough) |
+| **P2** | 3 to 4 screenshots for the PPT: Scenes page, Result map with swipe, impact panel mock, Accuracy page mock. **Label them "prototype, fixture data"** so no mock-up is presented as a real result | R3 + PPT owners | 14:00 |
+| **P3** | One architecture slide and one "what we will show" slide, taken from the README diagram and `TECH_OPTIONS.md` section 0 | PPT owners | 14:00 |
+
+**Data hand-off:** Ayush has found the data for the two options and will write it to a separate `.md` on his branch. When the branch name is given: pull it, merge its content into `docs/DATA_NOTES.md`, then check the plan sections that name datasets and scenes (BACKEND_PLAN sections 5 and 8, TASK_SPLIT Block 1) against it. Then the plan is final and is pushed to `main`.
+
+**Order of work:** finalise the plan (after Ayush's data) → push to `main` → continue the schedule in Blocks 0 to 5 above. P1 and P2 can start now because they use fixture data and do not depend on the data note.
+
+---
+
 ## 3. What we will show the judges (numbers and artefacts)
 
 | Item | Source | Status label |
@@ -137,7 +174,7 @@ After 03:00 only: bug fixes, tests, docs, polish, rehearsal. Anything unfinished
 1. Hindi PDF, Sentinel-1 radar mode, draw-an-area picker, permits and no-build zones, WorldPop.
 2. M4 flood water check; BIT fine-tune (M2b).
 3. Live `/fetch-s2` and live upload; keep static demos plus `/analyze` on demo ids.
-4. PDF export (keep GPKG and GeoJSON).
+4. PDF export (last resort only; keep GPKG, GeoJSON, permalink and QR).
 5. Learned model integration (ship spectral as default and report the learned result as measured, or as "in progress").
 
 **Never cut:** the static demo site, the swipe map, the raw/filtered toggle, tiered polygons with reasons, the Accuracy page with honest numbers, tests and CI, the README, deployment.

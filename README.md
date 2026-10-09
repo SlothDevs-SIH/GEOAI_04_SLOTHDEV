@@ -28,12 +28,25 @@ After a flood or a construction boom, agencies compare satellite images from two
 
 ## Why it's different
 
+The default stack for this problem (React + a map library + FastAPI + a pretrained Siamese model) is what most teams will submit, so we differentiate on the method, the architecture and the evidence. The options we compared and why are in [`docs/TECH_OPTIONS.md`](docs/TECH_OPTIONS.md).
+
 1. **False-alarm-first, and measured:** a raw → filtered toggle, plus false alarms per km² reported alongside F1.
 2. **Every change explains itself:** a plain-language reason, a confidence score and before/after crops.
 3. **Decisions, not masks:** ranked polygons with area, location, type, severity and impact numbers, ready for QGIS or ArcGIS.
 4. **Honest numbers:** held-out results on real labelled data (OSCD), naive vs spectral vs learned, with seed and commit recorded.
 5. **Static-first and free:** demo scenes are precomputed, so the deployed site works even if the API sleeps; free Sentinel-2 imagery, open models and maps, no API keys, CPU-only.
 6. **Right model for the right resolution:** automatic routing between the spectral / learned engine (Sentinel-2) and the Siamese transformer (high resolution).
+
+### Planned differentiators (in priority order)
+
+| # | Differentiator | What it means | Status |
+|---|---|---|---|
+| 1 | **Trust layer** | Before/after built from composites of several least-cloudy scenes, a persistence test for encroachment, calibrated confidence, and an **ablation table** of how many false alarms each rule removes | Planned |
+| 2 | **Browser-first compute** | The spectral engine and the small OSCD-trained model run in the page (ONNX Runtime Web, WebGPU with WebAssembly fallback) with a **live sensitivity slider**; no server needed, imagery never leaves the user's machine | Planned (scoped to small areas) |
+| 3 | **Standards and reproducibility** | STAC metadata, COG and GeoJSON outputs, `audit.json`, one command to reproduce the numbers | Planned |
+| Gated | Sentinel-1 radar flood mode (sees through monsoon cloud); AlphaEarth embeddings for year-over-year encroachment | Only after a data-access check and the core demo works |
+
+Anything marked "unverified" in `docs/TECH_OPTIONS.md` is tested before it appears in the pitch.
 
 ## Proof so far
 
@@ -72,7 +85,7 @@ The prototype ran end to end on real before/after pairs (LEVIR-CD, 0.5 m/pixel, 
 | **Models** | NDVI / NDBI / NDWI + Otsu (spectral); lightweight Siamese U-Net trained on OSCD; BIT Siamese transformer (LEVIR-CD weights) |
 | **Data** | Sentinel-2 L2A (Copernicus, public COGs), OSCD and LEVIR-CD for training and evaluation, OpenStreetMap, ESA WorldCover |
 | **Outputs** | GeoPackage, GeoJSON, PDF, CSV/KML |
-| **Deployment** | Vercel (web), Hugging Face Spaces (API, Docker), GitHub Actions (CI) |
+| **Deployment** | Vercel (web), a hosted container for the API, GitHub Actions (CI). Hugging Face Docker Spaces may now need a paid plan, so the host is confirmed first; the site works with the API off |
 
 Why each piece was chosen over its alternatives is in [`docs/PROJECT_PLAN.md` §14](docs/PROJECT_PLAN.md#14-tech-stack-what-we-use-why-and-why-not-the-alternatives).
 
@@ -85,7 +98,8 @@ Why each piece was chosen over its alternatives is in [`docs/PROJECT_PLAN.md` §
 ├── BACKEND_PLAN.md        ← engine, ML retraining, API contract, tests, deployment
 ├── docs/
 │   ├── PROJECT_PLAN.md    ← full plan: problem, solution, risks, demo script, judge Q&A
-│   └── TASK_SPLIT.md      ← hour-by-hour 24-hour schedule, roles, checkpoints, submission checklist
+│   ├── TASK_SPLIT.md      ← hour-by-hour 24-hour schedule, roles, checkpoints, submission checklist
+│   └── TECH_OPTIONS.md    ← backend, model and frontend options, and where we differentiate
 ├── prototype/             ← working pipeline from the worked example
 ├── engine/                ← config and Sentinel-2 search exist; the rest is being built
 ├── scripts/               ← demo scene fetching (and, planned, demo asset export)
@@ -136,6 +150,7 @@ cd web && npm run lint && npm test && npm run build   # frontend
 | Read this | For |
 |---|---|
 | [`docs/TASK_SPLIT.md`](docs/TASK_SPLIT.md) | **Start here for who does what, and when** |
+| [`docs/TECH_OPTIONS.md`](docs/TECH_OPTIONS.md) | Every stack option we compared, the scored differentiators, and what is still unverified |
 | [`BACKEND_PLAN.md`](BACKEND_PLAN.md) | Engine modules, the ML retraining plan, API, tests, deployment |
 | [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md) | The web app |
 | [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) | The whole picture, including the official statement (§2.1) |
@@ -146,6 +161,8 @@ cd web && npm run lint && npm test && npm run build   # frontend
 - [ ] Judging rubric and submission rules (format, repo visibility, required files): fill in [`docs/TASK_SPLIT.md` §5](docs/TASK_SPLIT.md).
 - [ ] Choose the flood scene (post-event cloud < 5 %) and the encroachment scene.
 - [ ] Assign names to the four roles in `docs/TASK_SPLIT.md` §1.
+- [ ] Confirm where the API will be hosted (check whether a free Hugging Face Docker Space can be created).
+- [ ] Review the teammates' `backend-2` and `research-notes` branches and merge what is useful.
 
 ## Credits
 

@@ -7,6 +7,24 @@
 
 ---
 
+## 0. Locked decisions (9 Oct 2026)
+
+| Area | Core (must ship) | Optional layer | Gated, after the core works |
+|---|---|---|---|
+| **Backend** | **B4** static-first files + **B1** FastAPI / Rasterio / PyTorch | **B3** browser-first compute on top of B1 and B4 | none |
+| **Models** | **M7** composites + persistence, **M9** uncertainty + ablation, **M3** OSCD-trained U-Net, **M1** spectral indices | none | **M8** Sentinel-1 radar flood mode, only after the whole pipeline works end to end and a 2-hour data-access check passes |
+| **Frontend** | **F3** React + MapLibre, **X5** evidence panel, **X3** offline PWA | **X1** live sensitivity lab (needs B3) | none |
+
+**Added to the core on 9 Oct (13:30):** **permalink**, **QR code** (send to phone) and **PDF export** (one-page report with a QR to the permalink). They are small, visible and useful for officers.
+
+**What B3 does and does not do.** B3 does **not** make the model more accurate: the same model on the same pixels gives the same answer in the browser as on the server. What it adds is a **live threshold and minimum-area slider**, so a user can tune sensitivity on their own area and see the effect immediately, plus offline use and, for private uploaded imagery, privacy. Accuracy comes from M7, M9 and M3.
+
+**Accuracy on the user's end.** A user running their own area has no ground-truth labels, so we cannot show them an F1 for their run. We show what we *can* honestly measure: (1) a **calibrated confidence** per polygon, (2) **data-quality flags** for their scene (cloud %, image shift, season mismatch, resolution), (3) the **ablation** of what each rule removed, and (4) the **held-out accuracy of the model on OSCD with 95 % confidence intervals** (bootstrap over test tiles), labelled as measured on those cities, not on their area.
+
+**State and sharing (no sign-in).** The permalink holds the inputs (area, dates, scene IDs, mode, thresholds); public Sentinel-2 data lets any device rebuild the same result, and a QR code hands a result to a phone. Phones are view-first. Details in `BACKEND_PLAN.md` section 12 and `FRONTEND_PLAN.md` section 13.
+
+---
+
 ## 1. The principle: differentiate where judges can see and check it
 
 Most teams on this problem will build the same shape: **React or Streamlit + MapLibre/Leaflet + FastAPI + Rasterio + a pretrained Siamese model**. A good version of that stack does not stand out, and a stack choice alone never wins. Judges notice differences in five places:

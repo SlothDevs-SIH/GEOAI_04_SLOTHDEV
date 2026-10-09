@@ -11,6 +11,15 @@
 
 ---
 
+## 0. Locked scope (9 Oct 2026)
+
+- **Core:** B4 static-first files + B1 FastAPI / Rasterio / PyTorch. Models: **M7** composites + persistence, **M9** confidence + ablation, **M3** OSCD-trained U-Net, **M1** spectral.
+- **Optional layer:** **B3** browser-first compute (spectral engine + exported small model as ONNX), built only after the core demo and tests are green.
+- **Gated:** **M8** Sentinel-1 radar flood mode, only after the full pipeline works end to end and a 2-hour data-access spike passes.
+- Rationale and scores: [`docs/TECH_OPTIONS.md`](docs/TECH_OPTIONS.md) section 0.
+
+---
+
 ## 1. The backend in one picture
 
 ```
@@ -249,3 +258,30 @@ The web app reads these static files directly. The live API is an **optional ext
 - [ ] `ruff` and `pytest -m "not slow"` are green in CI; slow tests were run once locally and the result noted in the README.
 - [ ] The API is live on a public URL and the deployed web app works with and without it.
 - [ ] The GPKG opens in QGIS (screenshot saved in `docs/`).
+
+---
+
+## 12. Added modules for the locked scope
+
+| Module / script | What | Phase |
+|---|---|---|
+| `engine/composite.py` | Search several least-cloudy scenes per period (`engine/s2.py`), mask with SCL, take the per-pixel **median** to build the before and after images; record scene ids and dates | B3-core |
+| `engine/persistence.py` | For encroachment mode, keep a change only if it appears in at least 2 post-event scenes (or composites of different weeks); flood mode skips it because floods are transient | B3-core |
+| `eval/ablation.py` | On a matched-season pair, a mismatched-season pair and an **unseen no-change pair**, report raw detections and what each rule (histogram match, seasonal rule, cloud mask, composite, persistence, morphology, min area) removes; writes `eval/ablation.json` | B4-ML |
+| `eval/bootstrap.py` | **95 % confidence intervals** for precision, recall, F1 and IoU on the OSCD test cities (bootstrap over test tiles, fixed seed) | B4-ML |
+| `engine/quality.py` | **Data-quality flags** per scene: cloud %, co-registration shift, season gap, resolution; returned in `summary.warnings` | B3-core |
+| `ml/export_onnx.py` | Export the chosen model to ONNX; `tests/test_onnx_parity.py` checks the ONNX output matches PyTorch within tolerance on fixture patches | Optional (B3) |
+| `engine/report.py` | One-page **PDF report** with **fpdf2** (pure Python, no system libraries, so it also installs on Windows; WeasyPrint needs GTK there): map snapshot image, totals, impact block, top 10 changes, sources, limits, and a QR code (`qrcode`) to the permalink. Called by `export.py` and by `scripts/export_demo_assets.py` for prebuilt demo PDFs | Core |
+| `engine/radar.py` *(gated)* | Sentinel-1 RTC log-ratio + Otsu water change; same filters, vectorise, attributes chain | After the core works |
+
+### State and sharing (no sign-in)
+
+- A **permalink** stores the *inputs*: AOI, dates, scene ids, mode, thresholds. The same inputs give the same output on any device, because Sentinel-2 is public.
+- Results are also **portable files** (GeoJSON / GPKG), and a small result can ride in the URL fragment (never sent to a server).
+- An **opt-in share** uploads only the derived polygons to static storage under an unguessable id; the API needs no accounts.
+- Phones are **view-first**: they open a shared or precomputed result; recompute is for small areas only.
+- Pitch wording: "analysis can run locally; sharing is opt-in". The privacy claim applies to private uploaded imagery only.
+
+### Honest accuracy reporting
+
+Report held-out OSCD metrics **with 95 % confidence intervals**, the ablation table, and calibrated per-polygon confidence. A user's own run has no labels, so do not show them an F1 for it.

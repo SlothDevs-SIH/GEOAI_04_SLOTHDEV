@@ -11,6 +11,15 @@
 
 ---
 
+## 0. Locked scope (9 Oct 2026)
+
+- **Core:** F3 React + MapLibre, **X5** evidence panel (ablation, held-out metrics with confidence intervals, limits), **X3** offline PWA.
+- **Optional layer:** **X1** live sensitivity lab, which needs the browser-first engine (B3) from [`BACKEND_PLAN.md`](BACKEND_PLAN.md).
+- **Also core (added 9 Oct, 13:30):** **permalink**, **QR code** (send to phone) and **PDF export** (section 13).
+- Not selected: language switch, deck.gl, 3D.
+
+---
+
 ## 1. Tech stack
 
 | Need | Choice | Why |
@@ -214,3 +223,29 @@ Rehearse this path on the **deployed** site, on a phone browser and on a laptop 
 - [ ] Loading, empty and error states exist on every page.
 - [ ] `eslint`, `tsc`, `vitest`, `vite build` and the Playwright smoke test are green in CI.
 - [ ] The live URL is in the README and works on a phone.
+
+---
+
+## 13. Locked-scope features
+
+### X5: evidence panel (core)
+Shown on the Result page and the Accuracy page: the **ablation table** (what each rule removed), held-out OSCD **precision / recall / F1 / IoU with 95 % confidence intervals** for naive, spectral and learned, the unseen no-change result, and a **limits** box. Data from `eval/results.json`, `eval/ablation.json`.
+
+### X3: offline PWA (core)
+`vite-plugin-pwa`: cache the app shell and the demo scenes so the demo works with no network; show an "Offline, demo data" badge; test with the network disabled in Playwright.
+
+### X1: live sensitivity lab (optional, needs B3)
+- A slider panel for **change threshold** and **minimum area**, on a scene whose magnitude raster is loaded in the page.
+- The browser recomputes the mask, connected components, polygons and the raw to filtered counter; a Web Worker keeps the UI responsive; fall back to the precomputed layers if the worker or WebGPU is unavailable.
+- Show the **data-quality flags** and **calibrated confidence** next to the result: this is the accuracy a user can see on their own area. Do **not** show an F1 for a user's run.
+
+### PDF export (core)
+- An **Export PDF** button on the Result page downloads a one-page report: map snapshot (from the map canvas), totals, tier and type counts, the impact block with sources, the top 10 changes (rank, area, tier, reason), scene dates and data sources, the **limits** line, and a **QR code to the permalink**.
+- Demo scenes: PDFs are prebuilt in `public/demos/<id>/exports/`. Live jobs: `GET /jobs/{id}/export?format=pdf`.
+- Test: the button exists and the downloaded file starts with `%PDF` (Playwright); the report builder is unit-tested on a fixture summary.
+
+### State and hand-off (no sign-in)
+- URL stores scene or AOI, dates, scene ids, mode, thresholds, swipe position and the selected polygon.
+- **Send to phone:** a QR code for the permalink; phones open results view-first.
+- Import / export of GeoJSON; optional opt-in share link (uploads only the polygons).
+- Tests: parse and rebuild state from a URL (Vitest); open a permalink and assert the same counts (Playwright).
