@@ -46,7 +46,7 @@ Every number below is on the site; do not say a number you cannot point to on sc
 
 - "The radar number is single-date and from a 2016 event."
 - "The 0.41 flood score is the demo scene; the held-out scores are 0.697 on an unseen country and 0.571 on India test chips."
-- "We have not yet measured optical accuracy against labels. That is the OSCD model we are training now."
+- "We measured optical accuracy on 10 held-out OSCD locations from four continents: our learned model scores F1 0.54 against 0.38 for our rule-based engine and 0.24 for plain subtraction. It wins in all ten, but it is weak in three (Valencia, Norcia, Saclay), and on our farmland no-change scene it raises more false alarms than the rules, so we offer both."
 - "The extra filters are off by default: in our test they cut false detections by 27% on a control area, but also removed about 15% of real changed area."
 
 ---

@@ -13,8 +13,8 @@ const STACK: [string, string, Status][] = [
   ["Engine", "Python 3.11, Rasterio / GDAL, GeoPandas, Shapely, NumPy, SciPy, scikit-image, scikit-learn", "Used now"],
   ["API", "FastAPI, Uvicorn; any-area fetch from Sentinel-2; Docker", "Used now"],
   ["Radar flood mode", "Sentinel-1 (VV/VH), event threshold + region growing, evaluated on Sen1Floods11", "Used now"],
-  ["Deep learning", "PyTorch (Siamese U-Net trained on OSCD), ONNX Runtime for serving", "In progress"],
-  ["High-res mode", "BIT Siamese transformer, evaluated on LEVIR-CD", "Planned"],
+  ["Deep learning", "PyTorch Siamese U-Net trained on OSCD (F1 0.54 on 10 held-out locations, see Accuracy) and exported to ONNX for ONNX Runtime serving; serving it in the live API is the next step", "In progress"],
+  ["High-res mode", "BIT Siamese transformer, reproduced on the full LEVIR-CD test split (F1 0.90, see Accuracy); not yet in the live API", "In progress"],
   ["Data", "Sentinel-2 L2A, Sentinel-1, ESA WorldCover, JRC water, OpenStreetMap, OSCD, LEVIR-CD, Sen1Floods11", "Used now"],
   ["Hosting", "Vercel (site), a Hugging Face Space or Render (API)", "Planned"],
 ];

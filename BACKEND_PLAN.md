@@ -334,7 +334,7 @@ Single-date water mapping on the 68 Indian Sen1Floods11 chips, IoU against hand 
 | Event-level Otsu on VH + 5x5 median (-19.45 dB) | 0.52 | **0.44** |
 
 - Thresholds **must be fitted at event level**; per-chip Otsu more than halves accuracy.
-- This is a **single-date lower bound**; Sen1Floods11 has no pre-event radar, so the before/after change version is not measured yet.
+- This is a **single-date lower bound**; Sen1Floods11 has no pre-event radar, so the before/after version was measured label-free on a real July 2024 Assam event (see `eval/README.md`): new water against a dry-season reference, with no hand labels and therefore no IoU.
 - **Radar misses flooded vegetation and flooded streets** (double bounce can raise backscatter). Report M8 as **"open-water flood extent estimate"**, never as complete flood damage.
 - Quote **only numbers that exist in `eval/results/`**. Compare against GFM as "compared with GFM (an automated product)", not as accuracy against ground truth, unless hand-checked points were used.
 

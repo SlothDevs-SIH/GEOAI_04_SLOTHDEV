@@ -99,9 +99,9 @@ records the commit it came from. Commands run from the repository root; datasets
 | Radar before/after on a real event | `python ml/fetch_s1_event.py ...` then `python eval/m8_opera.py --source mpc ...` | Planetary Computer (no account) | minutes |
 | Radar on 2026 OPERA events | `python eval/m8_opera.py --source opera ...` | Earthdata token in `.env` | minutes |
 
-Where the data comes from: OSCD images and train labels from the Kaggle copy `soumikrakshit/onera-satellite-change-detection-dataset`;
+Where the data comes from: OSCD images and train labels from the Kaggle copy `soumikrakshit/onera-satellite-change-detection-dataset` (<https://www.kaggle.com/datasets/soumikrakshit/onera-satellite-change-detection-dataset>);
 the 10 test-city labels from `hkristen/oscd` on Hugging Face (`... - Test Labels.zip`), unzipped next to the images; LEVIR-CD test
-split from `satellite-image-deep-learning/LEVIR-CD` (`test.zip`). The test cities and the gate are used once: `--gate` refuses a second
+split from `satellite-image-deep-learning/LEVIR-CD` (`test.zip`; official page <https://justchenhao.github.io/LEVIR/>, academic use only). The test cities and the gate are used once: `--gate` refuses a second
 run unless `--force`, and `m8_opera.py` refuses to rescore an event.
 
 The Python tests need no data: `python -m pytest -q` (181 pass and 3 skip without torch, 195 with it).

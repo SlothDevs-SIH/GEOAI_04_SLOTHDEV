@@ -35,7 +35,7 @@ The engine is region-agnostic (Sentinel-2 covers the whole country) and any box 
 - **Full pipeline on six regions, each reviewed by eye** (`eval/regions.py`, pictures in `docs/img/qa_region_*.jpg`): Delhi NCR, Jaipur, Chennai, Kochi, Guwahati, Bengaluru. Fast-growing urban areas look plausible. **Known confusers:** rivers and sandbars move between dates and are flagged (the Yamuna in Delhi, the Brahmaputra at Guwahati); bare soil in dry regions (Jaipur) produces scattered small detections. Three of these are published as demo scenes, labelled "Regional check".
 - Visual checks of the change polygons on four tuned scenes (Navi Mumbai, Pune, a farmland control in Maharashtra, Assam radar), see `docs/img/qa_*.jpg`.
 
-The detection thresholds were tuned on the Maharashtra scenes. **We have not yet validated the results in other regions, so we do not claim it works everywhere.** Bigger areas need tiling, which is not built.
+The spectral engine's thresholds were tuned on the Maharashtra scenes. The learned model was scored on 10 held-out OSCD locations on four continents (see the Accuracy page): it works well in some and poorly in others, **so we do not claim it works everywhere.** Bigger areas need tiling, which is not built.
 
 ## Measured results
 
@@ -80,7 +80,7 @@ The site is **static-first**: the demo works with the API switched off. The API 
 |---|---|
 | Web app | React 19, Vite 7, TypeScript, Tailwind CSS 4, MapLibre GL, Zustand, React Router, vite-plugin-pwa (offline); Vitest + Testing Library, Playwright |
 | Engine and API | Python 3.11, FastAPI, Rasterio (GDAL), GeoPandas, Shapely, pyproj, NumPy, SciPy, scikit-image, scikit-learn, fpdf2, qrcode, mgrs; pytest, ruff |
-| Deep learning | PyTorch (OSCD Siamese U-Net, in progress), ONNX Runtime (serving) |
+| Deep learning | PyTorch (OSCD Siamese U-Net: trained and measured), ONNX Runtime (exported; serving it in the API is the next step) |
 | Data | Sentinel-2 L2A (public COGs), Sentinel-1 via Sen1Floods11, ESA WorldCover 2021, JRC Global Surface Water |
 | Deployment | Vercel (web, `web/vercel.json`), one Docker container for the API + site (`Dockerfile`, port 7860), GitHub Actions CI |
 
@@ -148,5 +148,6 @@ CI runs all of these on every push (`.github/workflows/ci.yml`).
 - Sen1Floods11 (Bonafilia et al., CVPR Workshops 2020), CC-BY 4.0; JRC Global Surface Water (Pekel et al., 2016)
 - ESA WorldCover 2021 v200, CC-BY 4.0
 - Map data © OpenStreetMap contributors
-- Round-1 prototype: BIT model ([justchenhao/BIT_CD](https://github.com/justchenhao/BIT_CD)), LEVIR-CD dataset (**academic use only; commercial use prohibited; Google Earth imagery terms apply**)
-- OSCD, Onera Satellite Change Detection dataset (Daudt et al., 2018), used for the in-progress learned model
+- BIT change-detection model (Chen, Qi, Shi, IEEE TGRS 2021; [justchenhao/BIT_CD](https://github.com/justchenhao/BIT_CD)), used with the authors' LEVIR-CD weights, fetched by `scripts/fetch_bit.py`
+- LEVIR-CD dataset (Chen & Shi, Remote Sensing 2020; official page <https://justchenhao.github.io/LEVIR/>): **academic use only; commercial use prohibited; Google Earth imagery terms apply**. We evaluated BIT on the 128-image test split (copy from the Hugging Face dataset `satellite-image-deep-learning/LEVIR-CD`)
+- OSCD, Onera Satellite Change Detection dataset (Daudt et al., 2018), used to train and evaluate the learned model: images and train labels from <https://www.kaggle.com/datasets/soumikrakshit/onera-satellite-change-detection-dataset>, the 10 test-location labels from the Hugging Face dataset `hkristen/oscd` (the Kaggle copy does not include them); licence not stated in the files

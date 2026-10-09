@@ -26,7 +26,7 @@ describe("About: tech stack", () => {
     };
     expect(statusOf("PyTorch")).toContain("In progress");
     expect(statusOf("PyTorch")).not.toContain("Used now");
-    expect(statusOf("BIT Siamese")).toContain("Planned");
+    expect(statusOf("BIT Siamese")).toContain("In progress");
     expect(statusOf("Vercel")).toContain("Planned");
     expect(statusOf("MapLibre")).toContain("Used now");
   });

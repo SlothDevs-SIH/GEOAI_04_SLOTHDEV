@@ -55,7 +55,7 @@
 **Say the limits out loud:**
 - "The radar number is single-date open-water mapping, so flooded crops and streets can be missed. The Assam scene is a 2016 event, evaluated on a public hand-labelled dataset."
 - "The Assam score of 0.41 is the demo scene, not a held-out result. The held-out results are the three rows above."
-- "We have **not yet measured optical accuracy against labels**; that is the OSCD model we are training now."
+- "We measured optical accuracy on 10 held-out OSCD locations from four continents: our learned model scores F1 0.54 against 0.38 for our rule-based engine and 0.24 for plain subtraction. It wins in all ten, but it is weak in three (Valencia, Norcia, Saclay), and on our farmland no-change scene it raises more false alarms than the rules, so we offer both."
 - "Our early building-change prototype scored F1 0.93 on seven hand-picked tiles; the published full-test figure is about 0.89, which we did not reproduce."
 
 **How we did the research:** Ayush cloned and inspected **10 past projects** (stacks, datasets, whether results were real). **Nobody ships the full solution with real results**; several use simulated data or ship no trained weights, and **none reports false alarms per km2 or a reason per polygon**. (Source: `docs/PRIOR_ART_TECH_STACKS.md`.)
@@ -70,9 +70,9 @@
 
 | # | Component | What it does | Owner | Status |
 |---|---|---|---|---|
-| R1 | **OSCD-trained Siamese U-Net (PyTorch)** | Learned change model on real Sentinel-2 labels; trained on an RTX 4050; held-out F1 with 95% intervals | Ayush | Next |
-| R2 | **ONNX serving** | Export the model to ONNX so the server does not need PyTorch | Ayush | Next |
-| R3 | **BIT deep mode + LEVIR-CD evaluation** | Building change on 0.5 m imagery; the official PDF lists LEVIR-CD | Ayush | Next |
+| R1 | **OSCD-trained Siamese U-Net (PyTorch)** | Learned change model on real Sentinel-2 labels; trained on an RTX 4050; held-out F1 with 95% intervals | Ayush | **Done and measured** (F1 0.54 vs 0.38 spectral on 10 locations); API wiring is Soham's |
+| R2 | **ONNX serving** | Export the model to ONNX so the server does not need PyTorch | Ayush | **Export done** (matches PyTorch to 1.2e-5, runs on CPU with onnxruntime); serving it in the API is Soham's |
+| R3 | **BIT deep mode + LEVIR-CD evaluation** | Building change on 0.5 m imagery; the official PDF lists LEVIR-CD | Ayush | **Done and reproduced** (F1 0.90 on the full test split); API wiring is Soham's |
 | R4 | **Radar before/after mode + OPERA test** | Move radar from one date to change detection; test on 2026 events | Ayush | Next; live checks pending |
 | R5 | **Composites + persistence** | Median of several clear scenes; keep a change only if it repeats | Soham | **Built and measured; off by default** (persistence: -27% false detections on a control area, -15% real changed area; median composites did not help) |
 | R6 | **Visual QA of demo results** | Check polygons on real ground; tune thresholds on the demo scenes only | Soham | **Done** (findings logged; threshold changes await a team decision) |
@@ -101,7 +101,7 @@
 
 ### 3.3 Order of work
 1. **Core:** the PyTorch OSCD model and its held-out numbers, composites, QA, deployment, stack visibility, offline PWA.
-2. **Optional:** the browser sensitivity slider; BIT demo tile; radar before/after on 2026 data.
+2. **Optional:** the browser sensitivity slider; BIT demo tile; radar before/after (done on a real July 2024 event; the 2026 OPERA run is pending).
 3. **Cut first if behind:** the slider, OpenAerialMap pairs, then the radar before/after.
 
 ---
@@ -117,8 +117,8 @@
 | Web | React 19, Vite, TypeScript, Tailwind, MapLibre GL, Zustand | In use |
 | Engine | Python, Rasterio / GDAL, GeoPandas, NumPy, SciPy, scikit-image, scikit-learn | In use |
 | API | FastAPI, Uvicorn | In use |
-| **ML** | **PyTorch** (train the OSCD Siamese U-Net on an RTX 4050), **ONNX Runtime** (serve it) | **In progress** |
-| Data | Sentinel-2, Sentinel-1, ESA WorldCover, OpenStreetMap, Sen1Floods11, OSCD, LEVIR-CD | In use / training |
+| **ML** | **PyTorch** (train the OSCD Siamese U-Net on an RTX 4050), **ONNX Runtime** (serve it) | **Trained and measured; serving in the API is next** |
+| Data | Sentinel-2, Sentinel-1, ESA WorldCover, OpenStreetMap, Sen1Floods11, OSCD, LEVIR-CD | In use |
 | DevOps | GitHub Actions, Docker, Vercel, Hugging Face Space or Render | CI in use; deploy planned |
 
 **Say:** "Another team may stress PyTorch. We use PyTorch too, for the learned model. What we add is what a judge can verify: a held-out evaluation with confidence intervals, an ablation of the false-alarm rules, ONNX serving so the model runs anywhere, and a radar mode that works under monsoon cloud."
@@ -207,7 +207,7 @@ Planetary Computer reportedly stopped ingesting new scenes on 17 April 2026 (Git
 | 03:00 | Feature freeze |
 | 07:00 | Repo freeze; 08:15 submit; 09:00 to 10:00 buffer |
 
-**Open risks to name honestly:** the learned model may not beat the spectral baseline (we then ship spectral and report both); optical accuracy against labels is not yet measured; the radar result is single-date and from 2016; the live 2026 radar fetch is not yet verified; the API host choice (Hugging Face Docker Spaces may need a paid plan; Render is the fallback).
+**Open risks to name honestly:** the learned model beats spectral on OSCD F1 but raises about 12x more false alarms on our farmland no-change scene (we offer both and say so); it is weak in 3 of 10 locations; the radar flood result is single-date and from 2016, and the before/after result is from a 2024 event without hand labels; the live 2026 OPERA download is not yet verified (search works); the API host choice (Hugging Face Docker Spaces may need a paid plan; Render is the fallback).
 
 ---
 

@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockStaticFetch } from "../test/staticFetch";
 import Accuracy from "./Accuracy";
 import Analyse from "./Analyse";
@@ -13,6 +13,8 @@ vi.mock("qrcode", () => ({ default: { toDataURL: async () => "data:image/png;bas
 
 const at = (path: string, el: React.ReactNode, route = "*") =>
   render(<MemoryRouter initialEntries={[path]}><Routes><Route path={route} element={el} /></Routes></MemoryRouter>);
+
+afterEach(cleanup);            // vitest globals are off, so testing-library does not unmount between tests by itself
 
 beforeEach(() => {
   mockStaticFetch();
@@ -60,6 +62,30 @@ describe("Accuracy", () => {
     expect(await screen.findByTestId("acc-m8")).toBeInTheDocument();
     expect(screen.getAllByRole("table").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByTestId("acc-ablation")).toHaveTextContent("speckle");
+  });
+  it("shows the optical, per-location, high-res and real-event radar results, and no stale 'not measured' claim", async () => {
+    at("/accuracy", <Accuracy />);
+    const oscd = await screen.findByTestId("acc-oscd");
+    expect(oscd).toHaveTextContent("Learned Siamese U-Net");
+    expect(oscd).toHaveTextContent("gate winner");
+    expect(oscd).toHaveTextContent("0.54 [0.34, 0.66]");                     // learned F1 with its interval
+    expect(oscd).toHaveTextContent("0.38 [0.13, 0.52]");                     // spectral F1 with its interval
+    const loc = screen.getByTestId("acc-oscd-locations");
+    expect(loc).toHaveTextContent("lasvegas");
+    expect(loc).toHaveTextContent("valencia");
+    expect(loc).toHaveTextContent("10 worldwide locations");
+    expect(loc).toHaveTextContent("Spectral beats naive in only 3 of 10");
+    expect(screen.getByTestId("acc-learned-fa")).toHaveTextContent("season-control");
+    const levir = screen.getByTestId("acc-levir");
+    expect(levir).toHaveTextContent("0.90 [0.89, 0.91]");
+    expect(levir).toHaveTextContent("reproduced");
+    expect(levir).toHaveTextContent("academic use only");
+    const radar = screen.getByTestId("acc-radar-events");
+    expect(radar).toHaveTextContent("assam_2024");
+    expect(radar).toHaveTextContent("56.43 km²");
+    const nm = screen.getByTestId("acc-not-measured");
+    expect(nm).toHaveTextContent("NASA OPERA");                              // still open, taken from the results file
+    expect(nm).not.toHaveTextContent("blocked in our build environment");     // the old hard-coded claim is gone
   });
 });
 

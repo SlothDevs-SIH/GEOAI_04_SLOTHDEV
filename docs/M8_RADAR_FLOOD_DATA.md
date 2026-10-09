@@ -20,7 +20,7 @@ M8 is the **radar flood mode** from our method ranking (also listed as addition 
 - **Why it stands out:** none of the nine prior projects we surveyed (`docs/PRIOR_ART_TECH_STACKS.md`) uses Sentinel-1 for floods in a working pipeline. P5 and P8 only mention it or plan it. Disaster authorities in Assam, Bihar and Kerala would get flood extent during the monsoon itself.
 
 **Earlier score in our ranking table:**
-- Unique 4 · Reliable **2 (access unverified)** · Result quality 5 for floods · Effort 4
+- Unique 4 · Reliable **4 (Planetary Computer access verified 9 Oct; OPERA search verified, download pending)** · Result quality 5 for floods · Effort 4
 - The low reliability score was because we hadn't confirmed we could get analysis-ready radar data. This document closes that gap.
 
 ---
@@ -213,7 +213,7 @@ If it prints scene dates and an array, V-M8-1 is done.
 | Criterion | Before | After this document | Why |
 |---|---|---|---|
 | Unique | 4 | 4 | No surveyed project ships a working radar flood mode |
-| **Reliable** | **2 (access unverified)** | **4** | Free, no-account training source (MPC, maintainer-confirmed); free-login test source with 2026 data (OPERA); public labels verified in this session. Not 5 until V-M8-1 and V-M8-2 pass |
+| **Reliable** | **2 at the start; 4 now (Planetary Computer verified 9 Oct, OPERA search verified, OPERA download pending)** | **4** | Free, no-account training source (MPC, maintainer-confirmed); free-login test source with 2026 data (OPERA); public labels verified in this session. Not 5 until V-M8-1 and V-M8-2 pass |
 | Result quality | 5 for floods | 4 for floods | Measured single-date IoU of about 0.52 on Assam 2016; change detection should improve it; misses flooded vegetation |
 | Effort | 4 | 3 | Threshold-and-rules method on analysis-ready data; no radar preprocessing to build |
 

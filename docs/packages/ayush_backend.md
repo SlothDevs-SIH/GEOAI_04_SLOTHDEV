@@ -39,11 +39,7 @@ The wording rule from `DECISIONS.md` applies: pass means "tested on 2026 OPERA d
 labelled as GeoJSON; Sen1Floods11 chips are in degrees so the demo never showed it, but any UTM input (uploads, OPERA)
 would have. It now always returns WGS84. The Assam demo output is unchanged (37 polygons, identical areas).
 
-**To finish on the laptop, in order:** (1) `pip install -r requirements.txt -r requirements-ml.txt`; (2) download OSCD;
-(3) `python eval/oscd_baselines.py ROOT`; (4) `python ml/train_siamunet.py ROOT`; (5) `python ml/train_siamunet.py ROOT --gate`
-(uses the test cities once and picks the default method); (6) `python ml/export_onnx.py`; (7) `python eval/build_results.py`;
-(8) commit `engine/weights/siamunet_oscd.{pt,onnx,json}` and `eval/results/*`. Integration (Soham) then wires
-`change_learned` / `change_deep` / `radar_run` into `detectors.py` and the API.
+**What is left:** only the NASA OPERA 2026 run on the laptop (commands in `eval/README.md`, "Reproduce every number"), and Soham's integration of `change_learned`, `change_deep` and `radar_run` into `detectors.py` and the API.
 
 ---
 
@@ -79,7 +75,7 @@ this.** Your detectors plug in through **Seam 1** (same dict as `change_spectral
 | Piece | Detail |
 |---|---|
 | Install | `pip install -r requirements-ml.txt` (torch with CUDA for the 4050, torchvision, onnx, onnxruntime, einops) |
-| Download | OSCD on your laptop (Kaggle `soumikrakshit/onera-satellite-change-detection-dataset`; the host was blocked in the earlier build environment). Official split: **14 train / 10 test locations** (the source says "locations", not cities). **Verify on download:** file format, whether the images are georeferenced, and the licence (not stated); resample the 20 m B11 band to 10 m |
+| Download | OSCD on your laptop (Kaggle `soumikrakshit/onera-satellite-change-detection-dataset`, <https://www.kaggle.com/datasets/soumikrakshit/onera-satellite-change-detection-dataset>; done on the laptop, the host is blocked in the cloud build environment). Official split: **14 train / 10 test locations** (the source says "locations", not cities). **Verify on download:** file format, whether the images are georeferenced, and the licence (not stated); resample the 20 m B11 band to 10 m |
 | `ml/oscd_data.py` | Read the 13-band pairs; keep the 5 bands the engine uses (B02, B03, B04, B08, B11); normalise per band; **128 px patches** with stride; random flips and 90° rotations; **hold out 3 train locations as validation** |
 | `eval/metrics.py` | Precision, recall, F1, IoU on the change class; **bootstrap 95% confidence intervals** over test tiles with a fixed seed; expected calibration error |
 | `eval/oscd_baselines.py` | Run the **naive** (raw difference + Otsu) and the **spectral** engine (`engine.change_spectral` + `filters`) on the 10 test locations |
@@ -113,7 +109,7 @@ this.** Your detectors plug in through **Seam 1** (same dict as `change_spectral
 | `scripts/fetch_bit.py` | Download the BIT checkpoint (as the prototype does from the BIT_CD repo); never commit it |
 | `engine/change_deep.py` | Port the BIT loader and tiled inference from `prototype/pipeline.py` (torchvision shim and `safe_globals` loader). **RGB at 0.5 m only**; reject other inputs with a clear message. `type_map = built_up_gain` for candidates (Seam 1) |
 | `eval/levir_eval.py` | Full LEVIR-CD **test split**: precision, recall, F1, IoU with intervals. Label the result "reproduced" or "published, not reproduced" |
-| Demo | Add **one LEVIR-CD tile** as a demo input. **Check whether the download includes the March 2023 georeference update** (latitude and longitude per sample); use real coordinates if so, otherwise label them placeholder. LEVIR-CD is **academic use only** and follows Google Earth terms: say so in the README credits |
+| Demo (tool built: `scripts/fetch_bit.py --demo`; official page <https://justchenhao.github.io/LEVIR/>) | Add **one LEVIR-CD tile** as a demo input. **Check whether the download includes the March 2023 georeference update** (latitude and longitude per sample); use real coordinates if so, otherwise label them placeholder. LEVIR-CD is **academic use only** and follows Google Earth terms: say so in the README credits |
 | Tests | BIT loads; a sample tile's F1 is within tolerance of the prototype (`slow`) |
 | Done when | LEVIR numbers in `eval/results/` and `change_deep.detect` returns a valid dict |
 

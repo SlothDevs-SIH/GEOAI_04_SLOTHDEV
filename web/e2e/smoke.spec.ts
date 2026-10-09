@@ -52,4 +52,8 @@ test("phone width has no horizontal scroll", async ({ page }) => {
   await page.goto("./#/scene/season-control");
   await expect(page.getByTestId("counter")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  // the Accuracy page has many wide tables: each must scroll on its own, never the whole page
+  await page.goto("./#/accuracy");
+  await expect(page.getByTestId("acc-oscd")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
