@@ -150,6 +150,14 @@ def group_errors(c):
     check("errors", "DELETE on a read-only route is refused (404/405)", c.delete("/demos").status_code in (404, 405))
     check("errors", "analyze with no files is 400", c.post("/analyze", data={"preset": "general"}).status_code == 400)
     check("errors", "analyze with a bad preset is 400", c.post("/analyze", data={"preset": "x"}).status_code == 400)
+    for name, dates in (("reversed", ("2025-02-01", "2025-01-01")), ("same day", ("2025-01-01", "2025-01-01")),
+                        ("unreadable", ("soon", "2025-01-01"))):
+        r = c.post("/analyze", files={"before": ("b.tif", b"x"), "after": ("a.tif", b"x")},
+                   data={"before_date": dates[0], "after_date": dates[1]})
+        check("errors", f"analyze upload with {name} dates is 400 (no job started)",
+              r.status_code == 400 and "job_id" not in r.text, r.status_code)
+    r = c.post("/analyze", files={"after": ("a.tif", s1_tiff(True))}, data={"mode": "radar", "before_date": "2025-02-01", "after_date": "2025-01-01"})
+    check("errors", "radar upload with reversed dates is 400", r.status_code == 400, r.status_code)
     junk = c.post("/analyze", files={"before": ("b.tif", b"not a tiff"), "after": ("a.tif", b"nope")}, data={"preset": "general"})
     j = wait_job(c, junk.json()["job_id"], 60) if junk.status_code == 200 else {}
     check("errors", "junk upload ends as a clear job error, not a crash", j.get("status") == "error" and j.get("error"), j.get("error"))
