@@ -31,7 +31,8 @@ def results():
 
 
 @app.post("/api/analyze/radar")
-async def analyze_radar(s1: UploadFile = File(...), threshold_db: float = EVENT_THRESHOLD_DB):
+async def analyze_radar(s1: UploadFile = File(...), threshold_db: float = EVENT_THRESHOLD_DB,
+                        method: str = "hysteresis"):
     """Upload a Sentinel-1 GeoTIFF (band 1 = VV dB, band 2 = VH dB). Returns flood polygons as GeoJSON."""
     with tempfile.NamedTemporaryFile(suffix=".tif") as f:
         f.write(await s1.read())
@@ -40,11 +41,13 @@ async def analyze_radar(s1: UploadFile = File(...), threshold_db: float = EVENT_
             chip = radar.load_chip(f.name)
         except Exception as e:
             raise HTTPException(400, f"could not read GeoTIFF: {e}")
-    mask, drops, vvs = radar.flood_mask(chip, threshold_db)
+    if method not in ("hysteresis", "threshold"):
+        raise HTTPException(400, "method must be 'hysteresis' or 'threshold'")
+    mask, drops, vvs = radar.flood_mask(chip, threshold_db, method=method)
     feats = radar.polygons(mask, vvs, threshold_db, chip["transform"], chip["crs"])
     return {"type": "FeatureCollection", "features": [dict(type="Feature", **f) for f in feats],
             "summary": {"polygons": len(feats), "flooded_ha": round(sum(f["properties"]["area_ha"] for f in feats), 2),
-                        "filter_drops_px": drops, "threshold_db": threshold_db}}
+                        "filter_drops_px": drops, "threshold_db": threshold_db, "method": method}}
 
 
 @app.get("/")

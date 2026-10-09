@@ -1,0 +1,251 @@
+{
+ "dataset": "Sen1Floods11 v1.1 hand-labelled, official splits",
+ "split_sizes": {
+  "train": 251,
+  "valid": 86,
+  "test": 88,
+  "bolivia": 15
+ },
+ "hysteresis": {
+  "strict_db": 3.0,
+  "loose_db": 0.0,
+  "chosen_on": "valid"
+ },
+ "learned": {
+  "model": "HistGradientBoostingClassifier",
+  "features": [
+   "vv_rel",
+   "vh_rel",
+   "vv_minus_vh",
+   "vv_med5_rel",
+   "vh_med5_rel",
+   "vv_mean11_rel",
+   "vv_std5"
+  ],
+  "train_pixels": 663801,
+  "prob_cutoff": 0.7,
+  "cutoff_chosen_on": "valid"
+ },
+ "results": {
+  "naive_per_chip_otsu": {
+   "test": {
+    "all_water": {
+     "iou": 0.21,
+     "precision": 0.228,
+     "recall": 0.728
+    },
+    "flood_only": {
+     "iou": 0.141,
+     "precision": 0.151,
+     "recall": 0.68
+    },
+    "mean_chip_iou": 0.225,
+    "chips": 88
+   },
+   "bolivia_heldout": {
+    "all_water": {
+     "iou": 0.353,
+     "precision": 0.379,
+     "recall": 0.836
+    },
+    "flood_only": {
+     "iou": 0.337,
+     "precision": 0.362,
+     "recall": 0.827
+    },
+    "mean_chip_iou": 0.367,
+    "chips": 15
+   },
+   "india_test": {
+    "all_water": {
+     "iou": 0.37,
+     "precision": 0.402,
+     "recall": 0.82
+    },
+    "flood_only": {
+     "iou": 0.273,
+     "precision": 0.3,
+     "recall": 0.751
+    },
+    "mean_chip_iou": 0.364,
+    "chips": 14
+   },
+   "india_all_68": {
+    "all_water": {
+     "iou": 0.219,
+     "precision": 0.232,
+     "recall": 0.79
+    },
+    "flood_only": {
+     "iou": 0.175,
+     "precision": 0.187,
+     "recall": 0.744
+    },
+    "mean_chip_iou": 0.237,
+    "chips": 68
+   }
+  },
+  "m8_threshold": {
+   "test": {
+    "all_water": {
+     "iou": 0.217,
+     "precision": 0.341,
+     "recall": 0.375
+    },
+    "flood_only": {
+     "iou": 0.274,
+     "precision": 0.341,
+     "recall": 0.584
+    },
+    "mean_chip_iou": 0.179,
+    "chips": 88
+   },
+   "bolivia_heldout": {
+    "all_water": {
+     "iou": 0.649,
+     "precision": 0.784,
+     "recall": 0.79
+    },
+    "flood_only": {
+     "iou": 0.686,
+     "precision": 0.784,
+     "recall": 0.846
+    },
+    "mean_chip_iou": 0.357,
+    "chips": 15
+   },
+   "india_test": {
+    "all_water": {
+     "iou": 0.408,
+     "precision": 0.863,
+     "recall": 0.436
+    },
+    "flood_only": {
+     "iou": 0.573,
+     "precision": 0.863,
+     "recall": 0.63
+    },
+    "mean_chip_iou": 0.248,
+    "chips": 14
+   },
+   "india_all_68": {
+    "all_water": {
+     "iou": 0.277,
+     "precision": 0.365,
+     "recall": 0.534
+    },
+    "flood_only": {
+     "iou": 0.308,
+     "precision": 0.365,
+     "recall": 0.664
+    },
+    "mean_chip_iou": 0.205,
+    "chips": 68
+   }
+  },
+  "m8_hysteresis": {
+   "test": {
+    "all_water": {
+     "iou": 0.225,
+     "precision": 0.364,
+     "recall": 0.37
+    },
+    "flood_only": {
+     "iou": 0.287,
+     "precision": 0.364,
+     "recall": 0.576
+    },
+    "mean_chip_iou": 0.184,
+    "chips": 88
+   },
+   "bolivia_heldout": {
+    "all_water": {
+     "iou": 0.658,
+     "precision": 0.803,
+     "recall": 0.785
+    },
+    "flood_only": {
+     "iou": 0.697,
+     "precision": 0.803,
+     "recall": 0.841
+    },
+    "mean_chip_iou": 0.361,
+    "chips": 15
+   },
+   "india_test": {
+    "all_water": {
+     "iou": 0.406,
+     "precision": 0.869,
+     "recall": 0.432
+    },
+    "flood_only": {
+     "iou": 0.571,
+     "precision": 0.869,
+     "recall": 0.624
+    },
+    "mean_chip_iou": 0.243,
+    "chips": 14
+   },
+   "india_all_68": {
+    "all_water": {
+     "iou": 0.303,
+     "precision": 0.421,
+     "recall": 0.518
+    },
+    "flood_only": {
+     "iou": 0.342,
+     "precision": 0.421,
+     "recall": 0.643
+    },
+    "mean_chip_iou": 0.222,
+    "chips": 68
+   }
+  },
+  "m8_learned_gbm": {
+   "test": {
+    "all_water": {
+     "iou": 0.306,
+     "precision": 0.634,
+     "recall": 0.371
+    },
+    "flood_only": {
+     "iou": 0.433,
+     "precision": 0.634,
+     "recall": 0.578
+    },
+    "mean_chip_iou": 0.225,
+    "chips": 88
+   },
+   "bolivia_heldout": {
+    "all_water": {
+     "iou": 0.594,
+     "precision": 0.852,
+     "recall": 0.662
+    },
+    "flood_only": {
+     "iou": 0.631,
+     "precision": 0.852,
+     "recall": 0.709
+    },
+    "mean_chip_iou": 0.311,
+    "chips": 15
+   },
+   "india_test": {
+    "all_water": {
+     "iou": 0.383,
+     "precision": 0.846,
+     "recall": 0.411
+    },
+    "flood_only": {
+     "iou": 0.536,
+     "precision": 0.846,
+     "recall": 0.594
+    },
+    "mean_chip_iou": 0.255,
+    "chips": 14
+   }
+  }
+ },
+ "runtime_s": 439.2,
+ "metric_note": "IoU/precision/recall pooled over pixels; flood_only excludes JRC permanent water; mean_chip_iou averages chips that contain water."
+}

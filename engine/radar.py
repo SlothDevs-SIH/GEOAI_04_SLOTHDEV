@@ -6,7 +6,8 @@ from the satellite, so flooded ground appears dark (low VV backscatter, in dB).
 Pipeline (pure functions, no web code):
   1. speckle filter (median 5x5) on VV dB
   2. event-level threshold: one Otsu threshold fitted on all chips of the event
-     (no labels used). Per-chip Otsu is kept only as the "naive" baseline:
+     (no labels used), then region growing (hysteresis): seeds 3 dB darker than the
+     threshold grow through connected pixels below it. Per-chip Otsu is kept only as the "naive" baseline:
      on Assam 2016 it over-flags because it forces a split on dry chips.
   3. false-alarm filters: drop permanent water (JRC), morphological open/close,
      minimum area
@@ -23,6 +24,10 @@ from shapely.geometry import mapping, shape
 from skimage.filters import threshold_otsu
 
 TIERS_HA = [(50.0, "critical"), (10.0, "high"), (2.0, "medium"), (0.0, "low")]
+# Region-growing offsets chosen on the Sen1Floods11 VALID split (ml/m8_experiments.py,
+# eval/results/m8_sen1floods11_experiments.json): best flood-only IoU on test, held-out Bolivia
+# and India among the label-free methods.
+STRICT_DB, LOOSE_DB = 3.0, 0.0
 MIN_AREA_M2 = 2000.0          # ~20 Sentinel-1 pixels at 10 m
 
 
@@ -58,7 +63,7 @@ def naive_mask(chip):
     return (chip["vv"] < threshold_otsu(chip["vv"][v])) & v
 
 
-def hysteresis_water(vvs, valid, thr, strict_db=1.5, loose_db=1.0):
+def hysteresis_water(vvs, valid, thr, strict_db=STRICT_DB, loose_db=LOOSE_DB):
     """Region growing: seeds darker than thr - strict_db, grown through connected pixels darker
     than thr + loose_db. Recovers flood edges a single threshold cuts off, without adding
     isolated dark speckle."""
@@ -102,7 +107,7 @@ def postprocess(water, chip, min_area_m2=MIN_AREA_M2, px_area_m2=100.0):
     return cleaned, drops
 
 
-def flood_mask(chip, thr, method="threshold", model=None, prob=0.5, **kw):
+def flood_mask(chip, thr, method="hysteresis", model=None, prob=0.5, **kw):
     """Detect open-water flood and apply the false-alarm filters.
     method: "threshold" (event Otsu), "hysteresis" (region growing) or "learned" (needs model).
     Returns (mask, drop_counts, speckle-filtered VV)."""
@@ -111,7 +116,7 @@ def flood_mask(chip, thr, method="threshold", model=None, prob=0.5, **kw):
     if method == "threshold":
         water = vvs < thr
     elif method == "hysteresis":
-        water = hysteresis_water(vvs, v, thr, kw.pop("strict_db", 1.5), kw.pop("loose_db", 1.0))
+        water = hysteresis_water(vvs, v, thr, kw.pop("strict_db", STRICT_DB), kw.pop("loose_db", LOOSE_DB))
     elif method == "learned":
         f = features(chip, thr)
         water = model.predict_proba(f.reshape(-1, f.shape[-1]))[:, 1].reshape(v.shape) >= prob
@@ -154,7 +159,8 @@ def polygons(mask, vvs, thr, transform, crs):
                 centroid_lat=round(gw.centroid.y, 6), centroid_lon=round(gw.centroid.x, 6),
                 change_type="water_gain", tier=tier,
                 reason=f"radar backscatter {mean_db:.1f} dB, {depth:.1f} dB below the event water "
-                       f"threshold ({thr:.1f} dB); not permanent water (JRC)")))
+                       f"threshold ({thr:.1f} dB); grown from a seed {STRICT_DB:.0f} dB darker; "
+                       f"not permanent water (JRC)")))
     out.sort(key=lambda f: -f["properties"]["area_m2"])
     for i, f in enumerate(out, 1):
         f["properties"]["id"] = i

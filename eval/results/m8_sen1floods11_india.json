@@ -17,18 +17,18 @@
  },
  "m8": {
   "all_water": {
-   "iou": 0.341,
-   "precision": 0.775,
-   "recall": 0.378
+   "iou": 0.337,
+   "precision": 0.791,
+   "recall": 0.371
   },
   "flood_only": {
-   "iou": 0.413,
-   "precision": 0.775,
-   "recall": 0.47
+   "iou": 0.41,
+   "precision": 0.791,
+   "recall": 0.46
   }
  },
  "raw_blobs_naive": 129765,
- "polygons_m8": 2341,
- "runtime_s": 38.6,
+ "polygons_m8": 1477,
+ "runtime_s": 25.1,
  "note": "Single-date water mapping (no pre-event radar in Sen1Floods11): a lower bound for M8 change detection."
 }

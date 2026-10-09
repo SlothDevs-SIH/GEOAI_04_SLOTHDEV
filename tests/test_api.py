@@ -58,3 +58,11 @@ def test_analyze_radar_returns_flood_polygon():
 def test_analyze_radar_rejects_non_geotiff():
     r = client.post("/api/analyze/radar", files={"s1": ("x.tif", b"not a tiff", "image/tiff")})
     assert r.status_code == 400
+
+
+def test_analyze_radar_method_param():
+    tif = synthetic_s1_geotiff()
+    r = client.post("/api/analyze/radar?method=threshold", files={"s1": ("s.tif", tif, "image/tiff")})
+    assert r.status_code == 200 and r.json()["summary"]["method"] == "threshold"
+    r = client.post("/api/analyze/radar?method=bogus", files={"s1": ("s.tif", tif, "image/tiff")})
+    assert r.status_code == 400

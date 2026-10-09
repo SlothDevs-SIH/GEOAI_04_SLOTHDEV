@@ -120,7 +120,7 @@ function render(){const c=D.chips[cur];chips();
  <div class=kpi><b class=good>${sm.precision}</b><span>precision (naive ${sn.precision})</span></div>`;
  $('scoreTbl').innerHTML=`<table><tr><th>Method</th><th>IoU</th><th>Precision</th><th>Recall</th><th>False-alarm pixels</th></tr>
  <tr><td>Naive (per-scene threshold, no filters)</td><td class=num>${sn.iou}</td><td class=num>${sn.precision}</td><td class=num>${sn.recall}</td><td class=num>${fmt(sn.fp)}</td></tr>
- <tr><td><b>M8 (event threshold + filters)</b></td><td class="num good">${sm.iou}</td><td class="num good">${sm.precision}</td><td class=num>${sm.recall}</td><td class="num good">${fmt(sm.fp)}</td></tr></table>`;
+ <tr><td><b>M8 (event threshold + region growing + filters)</b></td><td class="num good">${sm.iou}</td><td class="num good">${sm.precision}</td><td class=num>${sm.recall}</td><td class="num good">${fmt(sm.fp)}</td></tr></table>`;
  $('svg').innerHTML=c.polygons.map((p,i)=>p.rings.map(r=>`<polygon data-i=${i} class="${sel===i?'sel':''}" points="${r.map(x=>x.join(',')).join(' ')}" fill="${TC[p.props.tier]}" fill-opacity=".45" stroke="${TC[p.props.tier]}"/>`).join('')).join('');
  document.querySelectorAll('#svg polygon').forEach(e=>e.onclick=()=>{sel=+e.dataset.i;render()});
  $('list').innerHTML=`<table><tr><th>#</th><th>Tier</th><th class=num>Area (ha)</th><th class=num>Conf.</th></tr>`+c.polygons.slice(0,60).map((p,i)=>`<tr class=row data-i=${i}><td>${p.props.id}</td><td><span class=tier style="background:${TC[p.props.tier]}">${p.props.tier}</span></td><td class=num>${p.props.area_ha}</td><td class=num>${p.props.confidence}</td></tr>`).join('')+`</table>`;

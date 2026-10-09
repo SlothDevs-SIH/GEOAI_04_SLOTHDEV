@@ -78,3 +78,24 @@ def test_naive_baseline_overflags_a_dry_chip():
     assert radar.naive_mask(dry).mean() > 0.2
     mask, _, _ = radar.flood_mask(dry, -14.0)
     assert mask.sum() == 0
+
+
+def test_hysteresis_grows_connected_edges_but_not_isolated_dark_patches():
+    """Region growing keeps a flood's slightly-less-dark edge (connected to a dark seed) and drops an
+    isolated patch that is only slightly below the threshold."""
+    thr = -14.0
+    vv = np.full((100, 100), -8.0, np.float32)
+    vv[20:40, 20:40] = -20.0          # core: 6 dB below threshold -> seed
+    vv[20:40, 40:50] = -14.5          # edge: just below threshold, touches the core
+    vv[70:85, 70:85] = -14.5          # isolated, just below threshold, no seed
+    chip = dict(vv=vv, valid=np.ones_like(vv, bool), perm=None, label=None, transform=TRANSFORM, crs=None)
+    grown = radar.hysteresis_water(radar.smooth(vv, chip["valid"]), chip["valid"], thr)
+    assert grown[25:35, 42:48].all()
+    assert not grown[72:83, 72:83].any()
+    plain = radar.smooth(vv, chip["valid"]) < thr
+    assert plain[72:83, 72:83].all()  # the plain threshold would have kept the isolated patch
+
+
+def test_flood_mask_rejects_unknown_method():
+    with pytest.raises(ValueError):
+        radar.flood_mask(synthetic_chip(), -14.0, method="magic")
