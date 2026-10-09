@@ -39,19 +39,21 @@ export const midnight: Palette = {
   skeletonBase: "#102033", skeletonHighlight: "#162A40",
 };
 
+// Daylight GIS. Measured deviations from the style guide: accent, actionSecondary, success, warning and info are darkened one step because
+// the guide's values reach only 3.2-4.1:1 as text on white (AA needs 4.5:1). See theme/__tests__/contrast.test.ts.
 export const daylight: Palette = {
   bg: "#F3F7FB", surface: "#FFFFFF", surfaceAlt: "#E8EEF5", surfaceHover: "#DDE5EE",
   border: "#CBD5E1", borderStrong: "#94A3B8",
   text: "#102033", textMuted: "#64748B", textSecondary: "#334155", textOnAccent: "#FFFFFF", overlayScrim: "rgba(15, 23, 42, 0.45)",
-  accent: "#0891B2", accentHover: "#0E7490", accentPressed: "#155E75", accentSoft: "rgba(8, 145, 178, 0.12)",
-  actionSecondary: "#0D9488", focusRing: "#CA8A04",
-  success: "#16A34A", successSoft: "#DCFCE7", warning: "#D97706", warningSoft: "#FEF3C7",
-  danger: "#DC2626", dangerSoft: "#FEE2E2", info: "#0284C7", infoSoft: "#E0F2FE",
+  accent: "#0E7490", accentHover: "#155E75", accentPressed: "#164E63", accentSoft: "rgba(8, 145, 178, 0.12)",
+  actionSecondary: "#0F766E", focusRing: "#CA8A04",
+  success: "#15803D", successSoft: "#DCFCE7", warning: "#B45309", warningSoft: "#FEF3C7",
+  danger: "#DC2626", dangerSoft: "#FEE2E2", info: "#0369A1", infoSoft: "#E0F2FE",
   tierCritical: "#E11D48", tierCriticalSoft: "#FFE4E6", tierHigh: "#EA580C", tierHighSoft: "#FFEDD5",
   tierMedium: "#CA8A04", tierMediumSoft: "#FEF9C3", tierLow: "#0284C7", tierLowSoft: "#E0F2FE",
   typeBuiltUp: "#7C3AED", typeWaterGain: "#0891B2", typeWaterLoss: "#1D4ED8", typeVegLoss: "#A16207", typeVegGain: "#16A34A", typeOther: "#64748B",
   selectedLine: "#CA8A04", rawDetection: "#94A3B8", rawStroke: "#CBD5E1",
-  boxFill: "rgba(8, 145, 178, 0.20)", boxLine: "#0891B2",
+  boxFill: "rgba(8, 145, 178, 0.20)", boxLine: "#0E7490",
   swipeHandle: "#FFFFFF", swipeHandleRing: "#0891B2", swipeHandleShadow: "rgba(0, 0, 0, 0.30)",
   statusUsedNow: "#16A34A", statusInProgress: "#D97706", statusPlanned: "#7C3AED",
   badgeDemoText: "#5B21B6", badgeDemoBg: "#EDE9FE", badgeLiveText: "#0F766E", badgeLiveBg: "#CCFBF1", badgeOfflineText: "#334155", badgeOfflineBg: "#F1F5F9",
