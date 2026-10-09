@@ -64,9 +64,9 @@ def raw_layer(candidate, transform, crs, cap=2000):
 
 
 def analyze(before_path, after_path, preset="general", mode="auto", before_date=None, after_date=None,
-            worldcover_cache=None, rules=None):
+            worldcover_cache=None, rules=None, params=None):
     t0 = time.time()
-    p = params_for(preset)
+    p = params or params_for(preset)
     pair = ingest.read_pair(before_path, after_path)
     mode = choose_mode(pair, mode)
     if mode != "spectral":
