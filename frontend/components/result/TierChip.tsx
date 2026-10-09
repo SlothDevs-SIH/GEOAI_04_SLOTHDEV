@@ -14,7 +14,7 @@ export function TierChip({ tier }: { tier: Tier }) {
     <View testID="tier-chip" accessibilityLabel={`${tierLabel(tier)} severity`}
       style={{ flexDirection: "row", alignItems: "center", gap: space[1] + 2, backgroundColor: bg, borderColor: fg, borderWidth: 1, borderRadius: radius.xs, paddingHorizontal: space[2], paddingVertical: 2, alignSelf: "flex-start" }}>
       <TierIcon tier={tier} size={11} />
-      <Txt v="micro" style={{ color: fg }}>{tierLabel(tier)}</Txt>
+      <Txt v="micro">{tierLabel(tier)}</Txt>
     </View>
   );
 }
