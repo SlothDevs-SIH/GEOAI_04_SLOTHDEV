@@ -8,7 +8,7 @@
 
 ## What is in this branch (`ayush_backend`, 9 Oct 2026): read this first
 
-**Built and tested here** (116 tests pass with torch; 102 pass and 3 skip without it, which is what CI sees):
+**Built and tested** (on `ayush_backend` merged with Soham's `main`: 190 Python tests pass with torch, 176 pass and 3 skip without it, which is what CI sees; plus 49 web tests and 4 browser tests):
 
 | Task | Built | Measured on real data? |
 |---|---|---|
@@ -16,7 +16,7 @@
 | A2 | `ml/siamunet.py` (1.09 M params), `ml/train_siamunet.py` (+ `--gate`, run-once test gate) | **Yes** (RTX 4050): stopped at epoch 36, best epoch 26 (validation F1 0.45). Gate, test cities used once: learned F1 0.54 [0.34, 0.66] vs spectral 0.38, so the default is `learned` by the pre-set rule, but see the false-alarm caveat in `eval/README.md` |
 | A3 | `engine/change_learned.py` (ONNX Runtime, torch fallback, fail-soft), `ml/export_onnx.py` (parity check), `engine/config_ml.py` | **Trained model shipped** (`siamunet_oscd.{pt,onnx,json}`); ONNX matches PyTorch to 1e-5; runs on all demo scenes in about 1 s each |
 | A4 | `engine/change_deep.py` (BIT, GPU when available), `scripts/fetch_bit.py`, `eval/levir_eval.py` | **Yes, on the full official LEVIR-CD test split (128 images), reproduced** (run on the laptop, 9 Oct): BIT F1 0.9025 [0.890, 0.912], IoU 0.822; naive F1 0.137. Published: 0.8931 / 0.8068 |
-| A5 | `engine/s1.py`, radar before/after in `engine/radar.py`, `engine/radar_run.py` (Seam 2), `ml/m8_calibrate.py`, `engine/params_m8.json`, `eval/m8_opera.py` | **No.** Synthetic scenes only: no pre-event radar exists in Sen1Floods11, and Planetary Computer / Earthdata are not reachable here |
+| A5 | `engine/s1.py`, radar before/after in `engine/radar.py`, `engine/radar_run.py` (Seam 2), `ml/m8_calibrate.py`, `engine/params_m8.json`, `eval/m8_opera.py`, `ml/fetch_s1_event.py` | **Yes, label-free, on a real event** (July 2024 Assam flood, Planetary Computer): new water 56.4 km2; a flood-free scene gives 0.13 km2 of false alarms against 11.3 km2 single-date. **Not yet:** the NASA OPERA 2026 run (written from the real listing, tested with fake downloads, not run live) |
 | A6 | `eval/build_results.py` Seam 3 keys (written only when their result file exists), `requirements-ml.txt` | n/a |
 
 **Still open:** only the NASA OPERA 2026 test (V-M8-2 below). The radar before/after mode has been run on a real 2024 event.
@@ -156,7 +156,7 @@ Data decisions are in `M8_RADAR_FLOOD_DATA.md`. **M8 stays either way** (see `DE
 - [x] `change_learned.detect` and `change_deep.detect` follow Seam 1 and fail soft; ONNX parity passes (max difference 1.2e-5).
 - [x] LEVIR-CD test-split numbers exist and are labelled **reproduced** (128 images, F1 0.9025).
 - [x] `radar_run.run` follows Seams 2, 4 and 5; single-date stays as the fallback. The live access checks are written down (V-M8-1: 403 from the build environment; V-M8-2: not tried).
-- [x] `ruff` and `pytest` are green without torch installed (102 pass, 3 skip; 116 with torch); every engine, eval and ml module imports without torch except the three PyTorch tools, which say how to install it (`tests/test_imports_without_torch.py`). No edits to the partner's files. A clean checkout rebuilds the committed `results.json` exactly.
+- [x] `ruff` and `pytest` are green without torch installed (176 pass, 3 skip; 190 with torch, on the merged tree); every engine, eval and ml module imports without torch except the three PyTorch tools, which say how to install it (`tests/test_imports_without_torch.py`). No edits to the partner's files. A clean checkout rebuilds the committed `results.json` exactly.
 
 **Radar before/after on a real event: done on Planetary Computer, label-free** (laptop, 9 Oct; `eval/results/m8_mpc_assam_2024.json`): July 2024 Assam flood,
 447 km2. New water 56.4 km2 (single-date: 82.5 km2). On a flood-free dry-season scene single-date mapping flags 11.3 km2 and before/after 0.13 km2.
