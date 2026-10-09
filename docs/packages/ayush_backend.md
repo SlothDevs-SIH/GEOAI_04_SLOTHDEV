@@ -6,6 +6,37 @@
 
 ---
 
+## What is in this branch (`ayush_backend`, 9 Oct 2026): read this first
+
+**Built and tested here** (103 tests pass; 89 pass and 3 skip without torch, which is what CI sees):
+
+| Task | Built | Measured on real data? |
+|---|---|---|
+| A1 | `eval/metrics.py` (P/R/F1/IoU, bootstrap CIs over tiles, ECE), `ml/oscd_data.py`, `eval/oscd_baselines.py` | **No.** OSCD's host is blocked in this environment. Run `python eval/oscd_baselines.py <OSCD root>` on your laptop |
+| A2 | `ml/siamunet.py` (1.09 M params), `ml/train_siamunet.py` (+ `--gate`, run-once test gate) | **No weights trained.** Needs OSCD and ideally the RTX 4050: `python ml/train_siamunet.py <OSCD root>`, then `--gate`, then `python ml/export_onnx.py` |
+| A3 | `engine/change_learned.py` (ONNX Runtime, torch fallback, fail-soft), `ml/export_onnx.py` (parity check), `engine/config_ml.py` | Plumbing verified with random weights; **no trained model is shipped**, so `change_learned.status()` says unavailable |
+| A4 | `engine/change_deep.py` (BIT), `scripts/fetch_bit.py`, `eval/levir_eval.py` | **Yes, on 7 labelled sample tiles** (not the test split): BIT F1 0.928 [0.908, 0.951], naive 0.303. Labelled "published, not reproduced". The full LEVIR-CD split could not be downloaded |
+| A5 | `engine/s1.py`, radar before/after in `engine/radar.py`, `engine/radar_run.py` (Seam 2), `ml/m8_calibrate.py`, `engine/params_m8.json`, `eval/m8_opera.py` | **No.** Synthetic scenes only: no pre-event radar exists in Sen1Floods11, and Planetary Computer / Earthdata are not reachable here |
+| A6 | `eval/build_results.py` Seam 3 keys (written only when their result file exists), `requirements-ml.txt` | n/a |
+
+**V-M8-1 (Planetary Computer):** tried from this build environment on 9 Oct: the egress proxy answered 403 for
+`planetarycomputer.microsoft.com`, so it is **not verified** (an environment limit, not a finding about the service).
+**V-M8-2 (Earthdata / OPERA):** not tried (no account or token). Both can be run on your laptop:
+`python -m engine.s1 --check mpc` and `EARTHDATA_TOKEN=... python -m engine.s1 --check opera`. The wording rule from
+`DECISIONS.md` applies: pass means "tested on 2026 OPERA data", fail means "evaluated on Sen1Floods11; live 2026 fetch not verified".
+
+**A bug found and fixed on the way:** `radar.polygons` returned geometry in the raster's own CRS (metres for UTM inputs)
+labelled as GeoJSON; Sen1Floods11 chips are in degrees so the demo never showed it, but any UTM input (uploads, OPERA)
+would have. It now always returns WGS84. The Assam demo output is unchanged (37 polygons, identical areas).
+
+**To finish on the laptop, in order:** (1) `pip install -r requirements.txt -r requirements-ml.txt`; (2) download OSCD;
+(3) `python eval/oscd_baselines.py ROOT`; (4) `python ml/train_siamunet.py ROOT`; (5) `python ml/train_siamunet.py ROOT --gate`
+(uses the test cities once and picks the default method); (6) `python ml/export_onnx.py`; (7) `python eval/build_results.py`;
+(8) commit `engine/weights/siamunet_oscd.{pt,onnx,json}` and `eval/results/*`. Integration (Soham) then wires
+`change_learned` / `change_deep` / `radar_run` into `detectors.py` and the API.
+
+---
+
 ## 1. What this package is
 
 Everything that **learns or is measured**: the PyTorch change model on real Sentinel-2 labels

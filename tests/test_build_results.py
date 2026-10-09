@@ -1,0 +1,73 @@
+"""eval/build_results.py: Seam 3 keys appear only when their result files exist; nothing is invented."""
+import json
+
+from eval import build_results as B
+
+def CI(v):
+    return {"value": v, "ci95": [round(v - 0.05, 4), round(v + 0.05, 4)]}
+
+
+def put(root, rel, obj):
+    p = root / rel
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(obj))
+
+
+def methods(f1):
+    return {k: {"precision": CI(f1), "recall": CI(f1), "f1": CI(f1), "iou": CI(f1 / 2)} for k in ("naive", "spectral")}
+
+
+def test_empty_checkout_reports_everything_as_not_measured(tmp_path):
+    r = B.build(str(tmp_path))
+    assert not {"oscd", "levir", "m8_change", "speed_s_per_km2"} & set(r)
+    assert len(r["not_measured"]) == 3 and r["seed"] == 0
+
+
+def test_oscd_baselines_without_training_keep_spectral_as_default_and_say_learned_is_unrun(tmp_path):
+    put(tmp_path, "eval/results/oscd_baselines.json", {"test_cities": list("abcdefghij"), "methods": methods(0.4),
+                                                       "bootstrap": "95% over cities"})
+    r = B.build(str(tmp_path))
+    o = r["oscd"]
+    assert o["default_method"] == "spectral" and o["learned_trained"] is False and set(o["methods"]) == {"naive", "spectral"}
+    assert o["split"]["test_cities"] == 10 and o["methods"]["spectral"]["f1"]["ci95"] == [0.35, 0.45]
+    assert any("Siamese U-Net" in x and "not been run" in x for x in r["not_measured"])
+    assert not any("OSCD test cities (dataset host" in x for x in r["not_measured"])
+
+
+def test_learned_result_adds_a_method_the_decision_and_speed(tmp_path):
+    put(tmp_path, "eval/results/oscd_baselines.json", {"test_cities": ["a"], "methods": methods(0.4), "bootstrap": "x"})
+    put(tmp_path, "eval/results/oscd_learned.json",
+        {"learned": {**{k: CI(0.5) for k in ("precision", "recall", "f1", "iou")}, "ece": 0.07, "s_per_km2": 1.5},
+         "threshold": 0.4, "default_method": "learned"})
+    put(tmp_path, "engine/weights/siamunet_oscd.json", {"trained_on": list("123456789ab"), "val_cities": ["x", "y", "z"]})
+    r = B.build(str(tmp_path))
+    assert r["oscd"]["default_method"] == "learned" and r["oscd"]["ece"] == 0.07 and r["oscd"]["threshold"] == 0.4
+    assert set(r["oscd"]["methods"]) == {"naive", "spectral", "learned"} and r["oscd"]["split"]["train_cities"] == 11
+    assert r["speed_s_per_km2"]["learned"] == 1.5
+    assert not any("Siamese" in x for x in r["not_measured"])
+
+
+def test_levir_is_never_called_reproduced_unless_the_file_says_so(tmp_path):
+    lv = {"bit": {k: CI(0.9) for k in ("f1", "iou", "precision", "recall")}, "naive": {"f1": CI(0.3), "iou": CI(0.2)},
+          "images": 7, "scope": "7 sample tiles", "note": "published, not reproduced", "s_per_km2": 36.0,
+          "published_bit": {"f1": 0.8931}}
+    put(tmp_path, "eval/results/levir_bit.json", lv)
+    r = B.build(str(tmp_path))
+    assert r["levir"]["note"] == "published, not reproduced" and r["speed_s_per_km2"]["deep"] == 36.0
+    assert any("full LEVIR-CD test split" in x and "7 labelled sample tiles" in x for x in r["not_measured"])
+    put(tmp_path, "eval/results/levir_bit.json", {**lv, "note": "reproduced"})
+    assert not any("LEVIR" in x for x in B.build(str(tmp_path))["not_measured"])
+
+
+def test_opera_events_are_collected(tmp_path):
+    put(tmp_path, "eval/results/m8_opera_2026_assam.json", {"event": "assam", "labels": {"iou": 0.5}})
+    put(tmp_path, "eval/results/m8_opera_2026_kerala.json", {"event": "kerala"})
+    r = B.build(str(tmp_path))
+    assert [e["event"] for e in r["m8_change"]["events"]] == ["assam", "kerala"]
+    assert not any("OPERA" in x for x in r["not_measured"])
+
+
+def test_existing_keys_are_kept(tmp_path):
+    put(tmp_path, "eval/results/m8_sen1floods11_india.json", {"chips": 68})
+    r = B.build(str(tmp_path))
+    assert r["m8_india"] == {"chips": 68} and {"m8_experiments", "false_alarms", "ablation", "generated_utc", "commit"} <= set(r)

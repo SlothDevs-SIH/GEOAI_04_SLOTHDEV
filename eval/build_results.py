@@ -7,7 +7,14 @@ Inputs (all produced by scripts in this repo):
   eval/results/m8_sen1floods11_india.json         scripts/build_m8_demo.py
   web/public/demos/<id>/summary.json               scripts/export_demo_assets.py (false alarms per km²)
   eval/ablation.json                               eval/ablation.py
+  eval/results/oscd_baselines.json                 eval/oscd_baselines.py     -> "oscd" (naive, spectral)
+  eval/results/oscd_learned.json                   ml/train_siamunet.py --gate -> "oscd" (learned, default_method)
+  eval/results/levir_bit.json                      eval/levir_eval.py         -> "levir"
+  eval/results/m8_opera_2026_<event>.json          eval/m8_opera.py           -> "m8_change"
+Keys follow docs/packages/CONTRACTS.md Seam 3. A key is written only when its result file exists: numbers come
+from code that ran, never from a placeholder, and `not_measured` lists what is still missing.
 """
+import glob
 import json
 import os
 import shutil
@@ -18,15 +25,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEMOS = os.path.join(ROOT, "web", "public", "demos")
 
 
-def load(p):
-    p = os.path.join(ROOT, p)
+def load(p, root=ROOT):
+    p = os.path.join(root, p)
     return json.load(open(p)) if os.path.exists(p) else None
 
 
-def false_alarms():
+def false_alarms(root=ROOT):
     out = []
     for sid in ("season-control", "navi-mumbai-airport", "pune-hinjewadi"):
-        s, m = load(f"web/public/demos/{sid}/summary.json"), load(f"web/public/demos/{sid}/meta.json")
+        s, m = load(f"web/public/demos/{sid}/summary.json", root), load(f"web/public/demos/{sid}/meta.json", root)
         if not s:
             continue
         km2 = s["area_km2"]
@@ -38,21 +45,88 @@ def false_alarms():
     return {"scenes": out, "method": "spectral, encroachment preset"}
 
 
+def oscd_block(root=ROOT):
+    """Seam 3 "oscd": held-out methods with 95% intervals. Present only once the baselines have been run."""
+    base, learned = load("eval/results/oscd_baselines.json", root), load("eval/results/oscd_learned.json", root)
+    if not base:
+        return None
+    meta = load("engine/weights/siamunet_oscd.json", root) or {}
+    methods = {k: {m: v[m] for m in ("precision", "recall", "f1", "iou")} for k, v in base["methods"].items()}
+    if learned:
+        methods["learned"] = {m: learned["learned"][m] for m in ("precision", "recall", "f1", "iou")}
+    return {"split": {"train_cities": len(meta.get("trained_on", [])) or None, "val_cities": meta.get("val_cities"),
+                      "test_cities": len(base["test_cities"])},
+            "methods": methods, "default_method": learned["default_method"] if learned else "spectral",
+            "default_rule": "learned only if it beats spectral on the test cities (used once); spectral otherwise",
+            "threshold": learned["threshold"] if learned else None, "ece": learned["learned"].get("ece") if learned else None,
+            "bootstrap": base["bootstrap"], "learned_trained": bool(learned)}
+
+
+def levir_block(root=ROOT):
+    r = load("eval/results/levir_bit.json", root)
+    if not r:
+        return None
+    return {"bit": {k: r["bit"][k] for k in ("f1", "iou", "precision", "recall")}, "naive": {k: r["naive"][k] for k in ("f1", "iou")},
+            "images": r["images"], "scope": r["scope"], "note": r["note"], "published_bit": r["published_bit"]}
+
+
+def m8_change_block(root=ROOT):
+    events = [json.load(open(p)) for p in sorted(glob.glob(os.path.join(root, "eval", "results", "m8_opera_2026_*.json")))]
+    return {"events": events, "note": "scored with frozen parameters on 2026 OPERA events"} if events else None
+
+
+def speed_block(root=ROOT, oscd=None):
+    sp = []
+    for p in glob.glob(os.path.join(root, "web", "public", "demos", "*", "summary.json")):
+        s = json.load(open(p))
+        if s.get("mode") == "spectral" and s.get("s_per_km2"):
+            sp.append(s["s_per_km2"])
+    out = {}
+    if sp:
+        out["spectral"] = round(sum(sp) / len(sp), 3)
+    learned = load("eval/results/oscd_learned.json", root)
+    if learned and learned["learned"].get("s_per_km2") is not None:
+        out["learned"] = learned["learned"]["s_per_km2"]
+    levir = load("eval/results/levir_bit.json", root)
+    if levir:
+        out["deep"] = levir["s_per_km2"]
+    return out or None
+
+
+def build(root=ROOT) -> dict:
+    commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, cwd=root).stdout.strip()
+    res = {"generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"), "commit": commit, "seed": 0,
+           "m8_experiments": load("eval/results/m8_sen1floods11_experiments.json", root),
+           "m8_india": load("eval/results/m8_sen1floods11_india.json", root),
+           "false_alarms": false_alarms(root),
+           "ablation": load("eval/ablation.json", root)}
+    for key, block in (("oscd", oscd_block(root)), ("levir", levir_block(root)), ("m8_change", m8_change_block(root)),
+                       ("speed_s_per_km2", speed_block(root))):
+        if block:
+            res[key] = block
+    nm = []
+    if "oscd" not in res:
+        nm.append("Optical change accuracy on OSCD test cities (dataset host blocked in the build environment)")
+    elif not res["oscd"]["learned_trained"]:
+        nm.append("PyTorch Siamese U-Net on OSCD: training and the test-city decision gate have not been run; "
+                  "spectral stays the default")
+    if "levir" not in res or res["levir"]["note"] != "reproduced":
+        nm.append("BIT on the full LEVIR-CD test split (the published F1 89.31 is quoted, not reproduced"
+                  + (f"; we measured {res['levir']['images']} labelled sample tiles" if "levir" in res else "") + ")")
+    if "m8_change" not in res:
+        nm.append("M8 before/after change on NASA OPERA RTC-S1 2026 events (needs Earthdata access, V-M8-2)")
+    res["not_measured"] = nm
+    return res
+
+
 def main():
-    commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, cwd=ROOT).stdout.strip()
-    res = {"generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"), "commit": commit,
-           "m8_experiments": load("eval/results/m8_sen1floods11_experiments.json"),
-           "m8_india": load("eval/results/m8_sen1floods11_india.json"),
-           "false_alarms": false_alarms(),
-           "ablation": load("eval/ablation.json"),
-           "not_measured": ["Optical change accuracy on OSCD test cities (dataset host blocked in the build "
-                            "environment)", "M8 before/after change on NASA OPERA RTC-S1 2026 events"]}
+    res = build()
     os.makedirs(os.path.join(ROOT, "eval"), exist_ok=True)
     with open(os.path.join(ROOT, "eval", "results.json"), "w") as f:
         json.dump(res, f, indent=1)
     os.makedirs(os.path.join(ROOT, "web", "public", "eval"), exist_ok=True)
     shutil.copy(os.path.join(ROOT, "eval", "results.json"), os.path.join(ROOT, "web", "public", "eval", "results.json"))
-    print(json.dumps(res["false_alarms"], indent=1))
+    print(json.dumps({k: res[k] for k in res if k in ("oscd", "levir", "m8_change", "speed_s_per_km2", "not_measured")}, indent=1)[:3000])
 
 
 if __name__ == "__main__":

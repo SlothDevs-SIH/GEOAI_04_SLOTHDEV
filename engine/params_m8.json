@@ -1,0 +1,21 @@
+{
+ "method": "hysteresis",
+ "strict_db": 3.0,
+ "loose_db": 0.0,
+ "offsets_chosen_on": "valid",
+ "change_db": 3.0,
+ "change_db_note": "literature default for radar flood change (about a factor of two in backscatter); not tuned, because Sen1Floods11 has no pre-event radar",
+ "min_area_m2": 2000.0,
+ "median_filter_px": 5,
+ "threshold_db": null,
+ "threshold_rule": "per event: Otsu on the speckle-filtered VV of that event's after scenes, no labels",
+ "calibration_event": {
+  "name": "Sen1Floods11 India (Assam 2016-08-12), 68 chips",
+  "chips": 68,
+  "otsu_threshold_db": -14.06
+ },
+ "labels_used": false,
+ "frozen_utc": "2026-10-09T11:37:04+00:00",
+ "commit": "0437d3e",
+ "refrozen_over": null
+}

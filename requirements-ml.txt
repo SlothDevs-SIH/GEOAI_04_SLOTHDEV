@@ -1,0 +1,14 @@
+# Training, ONNX export and the optional detectors. The core install (requirements.txt) does NOT need these:
+# CI and the deployed container run without PyTorch. Serving the learned model needs only onnxruntime.
+#   pip install -r requirements.txt -r requirements-ml.txt
+# For the NVIDIA GPU, install the CUDA build of torch first (see pytorch.org), then this file.
+torch>=2.4
+torchvision>=0.19
+onnx>=1.16
+onnxscript>=0.1          # used by the torch exporter
+onnxruntime>=1.18        # also serves the exported model
+einops>=0.7              # used by the BIT model code
+# Sentinel-1 access (engine/s1.py)
+pystac-client>=0.8
+planetary-computer>=1.0
+asf_search>=7.0
