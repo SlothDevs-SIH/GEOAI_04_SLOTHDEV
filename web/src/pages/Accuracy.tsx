@@ -30,6 +30,8 @@ export default function Accuracy() {
     per_location?: { locations: Record<string, { region: string } & Record<string, LocScores | string>>; n_locations: number; claim: string;
       summary?: { learned_beats_spectral?: number; learned_beats_naive?: number; spectral_beats_naive: number; learned_weak_locations_f1_below_0_25?: string[] } };
     false_alarms_by_variant?: { scenes: Record<string, { what: string; area_km2: number; per_km2: Record<string, number> }>; finding: string };
+    variant_study?: { split: string; seeds: number[]; note: string;
+      variants: Record<string, { pos_weight_cap: number; summary: Record<string, { mean: number; sd: number; n: number } | null> }> };
   } | undefined;
   const levir = m.levir as { bit: Scores; naive: { f1: CI; iou: CI }; images: number; scope: string; note: string; published_bit: { f1: number; iou: number } } | undefined;
   const events = (m.m8_change as { events: { event: string; source: string; area_km2: number; before_after: { polygons: number; flooded_km2: number };
@@ -166,6 +168,22 @@ export default function Accuracy() {
             </tbody>
           </table></div>
           <p className="mt-1 text-xs text-slate-600">{oscd.false_alarms_by_variant.finding}</p>
+        </Card>
+      )}
+      {oscd?.variant_study && (
+        <Card title={`Seed and loss-weight study (validation locations only, ${oscd.variant_study.seeds.length} seeds)`} testid="acc-variant-study">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="text-left text-xs text-slate-500"><th>Variant (weight cap)</th><th>Validation F1</th><th>Precision</th><th>Recall</th><th>Farmland polygons / km²</th></tr></thead>
+              <tbody>
+                {Object.entries(oscd.variant_study.variants).map(([name, v]) => {
+                  const f = (k: string) => (v.summary[k] ? `${v.summary[k]!.mean.toFixed(2)} ± ${v.summary[k]!.sd.toFixed(2)}` : "–");
+                  return <tr key={name} className="border-t border-slate-100"><td>{name}</td><td>{f("pipeline_f1")}</td><td>{f("pipeline_precision")}</td><td>{f("pipeline_recall")}</td><td>{f("farmland_polygons_per_km2")}</td></tr>;
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-1 text-xs text-slate-600">{oscd.variant_study.note}. Mean ± standard deviation over seeds.</p>
         </Card>
       )}
       {levir && (

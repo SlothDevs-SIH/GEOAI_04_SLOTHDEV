@@ -39,7 +39,7 @@ The wording rule from `DECISIONS.md` applies: pass means "tested on 2026 OPERA d
 labelled as GeoJSON; Sen1Floods11 chips are in degrees so the demo never showed it, but any UTM input (uploads, OPERA)
 would have. It now always returns WGS84. The Assam demo output is unchanged (37 polygons, identical areas).
 
-**What is left:** only the NASA OPERA 2026 run on the laptop (commands in `eval/README.md`, "Reproduce every number"), and Soham's integration of `change_learned`, `change_deep` and `radar_run` into `detectors.py` and the API.
+**What is left:** the NASA OPERA 2026 run, and the optional seed and loss-weight study (`ml/variant_study.py`, built and tested, not yet run: it needs the OSCD data and a GPU), both on the laptop (commands in `eval/README.md`, "Reproduce every number"), and Soham's integration of `change_learned`, `change_deep` and `radar_run` into `detectors.py` and the API.
 
 ---
 

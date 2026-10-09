@@ -52,14 +52,18 @@ def dice_loss(logits, y, eps=1.0):
     return (1 - (2 * inter + eps) / (p.sum((1, 2, 3)) + y.sum((1, 2, 3)) + eps)).mean()
 
 
-def city_probability(model, city, st, device):
-    """Full-city probability map (tiled, blended)."""
-    x = np.concatenate([oscd_data.normalise(city.before, st), oscd_data.normalise(city.after, st)])
-
+def torch_predictor(model, device):
+    """`fn([1, 10, h, w]) -> [h, w]` probabilities, the shape `change_learned.predict_tiled` and `detect` expect."""
     def f(batch):
         with torch.no_grad():
             return torch.sigmoid(model(torch.from_numpy(batch).to(device)))[0, 0].cpu().numpy()
-    return change_learned.predict_tiled(f, x)
+    return f
+
+
+def city_probability(model, city, st, device):
+    """Full-city probability map (tiled, blended)."""
+    x = np.concatenate([oscd_data.normalise(city.before, st), oscd_data.normalise(city.after, st)])
+    return change_learned.predict_tiled(torch_predictor(model, device), x)
 
 
 def validate(model, cities, st, device):
@@ -74,19 +78,19 @@ def validate(model, cities, st, device):
     return thr, s["f1"], metrics.ece(p, y)
 
 
-def train(root, epochs=60, batch=32, lr=2e-3, patience=10, size=128, stride=64, seed=0, base=24, device=None,
+def train(root, epochs=60, batch=32, lr=2e-3, patience=10, size=128, stride=64, seed=0, base=24, device=None, pos_weight_cap=50.0, split_seed=0,
           out_pt=config_ml.LEARNED_PT, out_meta=config_ml.LEARNED_META, log_path=os.path.join(RESULTS, "oscd_train_log.json")):
     seed_all(seed)
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     train_names, test_names = oscd_data.city_lists(root)
-    tr_names, val_names = oscd_data.split(train_names, 3, seed)
+    tr_names, val_names = oscd_data.split(train_names, 3, split_seed)     # the split seed is separate: a seed study must keep the same validation locations
     tr = [oscd_data.load_city(root, n) for n in tr_names]
     val = [oscd_data.load_city(root, n) for n in val_names]
     st = oscd_data.stats(tr)                                           # statistics from training cities only
     x, y = oscd_data.make_patches(tr, st, size, stride, seed=seed)
     if len(x) == 0:
         raise RuntimeError("no training patches")
-    pos_w = float(np.clip((1 - y.mean()) / max(y.mean(), 1e-6), 1, 50))
+    pos_w = float(np.clip((1 - y.mean()) / max(y.mean(), 1e-6), 1, pos_weight_cap))
     model = SiamUNet(base=base).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=epochs)
@@ -132,7 +136,7 @@ def train(root, epochs=60, batch=32, lr=2e-3, patience=10, size=128, stride=64, 
     log = {"history": hist, "device": device, "gpu": torch.cuda.get_device_name(0) if device == "cuda" else None,
            "cpu": platform.processor() or platform.machine(), "torch": torch.__version__, "seconds": round(time.time() - t0),
            "epochs_run": len(hist), "patches": int(len(x)), "positive_fraction": round(float(y.mean()), 4),
-           "pos_weight": round(pos_w, 2), **{k: meta[k] for k in ("seed", "commit", "params")}}
+           "pos_weight": round(pos_w, 2), "pos_weight_cap": pos_weight_cap, "split_seed": split_seed, **{k: meta[k] for k in ("seed", "commit", "params")}}
     os.makedirs(RESULTS, exist_ok=True)
     with open(log_path, "w") as fh:
         json.dump(log, fh, indent=1)
@@ -191,8 +195,9 @@ if __name__ == "__main__":
     ap.add_argument("--lr", type=float, default=2e-3)
     ap.add_argument("--patience", type=int, default=10)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--pos-weight-cap", type=float, default=50.0, help="upper limit on the weight of the rare change class")
     a = ap.parse_args()
     if a.gate:
         gate(a.root, a.force)
     else:
-        train(a.root, a.epochs, a.batch, a.lr, a.patience, seed=a.seed)
+        train(a.root, a.epochs, a.batch, a.lr, a.patience, seed=a.seed, pos_weight_cap=a.pos_weight_cap)

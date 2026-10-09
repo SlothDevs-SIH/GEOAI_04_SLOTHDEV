@@ -70,3 +70,17 @@ def test_training_is_reproducible_with_a_fixed_seed(tiny):
     assert a["val_f1"] == b["val_f1"] and a["threshold"] == b["threshold"]
     sa, sb = torch.load(tmp / "a.pt"), torch.load(tmp / "b.pt")
     assert all(torch.equal(sa[k], sb[k]) for k in sa)
+
+
+def test_validation_locations_do_not_change_with_the_training_seed(tiny):
+    root, tmp = tiny
+    kw = dict(epochs=1, batch=8, patience=2, size=64, stride=64, base=8, device="cpu")
+    vals = []
+    for seed in (0, 1, 2):
+        _, meta, _ = T.train(str(root), seed=seed, out_pt=str(tmp / f"s{seed}.pt"), out_meta=str(tmp / f"s{seed}.json"),
+                             log_path=str(tmp / f"s{seed}_log.json"), **kw)
+        vals.append(tuple(meta["val_cities"]))
+    assert len(set(vals)) == 1                                       # same split for every seed (split_seed defaults to 0)
+    _, other, _ = T.train(str(root), seed=0, split_seed=5, out_pt=str(tmp / "o.pt"), out_meta=str(tmp / "o.json"),
+                          log_path=str(tmp / "o_log.json"), **kw)
+    assert len(other["val_cities"]) == 3                             # a different split seed is allowed to pick other locations

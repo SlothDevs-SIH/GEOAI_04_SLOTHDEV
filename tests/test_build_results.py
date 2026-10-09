@@ -118,3 +118,15 @@ def test_per_location_without_a_learned_model_only_compares_naive_and_spectral(t
     put(tmp_path, "eval/results/oscd_baselines.json", base)
     pl = B.build(str(tmp_path))["oscd"]["per_location"]
     assert pl["summary"] == {"spectral_beats_naive": 1} and pl["locations"]["a"]["region"] == "unknown"
+
+
+def test_variant_study_summary_is_carried_without_the_per_run_detail(tmp_path):
+    put(tmp_path, "eval/results/oscd_baselines.json", {"test_cities": ["a"], "methods": methods(0.4), "bootstrap": "x"})
+    put(tmp_path, "eval/results/oscd_variant_study.json", {
+        "split": "validation locations only", "val_locations": ["a", "b", "c"], "seeds": [0, 1], "reference": "r", "note": "n",
+        "variants": {"cap50": {"pos_weight_cap": 50.0, "summary": {"pipeline_f1": {"mean": 0.3, "sd": 0.02, "n": 2}}, "runs": [{"seed": 0}, {"seed": 1}]}}})
+    vs = B.build(str(tmp_path))["oscd"]["variant_study"]
+    assert vs["split"] == "validation locations only" and vs["variants"]["cap50"]["summary"]["pipeline_f1"]["sd"] == 0.02
+    assert "runs" not in vs["variants"]["cap50"]
+    put(tmp_path, "eval/results/oscd_variant_study.json", {})                 # an empty file must not crash the build
+    assert "variant_study" not in B.build(str(tmp_path))["oscd"]

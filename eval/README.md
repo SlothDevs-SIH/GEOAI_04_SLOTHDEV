@@ -94,6 +94,7 @@ records the commit it came from. Commands run from the repository root; datasets
 | OSCD baselines (naive, spectral) | `python eval/oscd_baselines.py data/oscd` | OSCD images, train labels and test labels | about 1 min |
 | Learned model | `python ml/train_siamunet.py data/oscd`, then `... --gate` (once), then `python ml/export_onnx.py` | OSCD, GPU recommended | minutes on an RTX 4050 |
 | Validation comparison | `python ml/eval_variants_val.py data/oscd` | the trained model | about 1 min |
+| Seed and loss-weight study (validation only) | `python ml/variant_study.py data/oscd` (`--seeds 0 --quick` for a fast look) | OSCD, GPU recommended | about 40 min on an RTX 4050 (3 variants x 3 seeds) |
 | Learned false alarms on the demo scenes | `python eval/learned_false_alarms.py` | demo scenes, trained model | seconds |
 | BIT on LEVIR-CD | `python scripts/fetch_bit.py`, then `python eval/levir_eval.py data/levir_test --full-split` | the 128-image LEVIR-CD test split | minutes |
 | Radar before/after on a real event | `python ml/fetch_s1_event.py ...` then `python eval/m8_opera.py --source mpc ...` | Planetary Computer (no account) | minutes |
@@ -139,3 +140,13 @@ What this shows, and what it does not:
   to keep false alarms low and gives up recall (pooled recall 0.29), which F1 punishes. Say "fewer false alarms", not "better F1".
 - Locations differ a lot in how much changed (OSCD labels are about 98% no-change), so scores are not comparable across rows as a ranking of
   difficulty. The claim we can make is "evaluated on 10 worldwide locations; some work and some do not", not "works everywhere".
+
+## Seed and loss-weight study (not run yet)
+
+`ml/variant_study.py` trains the Siamese U-Net several times into a scratch folder (the shipped weights are never written), with
+different random seeds and three caps on the weight of the rare "change" pixels (50, which the shipped model used, then 10 and 3), and
+scores each on the same 3 **validation** locations plus polygons per km2 on the farmland no-change scene. It answers: how stable is the
+0.45 validation F1 across seeds, and does a lower cap cut the learned model's farmland false alarms (7.4 per km2 against 0.6 for
+spectral) without losing accuracy? The 10 test locations are not touched, so the study can inform a decision but cannot replace the shipped
+model by itself: a different model would need its own gate, which reuses the test locations and must be declared as a second use. The output
+`results/oscd_variant_study.json` is picked up by `build_results.py` and shown on the Accuracy page once it exists.

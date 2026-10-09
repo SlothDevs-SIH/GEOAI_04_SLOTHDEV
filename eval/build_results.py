@@ -9,6 +9,7 @@ Inputs (all produced by scripts in this repo):
   eval/ablation.json                               eval/ablation.py
   eval/results/oscd_baselines.json                 eval/oscd_baselines.py     -> "oscd" (naive, spectral)
   eval/results/oscd_learned.json                   ml/train_siamunet.py --gate -> "oscd" (learned, default_method)
+  eval/results/oscd_variant_study.json             ml/variant_study.py        -> "oscd.variant_study" (validation only)
   eval/results/levir_bit.json                      eval/levir_eval.py         -> "levir"
   eval/results/m8_opera_2026_<event>.json, m8_mpc_<event>.json   eval/m8_opera.py   -> "m8_change"
 Keys follow docs/packages/CONTRACTS.md Seam 3. A key is written only when its result file exists: numbers come
@@ -93,6 +94,7 @@ def oscd_block(root=ROOT):
         methods["learned"] = {m: learned["learned"][m] for m in ("precision", "recall", "f1", "iou")}
     var = load("eval/results/oscd_val_variants.json", root)
     fa = load("eval/results/learned_false_alarms.json", root)
+    study = load("eval/results/oscd_variant_study.json", root)
     return {"split": {"train_cities": len(meta.get("trained_on", [])) or None, "val_cities": meta.get("val_cities"),
                       "test_cities": len(base["test_cities"])},
             "methods": methods, "default_method": learned["default_method"] if learned else "spectral",
@@ -100,7 +102,9 @@ def oscd_block(root=ROOT):
             "threshold": learned["threshold"] if learned else None, "ece": learned["learned"].get("ece") if learned else None,
             "bootstrap": base["bootstrap"], "learned_trained": bool(learned),
             "per_location": per_location(base, learned),
-            **({"validation_variants": var} if var else {}), **({"false_alarms_by_variant": fa} if fa else {})}
+            **({"validation_variants": var} if var else {}), **({"false_alarms_by_variant": fa} if fa else {}),
+            **({"variant_study": {k: study[k] for k in ("split", "val_locations", "seeds", "reference", "note")} |
+                {"variants": {n: {"pos_weight_cap": v["pos_weight_cap"], "summary": v["summary"]} for n, v in study["variants"].items()}}} if study else {})}
 
 
 def levir_block(root=ROOT):
