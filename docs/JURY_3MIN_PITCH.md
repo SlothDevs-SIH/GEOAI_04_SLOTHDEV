@@ -41,6 +41,10 @@
 # 📑 Slide 3: Technical Approach & Architecture (0:30 – 1:00)
 **On Screen:** *Slide 3 — Technology Stack & Modules*
 
+> 💡 **Quick Full Forms for this Slide (Memorize these!):**
+> - **OSCD:** **Onera Satellite Change Detection** *(Global benchmark dataset of 24 cities with ground-truth change labels)*
+> - **ONNX:** **Open Neural Network Exchange** *(High-performance format to run AI models on normal CPUs in milliseconds without GPUs)*
+
 ### 🗣️ What to Say:
 > *"Here is our complete architecture from front to back, showing what each module does:
 > 
