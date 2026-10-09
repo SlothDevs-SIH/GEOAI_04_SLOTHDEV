@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 // base "./" so the built site works on any static host and from a sub-path.
-// The PWA caches the app shell AND the demo scenes (about 11 MB), so the demo opens with no network at all.
+// The PWA caches the app shell AND the demo scenes (about 22 MB), so the demo opens with no network at all.
 export default defineConfig({
   base: "./",
   plugins: [
@@ -28,7 +28,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,png,webp,json,geojson,mjs}"],
+        globPatterns: ["**/*.{js,css,html,png,webp,json,geojson,mjs,bin}"],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         navigateFallback: "index.html",
         // live API calls and map tiles are never served from the cache

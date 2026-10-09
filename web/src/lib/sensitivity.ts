@@ -4,7 +4,7 @@
 
 export const VALID_BIT = 128;
 
-/** What sens.json describes about sens.bin (2 bytes per pixel: magnitude, type | 128 if usable). */
+/** What sens.json describes about sens.bin (3 bytes per pixel: magnitude as uint16 little endian, then type | 128 if usable). */
 export interface SensInfo {
   width: number;
   height: number;
@@ -92,8 +92,9 @@ export function applySensitivity(bytes: Uint8Array, w: number, h: number, thresh
   const keep = new Set(keepCodes);
   const cand = new Uint8Array(n);
   for (let i = 0; i < n; i++) {
-    const kind = bytes[2 * i + 1];
-    if ((kind & VALID_BIT) && bytes[2 * i] / 255 > threshold && keep.has(kind & 7)) cand[i] = 1;
+    const kind = bytes[3 * i + 2];
+    const mag = (bytes[3 * i] | (bytes[3 * i + 1] << 8)) / 65535;
+    if ((kind & VALID_BIT) && mag > threshold && keep.has(kind & 7)) cand[i] = 1;
   }
   const opened = dilate(erode(cand, w, h), w, h);
   const closed = erode(dilate(opened, w, h), w, h);

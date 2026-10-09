@@ -10,9 +10,9 @@ Only "Analyse any area" and uploads need the API.
 
 | Check | Result |
 |---|---|
-| Backend tests and lint | 92 tests pass, lint clean |
-| Web tests, lint, typecheck, build | 39 unit tests pass, build produces the PWA (216 files, about 9 MB cached) |
-| End-to-end in a real browser | 4 Playwright tests pass, including **opening the demo with the network off** |
+| Backend tests and lint | 98 tests pass, lint clean |
+| Web tests, lint, typecheck, build | 49 unit tests pass, build produces the PWA (378 files, about 23 MB cached) |
+| End-to-end in a real browser | 4 Playwright tests pass, including **opening the demo with the network off and using the sensitivity lab offline** |
 | Docker image | See section 3 (built and run locally; result recorded there) |
 
 What cannot be checked from this laptop: the live hosts below (they need your accounts).

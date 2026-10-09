@@ -13,7 +13,7 @@ async function loadSens(base: string): Promise<Loaded | undefined> {
     if (!j.ok || !b.ok) return undefined;
     const info = (await j.json()) as SensInfo;
     const bytes = new Uint8Array(await b.arrayBuffer());
-    return bytes.length === info.width * info.height * 2 ? { info, bytes } : undefined;
+    return bytes.length === info.width * info.height * 3 ? { info, bytes } : undefined;
   } catch {
     return undefined;
   }

@@ -22,7 +22,7 @@ After a flood or a construction boom, agencies compare satellite images from two
 6. **Export:** GeoPackage, GeoJSON (all or confirmed only), one-page PDF, CSV field pack with map links, KML, audit trail; permalink + QR code for phones. A live analysis opens on the same swipe map as the demo scenes.
 7. **Accuracy page:** every number comes from a results file in this repo.
 
-**Works offline:** after one visit the site and the demo scenes are cached (PWA, about 14 MB), so the demo opens with no network. Live analysis needs the API.
+**Works offline:** after one visit the site and the demo scenes are cached (PWA, about 23 MB), so the demo opens with no network. Live analysis needs the API.
 
 **Sensitivity lab:** on the optical scenes, drag the change threshold and the smallest-change slider and watch the detections change live in the browser (the same filters as the server, proven equal by a test).
 
@@ -122,8 +122,8 @@ Rebuild the data: `python scripts/fetch_demo_scenes.py` → `python scripts/expo
 ## Tests
 
 ```bash
-ruff check . && pytest -q                                            # 92 tests
-cd web && npm run lint && npm run typecheck && npm test && npm run build && npm run e2e   # 39 unit tests, 4 end-to-end tests (including offline)
+ruff check . && pytest -q                                            # 98 tests
+cd web && npm run lint && npm run typecheck && npm test && npm run build && npm run e2e   # 49 unit tests, 4 end-to-end tests (including offline, with the sensitivity lab)
 python scripts/clean_clone_check.py                                  # fresh clone, fresh environment, every check
 ```
 

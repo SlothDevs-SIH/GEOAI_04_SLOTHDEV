@@ -26,6 +26,10 @@ test("the demo opens with no network after the first visit", async ({ page, cont
   await expect(page.getByTestId("counter")).toHaveText("2,185 raw detections → 265 real changes");
   await page.getByTestId("change-row").first().click();
   await expect(page.getByTestId("reason")).toContainText("Why:");
+  // the live sensitivity lab works offline too, and agrees with the server at the default settings
+  await expect(page.getByTestId("lab-count")).toContainText("265 changes");
+  await page.getByTestId("lab-threshold").fill("0.95");
+  await expect(page.getByTestId("lab-count")).not.toContainText("265 changes");
 
   // live analysis is honestly unavailable offline, not a blank page
   await page.goto("./#/analyse");

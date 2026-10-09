@@ -30,12 +30,14 @@ def test_mirror_reproduces_the_server_result_at_the_default_settings(tmp_path):
     assert mask.sum() > 0
 
 
-def test_data_file_has_two_bytes_per_pixel_and_a_usable_bit(tmp_path):
+def test_data_file_has_three_bytes_per_pixel_and_a_usable_bit(tmp_path):
     res = analysed(tmp_path)
     data = sensitivity.encode(res.det, res.pair)
-    assert data.shape == (120, 120, 2) and data.dtype == np.uint8
-    assert (data[..., 1] & sensitivity.VALID_BIT).all()              # nothing is cloudy in this scene
-    assert (data[..., 1] & 7).max() <= max(CODE.values())
+    assert data.shape == (120, 120, 3) and data.dtype == np.uint8
+    assert (data[..., 2] & sensitivity.VALID_BIT).all()              # nothing is cloudy in this scene
+    assert (data[..., 2] & 7).max() <= max(CODE.values())
+    mag = data[..., 0].astype(np.uint16) | (data[..., 1].astype(np.uint16) << 8)
+    assert np.abs(mag / 65535.0 - res.det["magnitude"]).max() < 1e-4   # 16 bits: far finer than the threshold step
 
 
 def test_a_cloudy_pixel_is_marked_unusable(tmp_path):
@@ -45,8 +47,8 @@ def test_a_cloudy_pixel_is_marked_unusable(tmp_path):
     after = make_stack(str(tmp_path / "a.tif"), VEG, [((10, 40, 10, 40), BUILT)], seed=2, scl=scl)
     res = run.analyze(before, after, "encroachment")
     data = sensitivity.encode(res.det, res.pair)
-    assert not (data[0:20, 0:20, 1] & sensitivity.VALID_BIT).any()
-    assert (data[50:60, 50:60, 1] & sensitivity.VALID_BIT).all()
+    assert not (data[0:20, 0:20, 2] & sensitivity.VALID_BIT).any()
+    assert (data[50:60, 50:60, 2] & sensitivity.VALID_BIT).all()
 
 
 def test_dragging_the_sliders_changes_the_result_in_the_expected_direction(tmp_path):
@@ -64,7 +66,7 @@ def test_write_creates_the_files_the_browser_reads(tmp_path):
     res = analysed(tmp_path)
     out = tmp_path / "out"
     info = sensitivity.write(res, str(out), res.summary["params"]["keep_types"], res.summary["params"]["min_area_m2"])
-    assert os.path.getsize(out / "sens.bin") == info["width"] * info["height"] * 2
+    assert os.path.getsize(out / "sens.bin") == info["width"] * info["height"] * 3
     saved = json.load(open(out / "sens.json"))
     assert saved["server_after_filter"] == saved["mirror_after_filter"] == 2
     assert saved["default_threshold"] > 0 and saved["keep_codes"] == sorted(saved["keep_codes"])
