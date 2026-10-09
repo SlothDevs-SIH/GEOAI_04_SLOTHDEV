@@ -3,6 +3,8 @@ import { create } from "zustand";
 export type ThemePref = "system" | "light" | "dark";
 export type Resolved = "light" | "dark";
 
+const KEY = "geoai04.theme";
+
 const systemDark = () => typeof window === "undefined" || !window.matchMedia || !!window.matchMedia("(prefers-color-scheme: dark)")?.matches;
 
 export function resolveTheme(pref: ThemePref): Resolved {
