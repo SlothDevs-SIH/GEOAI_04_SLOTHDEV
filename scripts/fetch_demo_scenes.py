@@ -38,18 +38,24 @@ SCENES = {
 }
 
 
-def best_scene(tile, months, bbox, tries=4):
+def best_scene(tile, months, bbox, tries=10):
     best = None
     for sc in s2.search(tile, months, max_cloud=30)[:tries]:
-        with rasterio.open(sc.href("SCL")) as _:
-            pass
-        refl, scl, tr, crs = s2.read_aoi(sc, bbox)
+        try:
+            refl, scl, tr, crs = s2.read_aoi(sc, bbox)
+        except rasterio.errors.RasterioIOError as e:
+            print(f"   {sc.id} skipped: {e}")
+            continue
         cc = s2.aoi_cloud_pct(scl)
         print(f"   {sc.id} tile cloud {sc.cloud_pct:.1f}%  AOI invalid {cc:.2f}%")
+        if cc > 5:  # outside this scene's footprint or cloudy over the AOI
+            continue
         if best is None or cc < best[0]:
             best = (cc, sc, refl, scl, tr, crs)
         if cc < 0.5:
             break
+    if best is None:
+        raise RuntimeError(f"no usable scene for {tile} in {months}")
     return best
 
 

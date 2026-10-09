@@ -1,0 +1,30 @@
+{
+ "name": "navi-mumbai-airport",
+ "place": "Navi Mumbai International Airport site, Maharashtra",
+ "story": "Large construction project: land levelling and airport build-out",
+ "bbox": [
+  73.04,
+  18.965,
+  73.1,
+  19.015
+ ],
+ "tile": "43QBB",
+ "preset": "encroachment",
+ "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket",
+ "before": {
+  "scene": "S2A_43QBB_20190113_0_L2A",
+  "date": "2019-01-13",
+  "tile_cloud_pct": 0.016908,
+  "aoi_invalid_pct": 0.032,
+  "processing_baseline": "02.11",
+  "dn_offset_removed": 0
+ },
+ "after": {
+  "scene": "S2B_43QBB_20241217_0_L2A",
+  "date": "2024-12-17",
+  "tile_cloud_pct": 0.000547,
+  "aoi_invalid_pct": 0.0,
+  "processing_baseline": "05.11",
+  "dn_offset_removed": 0
+ }
+}

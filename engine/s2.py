@@ -15,6 +15,7 @@ from datetime import date
 
 import numpy as np
 import rasterio
+import rasterio.errors
 from rasterio.enums import Resampling
 from rasterio.warp import transform_bounds
 from rasterio.windows import from_bounds
@@ -44,10 +45,7 @@ class Scene:
     baseline: str
     offset_applied: bool
 
-    @property
-    def dn_offset(self) -> int:
-        """Baseline 04.00+ adds 1000 to every DN unless Earth Search already removed it."""
-        return 1000 if self.baseline >= "04.00" and not self.offset_applied else 0
+    dn_offset: int = 0        # set by read_aoi from the pixels themselves
 
     def href(self, band: str) -> str:
         return f"/vsicurl/{BUCKET}/{self.prefix}{band}.tif"
@@ -92,25 +90,54 @@ def search(tile: str, months: list[tuple[int, int]], max_cloud: float = 20.0) ->
     return sorted(out, key=lambda s: s.cloud_pct)
 
 
+def _open(href: str, attempts: int = 4):
+    """Open a remote COG, retrying: the bucket/proxy occasionally answers a burst with an error page."""
+    import time
+    for i in range(attempts):
+        try:
+            return rasterio.open(href)
+        except rasterio.errors.RasterioIOError:
+            if i == attempts - 1:
+                raise
+            time.sleep(2 ** (i + 1))
+
+
 def read_aoi(scene: Scene, bbox_ll: tuple[float, float, float, float]):
     """Read an AOI (lon/lat bbox) at 10 m. Returns (reflectance[5,H,W], scl[H,W], transform, crs)."""
-    with rasterio.open(scene.href("B04")) as ref:
+    with _open(scene.href("B04")) as ref:
         crs = ref.crs
         b = transform_bounds("EPSG:4326", crs, *bbox_ll)
         win = from_bounds(*b, ref.transform).round_offsets().round_lengths()
         transform = ref.window_transform(win)
         shape = (int(win.height), int(win.width))
-    layers = []
+    raw = []
     for band in BANDS_10M + BANDS_20M:
-        with rasterio.open(scene.href(band)) as s:
+        with _open(scene.href(band)) as s:
             w = from_bounds(*b, s.transform)
-            a = s.read(1, window=w, out_shape=shape, resampling=Resampling.bilinear,
-                       boundless=True, fill_value=0).astype(np.float32)
-        layers.append(np.clip((a - scene.dn_offset) / 10000.0, 0, 1.5))
-    with rasterio.open(scene.href("SCL")) as s:
+            raw.append(s.read(1, window=w, out_shape=shape, resampling=Resampling.bilinear,
+                              boundless=True, fill_value=0).astype(np.float32))
+    scene.dn_offset = detect_offset(scene.baseline, raw[0])
+    layers = [np.clip((a - scene.dn_offset) / 10000.0, 0, 1.5) for a in raw]
+    with _open(scene.href("SCL")) as s:
         scl = s.read(1, window=from_bounds(*b, s.transform), out_shape=shape,
                      resampling=Resampling.nearest, boundless=True, fill_value=0)
     return np.stack(layers), scl, transform, crs
+
+
+def detect_offset(baseline: str, blue_dn: np.ndarray) -> int:
+    """DN offset to remove, decided from the pixels.
+
+    Processing baseline 04.00+ defines reflectance = (DN - 1000) / 10000, but the
+    bucket mixes items that store that offset with items that don't, and the item
+    metadata (earthsearch:boa_offset_applied, raster:bands offset) is not reliable:
+    S2C_43QCA_20250217 says offset -0.1 yet its blue median DN is 476. Real surface
+    reflectance is almost never negative, so if the 1st percentile of valid blue DNs
+    is below 1000 the offset is not in the data.
+    """
+    if baseline < "04.00":
+        return 0
+    v = blue_dn[blue_dn > 0]
+    return 1000 if v.size and np.percentile(v, 1) >= 1000 else 0
 
 
 def aoi_cloud_pct(scl: np.ndarray) -> float:

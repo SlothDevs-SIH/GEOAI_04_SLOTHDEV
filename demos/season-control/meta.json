@@ -1,0 +1,30 @@
+{
+ "name": "season-control",
+ "place": "Farmland near Saswad, Pune district, Maharashtra",
+ "story": "False-alarm control: green post-monsoon crops vs dry season, a few months apart",
+ "bbox": [
+  74.0,
+  18.33,
+  74.06,
+  18.38
+ ],
+ "tile": "43QCA",
+ "preset": "encroachment",
+ "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket",
+ "before": {
+  "scene": "S2A_43QCA_20241119_0_L2A",
+  "date": "2024-11-19",
+  "tile_cloud_pct": 7e-05,
+  "aoi_invalid_pct": 0.0,
+  "processing_baseline": "05.11",
+  "dn_offset_removed": 0
+ },
+ "after": {
+  "scene": "S2B_43QCA_20250314_1_L2A",
+  "date": "2025-03-14",
+  "tile_cloud_pct": 0.000153,
+  "aoi_invalid_pct": 0.0,
+  "processing_baseline": "05.11",
+  "dn_offset_removed": 0
+ }
+}

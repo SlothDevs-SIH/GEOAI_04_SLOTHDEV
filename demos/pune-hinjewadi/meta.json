@@ -1,0 +1,30 @@
+{
+ "name": "pune-hinjewadi",
+ "place": "Hinjewadi / Maan, Pune, Maharashtra",
+ "story": "Fast urban growth on the city edge: IT parks and housing",
+ "bbox": [
+  73.68,
+  18.56,
+  73.76,
+  18.62
+ ],
+ "tile": "43QCA",
+ "preset": "encroachment",
+ "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket",
+ "before": {
+  "scene": "S2B_43QCA_20190125_1_L2A",
+  "date": "2019-01-25",
+  "tile_cloud_pct": 0.000166,
+  "aoi_invalid_pct": 0.0,
+  "processing_baseline": "05.00",
+  "dn_offset_removed": 0
+ },
+ "after": {
+  "scene": "S2C_43QCA_20250217_0_L2A",
+  "date": "2025-02-17",
+  "tile_cloud_pct": 0.000119,
+  "aoi_invalid_pct": 0.0,
+  "processing_baseline": "05.11",
+  "dn_offset_removed": 0
+ }
+}
