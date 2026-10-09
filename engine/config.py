@@ -18,6 +18,14 @@ class Params:
     # spectral rules (reflectance-index differences)
     d_ndbi_built: float = 0.10       # NDBI rise for built-up gain
     after_ndvi_max_built: float = 0.25
+    before_ndvi_max_built: float = 0.35  # built-up gain only on land that was not vegetated before:
+                                         # green crops -> bare soil (harvest) also raises NDBI
+    # surface sealing (bare soil -> pavement / concrete): man-made surfaces have a flatter spectrum than
+    # soil, so SWIR1/blue falls. Measured on the demo scenes: construction -0.16 (airport), -0.36 (Pune);
+    # drying farmland +0.35 (season control).
+    bare_ndvi_max: float = 0.25
+    sealed_swir_blue_max: float = 2.3
+    d_swir_blue_sealed: float = -0.10
     d_ndvi_veg_loss: float = -0.20
     before_ndvi_dense: float = 0.45  # vegetation loss only counts on dense vegetation
     ndwi_water: float = 0.0          # NDWI above this is water
