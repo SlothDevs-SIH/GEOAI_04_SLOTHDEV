@@ -1,6 +1,6 @@
 # Package: `soham_backend` (product quality, stack visibility, deployment)
 
-**Owner:** Soham · **Branch:** `soham_backend` (create from `main`) · **Size:** about 24 hours of work across the 8 tasks below
+**Owner:** Soham · **Branch:** `soham_backend` (create from `main`) · **Size:** about 32 hours of work across the 9 tasks below (S9 added: the product must work for any area in India)
 **Read first:** [`CONTRACTS.md`](CONTRACTS.md) · [`../DECISIONS.md`](../DECISIONS.md) · **Partner package:** [`ayush_backend.md`](ayush_backend.md)
 
 ---
@@ -88,6 +88,20 @@ flood extent from one date". Add a Vitest component test.
 | Config | `ALLOWED_ORIGINS` for the Vercel domain; no secrets in the repo |
 | Done when | The live site and `/health` URL work, and both URLs are in the README |
 
+### S9. Any area in India (about 8 h) → core, added 9 Oct
+The demo scenes are only examples. The product must analyse **any area in India** (and anywhere Sentinel-2 reaches).
+
+| Piece | Detail |
+|---|---|
+| `POST /fetch-s2` | Body: bounding box (west, south, east, north), before date, after date, preset. Finds the MGRS tile (`mgrs`), searches scenes within about 15 days of each date (`s2.search`), keeps the **least cloudy scene whose data footprint covers the box**, reads the box windows, then runs the normal job. Returns a `job_id` |
+| Limits | Cap the box (about 15 km by 15 km inside one tile at first). A box that spans two tiles or is too big gets a plain-language `400`. Larger areas = tiling = future work |
+| Web: area picker | Analyse page: draw a rectangle on the MapLibre map, choose two dates, **preview the chosen scenes (date, cloud %)** before running. Keep the upload option |
+| Cloud advice | If the best scene is cloudy over the box, show a warning; for a flood in monsoon, suggest the radar mode |
+| More demo scenes | Add **3 to 4 scenes from different regions and climates** (for example arid Rajasthan, Delhi NCR, a coastal city, the humid south). Visually check each with `scripts/qa_overlay.py` |
+| Evidence | Add per-scene false alarms per km2 for the new scenes to `eval/ablation.json`; say "validated on N regions" in the README, never "works everywhere" |
+| Tests | Unit: a latitude and longitude in several Indian regions maps to the right MGRS tile; oversized and two-tile boxes are rejected; scene choice prefers low cloud and full coverage (mocked search). One `integration` test (network) fetches a small real box |
+| Done when | A user can draw a box in any Indian region, pick dates and get a result, and the new demo scenes pass visual QA |
+
 ### S8. Submission pack (about 3 h)
 README live links and a screenshot, demo video (3 minutes, recorded on the deployed site), the
 stack slide, a clean-clone test (fresh venv, install, tests, one CLI run), the checklist in
@@ -99,9 +113,9 @@ stack slide, a clean-clone test (fresh venv, install, tests, one CLI run), the c
 
 | When | Milestone |
 |---|---|
-| 18:30 | S1 done; S2 started |
-| 21:00 | S2, S4 and S5 done; S3 working on Pune |
-| 00:00 | **Merge-ready:** S3, S6 (core), S7 done; tests and lint green; a short "what is in this branch" note at the top of this file |
+| 18:30 | S1 done; S2 started; S9 design agreed |
+| 21:00 | S2, S4 and S5 done; S9 `/fetch-s2` working; S3 working on one scene |
+| 00:00 | **Merge-ready:** S3, S7 and S9 done (S6 PWA if time; the slider is optional); tests and lint green; a short "what is in this branch" note at the top of this file |
 | 03:00 | Freeze |
 
 **Interim rule:** commit small and often; keep `soham_backend` green (`pytest`, `ruff`, `npm test`).
@@ -115,7 +129,8 @@ stack slide, a clean-clone test (fresh venv, install, tests, one CLI run), the c
 - [ ] Composites and persistence are measured in `eval/ablation.json` (kept or switched off by evidence).
 - [ ] The About page shows the tech stack (used now vs in progress) and the architecture diagram.
 - [ ] The Analyse page offers radar uploads.
-- [ ] The PWA works offline; the permalink test passes.
+- [ ] A user can analyse **any area in India** by drawing a box and choosing dates (S9), with a size cap and clear errors; at least 3 more regional demo scenes pass visual QA.
+- [ ] The PWA works offline and the permalink test passes (or the PWA is explicitly cut).
 - [ ] The site is live on Vercel and the API has a host, or the fallback is documented.
 - [ ] Submission pack complete; repo public; no edits to the partner's files.
 
@@ -127,7 +142,7 @@ stack slide, a clean-clone test (fresh venv, install, tests, one CLI run), the c
 - Backend: `pytest` **37 passed**, `ruff` clean.
 - Web: `npm ci`, `lint`, `typecheck`, **19 tests passed**, `npm run build` succeeds. The Playwright smoke test (`npm run e2e`) was **not run** locally.
 
-### S2: visual QA of the demo outputs (findings, thresholds NOT yet changed)
+### S2: visual QA of the demo outputs (the four scenes below are demo examples, not the product's limit) (findings, thresholds NOT yet changed)
 Tool: `python scripts/qa_overlay.py` writes `docs/img/qa_<scene>.jpg` (left before, right after with polygons; colour = change type, line thickness = tier).
 
 | Scene | What the picture shows | Verdict |

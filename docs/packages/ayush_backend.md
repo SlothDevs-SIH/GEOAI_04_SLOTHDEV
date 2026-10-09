@@ -41,17 +41,17 @@ this.** Your detectors plug in through **Seam 1** (same dict as `change_spectral
 | Download | OSCD on your laptop (Kaggle `soumikrakshit/onera-satellite-change-detection-dataset`; the host was blocked in the earlier build environment). Official split: **14 train / 10 test locations** (the source says "locations", not cities). **Verify on download:** file format, whether the images are georeferenced, and the licence (not stated); resample the 20 m B11 band to 10 m |
 | `ml/oscd_data.py` | Read the 13-band pairs; keep the 5 bands the engine uses (B02, B03, B04, B08, B11); normalise per band; **128 px patches** with stride; random flips and 90° rotations; **hold out 3 train locations as validation** |
 | `eval/metrics.py` | Precision, recall, F1, IoU on the change class; **bootstrap 95% confidence intervals** over test tiles with a fixed seed; expected calibration error |
-| `eval/oscd_baselines.py` | Run the **naive** (raw difference + Otsu) and the **spectral** engine (`engine.change_spectral` + `filters`) on the 10 test cities |
-| Tests | Loader shapes; validation cities never appear in train; metrics on hand-made arrays; skip cleanly without torch (`pytest.importorskip`) |
+| `eval/oscd_baselines.py` | Run the **naive** (raw difference + Otsu) and the **spectral** engine (`engine.change_spectral` + `filters`) on the 10 test locations |
+| Tests | Loader shapes; validation locations never appear in train; metrics on hand-made arrays; skip cleanly without torch (`pytest.importorskip`) |
 | Done when | `eval/results/oscd_baselines.json` exists with naive and spectral numbers and intervals |
 
 ### A2. Train the PyTorch Siamese U-Net and decide (about 6 h)
 | Step | Detail |
 |---|---|
 | Model | Lightweight **FC-Siam-diff style U-Net**, about 1 to 2 million parameters; input = the 5 bands from both dates |
-| Training | Weighted BCE + Dice, AdamW, cosine schedule, early stopping on the **validation cities**, fixed seed; record GPU, time, epochs in the results file |
+| Training | Weighted BCE + Dice, AdamW, cosine schedule, early stopping on the **validation locations**, fixed seed; record GPU, time, epochs in the results file |
 | Threshold | Chosen on **validation only** |
-| **Decision gate** | Run the **test cities once**. If learned beats spectral on test F1: `default_method = "learned"`. Otherwise **ship spectral as default and report both honestly** |
+| **Decision gate** | Run the **test locations once**. If learned beats spectral on test F1: `default_method = "learned"`. Otherwise **ship spectral as default and report both honestly** |
 | Output | `engine/weights/siamunet_oscd.pt` (a few MB, committed) and the learned numbers in `eval/results/` |
 | Tests | Tiny forward pass; weights load; output in [0, 1] |
 | Done when | Held-out learned numbers with intervals and the decision written down |
@@ -72,7 +72,7 @@ this.** Your detectors plug in through **Seam 1** (same dict as `change_spectral
 | `scripts/fetch_bit.py` | Download the BIT checkpoint (as the prototype does from the BIT_CD repo); never commit it |
 | `engine/change_deep.py` | Port the BIT loader and tiled inference from `prototype/pipeline.py` (torchvision shim and `safe_globals` loader). **RGB at 0.5 m only**; reject other inputs with a clear message. `type_map = built_up_gain` for candidates (Seam 1) |
 | `eval/levir_eval.py` | Full LEVIR-CD **test split**: precision, recall, F1, IoU with intervals. Label the result "reproduced" or "published, not reproduced" |
-| Demo | Add **one LEVIR-CD tile** as a demo input (placeholder coordinates labelled as such, because LEVIR ships as plain PNG) |
+| Demo | Add **one LEVIR-CD tile** as a demo input. **Check whether the download includes the March 2023 georeference update** (latitude and longitude per sample); use real coordinates if so, otherwise label them placeholder. LEVIR-CD is **academic use only** and follows Google Earth terms: say so in the README credits |
 | Tests | BIT loads; a sample tile's F1 is within tolerance of the prototype (`slow`) |
 | Done when | LEVIR numbers in `eval/results/` and `change_deep.detect` returns a valid dict |
 
@@ -104,7 +104,7 @@ Data decisions are in `M8_RADAR_FLOOD_DATA.md`. **M8 stays either way** (see `DE
 | When | Milestone |
 |---|---|
 | 19:00 | A1 done (OSCD loader, metrics, baselines); V-M8-1 and V-M8-2 tried; training started on the 4050 |
-| 21:00 | **ML decision gate** (A2): model chosen on validation; test cities used once |
+| 21:00 | **ML decision gate** (A2): model chosen on validation; test locations used once |
 | 23:00 | A3 done (learned detector, ONNX parity); A4 started |
 | 00:00 | **Merge-ready:** A4, A5, A6 done; tests and lint green |
 | 03:00 | Freeze |
@@ -120,3 +120,9 @@ Data decisions are in `M8_RADAR_FLOOD_DATA.md`. **M8 stays either way** (see `DE
 - [ ] LEVIR-CD test-split numbers exist, labelled reproduced or published.
 - [ ] `radar_run.run` follows Seams 2, 4 and 5, or the failed checks are written down and single-date stays.
 - [ ] `ruff` and `pytest` are green without torch installed; no edits to the partner's files.
+
+---
+
+## 6. Extra check: generalisation beyond our demo scenes
+
+OSCD's 10 test locations are spread worldwide, so they are our best evidence that the method is not tuned to three Maharashtra scenes. In `eval/results.json`, report the OSCD results **per location** (not only pooled), so we can show which regions work and which do not. Do not claim "works everywhere": say "evaluated on 10 worldwide locations".

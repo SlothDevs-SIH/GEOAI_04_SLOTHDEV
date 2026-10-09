@@ -91,6 +91,10 @@
 | Permalink + QR, PDF export | URL state, fpdf2 and qrcode | In use |
 | Live sensitivity slider (optional) | Web Worker + in-browser compute | Optional |
 
+| R11 | **Analyse any area in India** | Draw a box, pick two dates, get a result; more demo scenes from other regions and climates | Soham | **Core, next** |
+
+**Say:** "The four scenes you see are examples. The engine works on any Sentinel-2 pair, so we are adding a box-and-dates picker to analyse any area in India. We will say exactly how many regions we validated on, not that it works everywhere."
+
 ### 3.3 Order of work
 1. **Core:** the PyTorch OSCD model and its held-out numbers, composites, QA, deployment, stack visibility, offline PWA.
 2. **Optional:** the browser sensitivity slider; BIT demo tile; radar before/after on 2026 data.
@@ -216,6 +220,7 @@ Planetary Computer reportedly stopped ingesting new scenes on 17 April 2026 (Git
 | What about privacy? | Analysis can run in the browser; imagery stays local. Sharing is opt-in and uploads only derived polygons. |
 | Is this new? | The ingredients are public. Our contribution is measured false-alarm suppression, a reason per polygon, impact numbers, honest evidence and a working radar flood mode. A 10-repo survey found none that reports false alarms per km². |
 | Why not a mobile app? | The statement asks for a web map; a link works on any device with no install. |
+| Does it work for all of India? | The engine is region-agnostic because Sentinel-2 covers the whole country, and the area picker lets anyone analyse any box. We have validated on a few regions so far (three in Maharashtra, one in Assam, plus more being added) and will report how many; the OSCD test locations give worldwide evidence. |
 | How does it scale to a district? | Tiled and windowed processing now; PostGIS and a job queue as future work. |
 
 ---
