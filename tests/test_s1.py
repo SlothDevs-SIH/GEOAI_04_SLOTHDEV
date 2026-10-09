@@ -1,4 +1,5 @@
 """engine/s1.py offline: dB conversion, reference selection, STAC search with a fake client, windowed read."""
+import os
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
@@ -104,18 +105,123 @@ def test_sign_function_is_applied_to_each_href(tmp_path):
     assert seen == [paths[0], paths[1]]
 
 
-def test_opera_search_parses_results_and_download_needs_a_token(monkeypatch, tmp_path):
-    fake = [SimpleNamespace(properties={"fileID": "OPERA_L2_RTC-S1_X", "startTime": "2026-07-02T00:11:22Z",
-                                        "pathNumber": 77, "flightDirection": "DESCENDING", "url": "https://asf/x.h5"})]
+BASE = "https://cumulus.asf.earthdatacloud.nasa.gov/OPERA/OPERA_L2_RTC-S1/"
+
+
+def burst(i, t, path=150, direction="DESCENDING", with_vh=True):
+    name = f"OPERA_L2_RTC-S1_T{path}-3209{i:02d}-IW1_{t}_20260804T043038Z_S1A_30_v1.0"
+    urls = [f"{BASE}{name}/{name}.iso.xml", f"{BASE}{name}/{name}_VV.tif", f"{BASE}{name}/{name}_mask.tif"]
+    if with_vh:
+        urls.append(f"{BASE}{name}/{name}_VH.tif")
+    return SimpleNamespace(properties={"fileID": name, "startTime": f"{t[:4]}-{t[4:6]}-{t[6:8]}T{t[9:11]}:{t[11:13]}:{t[13:15]}Z",
+                                       "pathNumber": path, "flightDirection": direction, "operaBurstID": f"t{path}_3209{i:02d}_iw1",
+                                       "additionalUrls": urls})
+
+
+def test_opera_search_reads_the_real_listing_layout_and_skips_scenes_without_both_polarisations():
+    fake = [burst(60, "20260626T235523Z"), burst(61, "20260626T235525Z"), burst(62, "20260626T235528Z", with_vh=False)]
     out = s1.search_opera(s1.ASSAM_BOX, "2026-06-01", "2026-08-31", results=fake)
-    assert out[0].source == "opera" and out[0].orbit_state == "descending" and out[0].relative_orbit == 77
+    assert len(out) == 2 and out[0].source == "opera" and out[0].orbit_state == "descending" and out[0].relative_orbit == 150
+    assert out[0].hrefs["vv"].endswith("_VV.tif") and out[0].hrefs["vh"].endswith("_VH.tif") and out[0].burst_id == "t150_320960_iw1"
+
+
+def test_bursts_of_one_pass_become_one_acquisition_and_other_passes_stay_apart():
+    fake = [burst(60, "20260626T235523Z"), burst(61, "20260626T235525Z"), burst(62, "20260626T235528Z"),    # one pass, 3 bursts
+            burst(60, "20260708T235523Z"),                                                                 # 12 days later
+            burst(60, "20260626T115523Z", path=143, direction="ASCENDING")]                                # same day, other orbit
+    acq = s1.group_acquisitions(s1.search_opera(s1.ASSAM_BOX, "2026-06-01", "2026-08-31", results=fake))
+    assert len(acq) == 3
+    first = next(a for a in acq if a.relative_orbit == 150 and a.datetime.day == 26)
+    assert len(first.hrefs["vv"]) == 3 and len(first.hrefs["vh"]) == 3
+    # acquisitions behave like scenes for reference picking
+    dry = [s1.Scene(id="d", datetime=datetime(2026, 2, 3, tzinfo=timezone.utc), relative_orbit=150, orbit_state="descending")]
+    assert s1.pick_reference(dry, first.datetime, 150, "descending")[0].id == "d"
+
+
+class FakeResponse:
+    def __init__(self, code=200, body=b"data"):
+        self.status_code, self.body = code, body
+
+    def iter_content(self, n):
+        yield self.body
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise RuntimeError(self.status_code)
+
+
+class FakeSession:
+    def __init__(self, code=200):
+        self.code, self.calls = code, []
+
+    def get(self, url, **kw):
+        self.calls.append(url)
+        return FakeResponse(self.code)
+
+
+def test_download_files_skips_existing_files_and_names_a_refused_token_without_echoing_it(tmp_path):
+    ses = FakeSession()
+    urls = [BASE + "x/x_VV.tif?token=1", BASE + "x/x_VH.tif"]
+    paths = s1.download_files(urls, str(tmp_path), session=ses)
+    assert [os.path.basename(p) for p in paths] == ["x_VV.tif", "x_VH.tif"] and all(os.path.getsize(p) > 0 for p in paths)
+    s1.download_files(urls, str(tmp_path), session=ses)
+    assert len(ses.calls) == 2                                    # the second call found both files and downloaded nothing
+    with pytest.raises(PermissionError, match="refused the download \\(403\\)") as e:
+        s1.download_files([BASE + "y/y_VV.tif"], str(tmp_path), session=FakeSession(403))
+    assert "token" in str(e.value) and "eyJ" not in str(e.value)
+
+
+def test_download_files_needs_a_token_when_no_session_is_given(tmp_path, monkeypatch):
     monkeypatch.delenv("EARTHDATA_TOKEN", raising=False)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(s1.os.path, "isfile", lambda p: False)
     with pytest.raises(PermissionError, match="EARTHDATA_TOKEN"):
-        s1.download_opera(fake, str(tmp_path))
-    monkeypatch.chdir(tmp_path)                                  # no .env here
-    monkeypatch.setattr(s1.os.path, "isfile", lambda p: False)   # nor in the repository root
-    r = s1.check_opera()
-    assert r["ok"] is False and "EARTHDATA_TOKEN is not set" in r["error"]
+        s1.download_files([BASE + "z/z_VV.tif"], str(tmp_path))
+
+
+def burst_tif(path, x0, level, size=60, res=30.0, nodata_block=None):
+    a = np.full((size, size), level, np.float32)
+    if nodata_block:
+        a[nodata_block] = np.nan
+    with rasterio.open(path, "w", driver="GTiff", height=size, width=size, count=1, dtype="float32", crs="EPSG:32646",
+                       transform=from_origin(x0, 2892000.0, res, res)) as d:
+        d.write(a, 1)
+    return str(path)
+
+
+def test_mosaic_joins_adjacent_bursts_averages_overlaps_in_power_and_returns_db(tmp_path):
+    # two bursts side by side with a 10 px overlap: left is 0.1 (-10 dB), right is 0.3 (about -5.2 dB)
+    a = (burst_tif(tmp_path / "a_vv.tif", 375000.0, 0.1), burst_tif(tmp_path / "a_vh.tif", 375000.0, 0.01))
+    b = (burst_tif(tmp_path / "b_vv.tif", 375000.0 + 50 * 30, 0.3), burst_tif(tmp_path / "b_vh.tif", 375000.0 + 50 * 30, 0.03))
+    bbox = transform_bounds("EPSG:32646", "EPSG:4326", 375000.0, 2890200.0, 375000.0 + 110 * 30, 2892000.0)
+    out = s1.mosaic_chip([a[0], b[0]], [a[1], b[1]], bbox, str(tmp_path / "chip.tif"))
+    with rasterio.open(out) as s:
+        v = s.read(1)
+        assert s.count == 2 and abs(s.transform.a) == 30.0
+    assert np.isfinite(v).mean() > 0.85                                       # corners of the lon/lat box lie outside the bursts
+    assert v[30, 5] == pytest.approx(-10.0, abs=0.05) and v[30, 100] == pytest.approx(10 * np.log10(0.3), abs=0.05)
+    assert v[30, 55] == pytest.approx(10 * np.log10(0.2), abs=0.05)          # overlap: mean of 0.1 and 0.3 in power
+    from engine import radar
+    assert radar.load_chip(out)["valid"].any()                                # the radar engine reads it
+
+
+def test_mosaic_refuses_db_values_and_uncovered_boxes_with_a_clear_message(tmp_path):
+    bbox = transform_bounds("EPSG:32646", "EPSG:4326", 375000.0, 2890200.0, 376800.0, 2892000.0)
+    neg = (burst_tif(tmp_path / "n_vv.tif", 375000.0, -10.0), burst_tif(tmp_path / "n_vh.tif", 375000.0, -20.0))   # already dB
+    with pytest.raises(ValueError, match="almost no valid pixels"):
+        s1.mosaic_chip([neg[0]], [neg[1]], bbox, str(tmp_path / "c1.tif"))
+    far = (burst_tif(tmp_path / "f_vv.tif", 900000.0, 0.1), burst_tif(tmp_path / "f_vh.tif", 900000.0, 0.01))
+    with pytest.raises(ValueError, match="almost no valid pixels"):
+        s1.mosaic_chip([far[0]], [far[1]], bbox, str(tmp_path / "c2.tif"))
+    with pytest.raises(ValueError, match="same non-empty number"):
+        s1.mosaic_chip([neg[0]], [], bbox, str(tmp_path / "c3.tif"))
+
+
+def test_check_opera_without_a_token_says_where_to_put_it(monkeypatch, tmp_path):
+    monkeypatch.delenv("EARTHDATA_TOKEN", raising=False)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(s1.os.path, "isfile", lambda p: False)
+    assert s1.check_opera()["ok"] is False
 
 
 def test_dotenv_is_loaded_without_overriding_and_never_echoed(tmp_path, monkeypatch):

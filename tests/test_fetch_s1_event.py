@@ -72,3 +72,61 @@ def test_fetch_fails_clearly_when_there_is_no_event_scene_or_too_few_dry_scenes(
     few = [i for i in items(tmp_path) if i.id not in ("s5",)]                       # only 3 dry scenes: need 4
     with pytest.raises(LookupError, match="need 4"):
         F.fetch_event(BOX, "2024-07-05", str(tmp_path / "b"), client=Client(few))
+
+
+# ---------------------------------------------------------------- OPERA path (bursts, downloads, mosaic) with fakes
+from engine import s1  # noqa: E402
+from tests.test_s1 import BASE, FakeSession, burst, burst_tif  # noqa: E402,F401
+
+OBOX = transform_bounds("EPSG:32646", "EPSG:4326", 375000.0, 2890200.0, 376800.0, 2892000.0)
+
+
+class LocalSession:
+    """Serves the 'download' from local rasters: the file name decides which burst and polarisation it is."""
+
+    def __init__(self, folder):
+        self.folder, self.calls = folder, []
+
+    def get(self, url, **kw):
+        from types import SimpleNamespace as NS
+        self.calls.append(url)
+        name = url.split("/")[-1]
+        level = 0.1 if "_VV" in name else 0.01
+        src = burst_tif(self.folder / f"src_{len(self.calls)}.tif", 375000.0, level)
+        return NS(status_code=200, iter_content=lambda n: iter([open(src, "rb").read()]), raise_for_status=lambda: None)
+
+
+def opera_results():
+    bursts = []
+    for t, i in (("20260626T235523Z", 60), ("20260626T235525Z", 61),                   # the flood pass: two bursts
+                 ("20260308T235523Z", 60), ("20260225T235523Z", 60), ("20260120T235523Z", 60), ("20260108T235523Z", 60)):
+        bursts.append(burst(i, t))
+    bursts.append(burst(60, "20260301T115523Z", path=143, direction="ASCENDING"))     # another orbit: ignored
+    return bursts
+
+
+def test_opera_event_plan_downloads_mosaics_and_writes_the_same_files_as_the_mpc_path(tmp_path):
+    out = tmp_path / "out"
+    ses = LocalSession(tmp_path)
+    m = F.fetch_opera_event(OBOX, "2026-06-25", str(out), cache_dir=str(tmp_path / "dl"),
+                            search=lambda b, start, end: s1.search_opera(b, start, end, results=[
+                                r for r in opera_results()
+                                if start <= datetime.fromisoformat(r.properties["startTime"].replace("Z", "+00:00")) <= end]),
+                            session=ses)
+    assert m["relative_orbit"] == 150 and m["orbit_state"] == "descending" and "OPERA" in m["source"]
+    assert len(m["references"]) == 3 and m["after"]["datetime"].startswith("2026-06-26") and m["dry_after"]["datetime"].startswith("2026-01-08")
+    assert "t150_320960_iw1,t150_320961_iw1" in m["after"]["bursts"]                  # two bursts joined into one acquisition
+    for n in ("after", "ref1", "ref2", "ref3", "dry_after"):
+        with rasterio.open(out / f"{n}.tif") as s:
+            a = s.read()
+            assert s.count == 2 and abs(s.transform.a) == 30.0 and np.nanmedian(a[0]) == pytest.approx(-10, abs=0.1)
+    assert len(ses.calls) == 2 * 2 + 4 * 2                                            # after: 2 bursts x 2 pols; 4 dry acquisitions x 2 pols
+    assert json.loads((out / "meta.json").read_text())["event_date"] == "2026-06-25"
+    from engine import radar
+    chip = radar.load_chip(str(out / "after.tif"))
+    assert radar.load_reference([str(out / f"ref{i}.tif") for i in (1, 2, 3)], chip)["n_scenes"] == 3
+
+
+def test_opera_event_fails_clearly_without_an_event_pass(tmp_path):
+    with pytest.raises(LookupError, match="no Sentinel-1 scene"):
+        F.fetch_opera_event(OBOX, "2026-09-25", str(tmp_path / "o"), search=lambda b, s, e: [], session=FakeSession())

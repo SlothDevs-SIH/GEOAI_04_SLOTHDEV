@@ -13,7 +13,7 @@ Verification status (see docs/M8_RADAR_FLOOD_DATA.md section 8): everything here
 live checks V-M8-1 (Planetary Computer) and V-M8-2 (Earthdata/OPERA) have to be run from a machine with access:
     python -m engine.s1 --check mpc
     EARTHDATA_TOKEN=... python -m engine.s1 --check opera
-The OPERA functions follow the documented `asf_search` API but have not been run against the live service.
+OPERA: search, listing and token acceptance were run live (V-M8-2); the download and mosaic below were written from that real listing and are unit-tested with fake downloads.
 """
 from __future__ import annotations
 
@@ -37,8 +37,9 @@ class Scene:
     datetime: datetime
     relative_orbit: int | None
     orbit_state: str | None                     # "ascending" | "descending"
-    hrefs: dict = field(default_factory=dict)   # {"vv": url, "vh": url}
+    hrefs: dict = field(default_factory=dict)   # {"vv": url, "vh": url}; an OPERA acquisition holds lists, one URL per burst
     source: str = "mpc"
+    burst_id: str | None = None
 
 
 def load_dotenv(paths=None) -> list:
@@ -150,33 +151,139 @@ def read_chip(vv_href, vh_href, bbox, out_path, sign=None) -> str:
     return out_path
 
 
+def _opera_url(p, suffix):
+    return next((u for u in p.get("additionalUrls") or [] if u.endswith(suffix)), None)
+
+
 def search_opera(bbox, start, end, results=None) -> list[Scene]:
-    """OPERA RTC-S1 products over `bbox` (UNVERIFIED against the live service; see module docstring)."""
+    """OPERA RTC-S1 bursts over `bbox`, one Scene per burst, oldest first.
+
+    A burst is a small strip (about 20 x 85 km); several consecutive bursts make one acquisition (see
+    `group_acquisitions`). Each carries the URLs of its VV and VH GeoTIFFs (linear gamma0 power, 30 m, UTM), taken from the
+    `additionalUrls` the service lists. The layout was read from the live service on 9 Oct 2026 (`--inspect opera`).
+    """
     if results is None:
+        load_dotenv()
         import asf_search as asf
-        w, s, e, n = bbox
-        wkt = f"POLYGON(({w} {s},{e} {s},{e} {n},{w} {n},{w} {s}))"
+        w, s_, e, n = bbox
+        wkt = f"POLYGON(({w} {s_},{e} {s_},{e} {n},{w} {n},{w} {s_}))"
         results = asf.search(dataset="OPERA-S1", processingLevel="RTC", intersectsWith=wkt, start=str(start), end=str(end))
     out = []
     for r in results:
         p = r.properties
+        vv, vh = _opera_url(p, "_VV.tif"), _opera_url(p, "_VH.tif")
+        if not (vv and vh):
+            continue                                                       # need both polarisations
         out.append(Scene(id=p.get("fileID", ""), datetime=_aware(datetime.fromisoformat(str(p["startTime"]).replace("Z", "+00:00"))),
                          relative_orbit=p.get("pathNumber"), orbit_state=str(p.get("flightDirection", "")).lower() or None,
-                         hrefs={"product": p.get("url", "")}, source="opera"))
+                         hrefs={"vv": vv, "vh": vh}, source="opera", burst_id=p.get("operaBurstID")))
     return sorted(out, key=lambda s: s.datetime)
 
 
-def download_opera(results, dest_dir, token=None):
-    """Download ASF results with an Earthdata token from the argument or EARTHDATA_TOKEN. Never prints the token."""
-    load_dotenv()
-    token = token or os.environ.get("EARTHDATA_TOKEN")
-    if not token:
-        raise PermissionError("EARTHDATA_TOKEN is not set (create a free Earthdata Login and a token; keep it in .env)")
-    import asf_search as asf
-    session = asf.ASFSession().auth_with_token(token)
+def group_acquisitions(bursts, gap_s=30) -> list[Scene]:
+    """Merge bursts of one pass into one Scene each: same relative orbit and direction, start times within `gap_s`.
+
+    The result's `hrefs` hold lists (`{"vv": [...], "vh": [...]}`) and `datetime` is the first burst's time, so
+    `pick_reference` works on acquisitions exactly as it does on single scenes.
+    """
+    groups: list[list[Scene]] = []
+    for b in sorted(bursts, key=lambda s: (s.relative_orbit or 0, s.orbit_state or "", s.datetime)):
+        last = groups[-1][-1] if groups else None
+        if (last and last.relative_orbit == b.relative_orbit and last.orbit_state == b.orbit_state
+                and (b.datetime - last.datetime).total_seconds() <= gap_s):
+            groups[-1].append(b)
+        else:
+            groups.append([b])
+    out = [Scene(id=g[0].id, datetime=g[0].datetime, relative_orbit=g[0].relative_orbit, orbit_state=g[0].orbit_state,
+                 hrefs={"vv": [x.hrefs["vv"] for x in g], "vh": [x.hrefs["vh"] for x in g]}, source="opera",
+                 burst_id=",".join(str(x.burst_id) for x in g))
+           for g in groups]
+    return sorted(out, key=lambda s: s.datetime)
+
+
+def download_files(urls, dest_dir, token=None, session=None) -> list:
+    """Download URLs into `dest_dir` (skipping files already there) with an Earthdata token; returns local paths.
+
+    The token comes from the argument or EARTHDATA_TOKEN (`.env` is read) and is never printed. A 401 or 403 raises a
+    PermissionError that says so without echoing anything secret.
+    """
+    if session is None:
+        load_dotenv()
+        token = token or os.environ.get("EARTHDATA_TOKEN")
+        if not token:
+            raise PermissionError("EARTHDATA_TOKEN is not set (put EARTHDATA_TOKEN=... in a file named .env in the project folder)")
+        import asf_search as asf
+        session = asf.ASFSession().auth_with_token(token)
     os.makedirs(dest_dir, exist_ok=True)
-    asf.ASFSearchResults(results).download(path=dest_dir, session=session)
-    return dest_dir
+    paths = []
+    for url in urls:
+        path = os.path.join(dest_dir, os.path.basename(url.split("?")[0]))
+        if not (os.path.exists(path) and os.path.getsize(path) > 0):
+            r = session.get(url, stream=True, timeout=120)
+            if r.status_code in (401, 403):
+                raise PermissionError(f"Earthdata refused the download ({r.status_code}): the token is invalid or expired, or the "
+                                      "account has not accepted the ASF / OPERA terms (open the file link once in a browser while signed in)")
+            r.raise_for_status()
+            tmp = path + ".part"
+            with open(tmp, "wb") as f:
+                for chunk in r.iter_content(1 << 20):
+                    f.write(chunk)
+            os.replace(tmp, path)
+        paths.append(path)
+    return paths
+
+
+def mosaic_chip(vv_paths, vh_paths, bbox, out_path) -> str:
+    """Mosaic linear-power VV and VH bursts over `bbox` into one 2-band dB GeoTIFF that `radar.load_chip` reads.
+
+    Bursts are resampled onto one grid in the first file's UTM zone at its own posting (30 m for OPERA); overlaps are
+    averaged in the linear domain (the right place to average power), then converted to dB with zeros and negatives
+    masked first. Raises if the values look like dB already (OPERA is linear; a product change would show up here).
+    """
+    import warnings
+
+    from rasterio.transform import from_origin
+    from rasterio.warp import Resampling, reproject
+    vv_paths, vh_paths = list(vv_paths), list(vh_paths)
+    if not vv_paths or len(vv_paths) != len(vh_paths):
+        raise ValueError("need the same non-empty number of VV and VH files")
+    with rasterio.open(vv_paths[0]) as s:
+        crs, res = s.crs, abs(s.transform.a)
+    left, bottom, right, top = transform_bounds("EPSG:4326", crs, *bbox)
+    left, top = np.floor(left / res) * res, np.ceil(top / res) * res
+    w, h = int(np.ceil((right - left) / res)), int(np.ceil((top - bottom) / res))
+    dst_t = from_origin(left, top, res, res)
+    bands = []
+    for paths in (vv_paths, vh_paths):
+        total, count = np.zeros((h, w), np.float64), np.zeros((h, w), np.int32)
+        for path in paths:
+            with rasterio.open(path) as s:
+                if s.crs != crs:
+                    raise ValueError(f"{os.path.basename(path)} is in {s.crs}, not {crs}: bursts must share a UTM zone")
+                a = s.read(1).astype(np.float32)
+                a[(a <= 0) | ~np.isfinite(a)] = np.nan
+                out = np.full((h, w), np.nan, np.float32)
+                reproject(a, out, src_transform=s.transform, src_crs=s.crs, dst_transform=dst_t, dst_crs=crs,
+                          resampling=Resampling.nearest, src_nodata=np.nan, dst_nodata=np.nan)
+            ok = np.isfinite(out)
+            total[ok] += out[ok]
+            count[ok] += 1
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            bands.append(to_db(np.where(count > 0, total / np.maximum(count, 1), np.nan)))
+    finite = np.isfinite(bands[0])
+    if finite.mean() > 0.05 and np.nanmedian(bands[0]) > 5:
+        raise ValueError("backscatter values look too large for dB of a land scene: check the product's units")
+    if finite.mean() < 0.01:
+        raise ValueError("almost no valid pixels in the box: the bursts do not cover it, or the values are already in dB (negative)")
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    with rasterio.open(out_path, "w", driver="GTiff", height=h, width=w, count=2, dtype="float32", crs=crs, transform=dst_t,
+                       nodata=np.nan, compress="deflate") as d:
+        d.write(bands[0], 1)
+        d.write(bands[1], 2)
+        d.set_band_description(1, "VV dB")
+        d.set_band_description(2, "VH dB")
+    return out_path
 
 
 def inspect_opera(bbox=ASSAM_BOX, start="2026-06-01", end="2026-08-31", n=3, results=None) -> list:

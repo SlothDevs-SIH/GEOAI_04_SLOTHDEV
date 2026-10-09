@@ -25,9 +25,11 @@
 Assam box (Nov 2024 to Mar 2025) and a 224 x 203 px window read from the first one. (From the build environment it had returned 403: that was
 an egress limit, not a problem with the service.) Planetary Computer stopped ingesting on 17 Apr 2026, so it cannot supply 2026 events: it
 gives us before/after tests on earlier events such as the July 2024 Assam flood.
-**V-M8-2 (Earthdata / OPERA):** not tried (no account or token). It can be run on the laptop:
-`EARTHDATA_TOKEN=... python -m engine.s1 --check opera`. The wording rule from
-`DECISIONS.md` applies: pass means "tested on 2026 OPERA data", fail means "evaluated on Sen1Floods11; live 2026 fetch not verified".
+**V-M8-2 (Earthdata / OPERA): search passed, download not yet verified.** On the laptop, 9 Oct, with the token in `.env`:
+`python -m engine.s1 --check opera` found 28 OPERA RTC-S1 bursts over the Assam box for Jun to Aug 2026, and `--inspect opera` showed the real
+layout (each burst has separate `_VV.tif` and `_VH.tif`, about 7 MB each, plus a mask and an HDF5 file). The download, mosaic and event fetcher
+(`ml/fetch_s1_event.py --source opera`) were then written against that real listing and are tested with fake downloads; they have not yet been run live.
+The wording rule from `DECISIONS.md` applies: pass means "tested on 2026 OPERA data", fail means "evaluated on Sen1Floods11 and a Planetary Computer 2024 event; live 2026 fetch not verified".
 
 **A bug found and fixed on the way:** `radar.polygons` returned geometry in the raster's own CRS (metres for UTM inputs)
 labelled as GeoJSON; Sen1Floods11 chips are in degrees so the demo never showed it, but any UTM input (uploads, OPERA)
