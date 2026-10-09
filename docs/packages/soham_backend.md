@@ -5,6 +5,29 @@
 
 ---
 
+## What is in this branch (`soham_backend`, 9 Oct 2026, evening)
+
+**Everything in this package is built and tested except the live deployment and the demo video, which need the team accounts and a recording.**
+
+| New | Where |
+|---|---|
+| Analyse any area: box + two dates, scene choice, live jobs, swipe map for results | `engine/aoi.py`, `engine/preview.py`, `api/main.py` (`/fetch-s2`, `/fetch-s2/preview`, `/jobs/{id}/files`), `web/src/pages/Analyse.tsx`, `web/src/components/map/AreaPicker.tsx` |
+| Radar upload tab | `web/src/pages/Analyse.tsx` |
+| Median composites and persistence (off by default, measured) | `engine/composite.py`, `engine/persistence.py`, `eval/composites.py` -> `eval/composites.json` |
+| Live sensitivity lab (exact parity with the server) | `engine/sensitivity.py`, `web/src/lib/sensitivity.ts`, `web/src/components/panel/SensitivityLab.tsx`, `scripts/export_sensitivity.py` |
+| Offline PWA (about 23 MB cached) | `web/vite.config.ts`, `web/e2e/offline.spec.ts` |
+| Tech stack table and architecture diagram on the About page | `web/src/pages/About.tsx`, `docs/img/geoai04_architecture.png` |
+| Regional checks (six regions run and reviewed, three published as demo scenes) | `eval/regions.py`, `eval/regions.json`, `scripts/export_regions_demo.py`, `docs/img/qa_region_*.jpg` |
+| Visual QA tool | `scripts/qa_overlay.py` |
+| Deployment guide, Render fallback, container verified | `docs/DEPLOY.md`, `render.yaml`, `Dockerfile` |
+| Demo script and pre-submission check | `docs/DEMO_SCRIPT.md`, `scripts/clean_clone_check.py` |
+
+**Checks at this commit:** 98 backend tests, 49 web unit tests and 4 browser end-to-end tests (including offline) pass; `ruff` and `eslint` are clean; the production build succeeds; the container builds and runs healthy. The demo source images were re-downloaded and the engine reproduces the published numbers exactly (2,185 to 265; 6,830 to 475; 3,083 to 22).
+
+**Fixed along the way:** a Windows file race that made half of the API job tests flaky; the radar upload temp-file bug; a silent-zeros risk when a satellite pass does not cover the chosen box.
+
+---
+
 ## 1. What this package is
 
 `main` already has a working product. This package makes it **trustworthy, visible and live**:
