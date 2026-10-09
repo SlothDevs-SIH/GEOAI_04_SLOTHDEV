@@ -16,7 +16,6 @@ Split: official 14 train / 10 test cities. Three train cities are held out as va
 """
 from __future__ import annotations
 
-import glob
 import json
 import os
 from dataclasses import dataclass
@@ -41,13 +40,19 @@ class City:
     label: np.ndarray             # bool [H, W], True = change
 
 
+def _walk_files(root, name):
+    for dirpath, _, files in os.walk(root):
+        if name in files:
+            yield os.path.join(dirpath, name)
+
+
 def city_lists(root):
     """(train, test) city names: the dataset's own text files if found, else the paper's lists."""
     lists = {}
     for name in ("train", "test"):
-        hits = glob.glob(os.path.join(root, "**", f"{name}.txt"), recursive=True)
-        if hits:
-            txt = open(hits[0]).read()
+        hit = next(_walk_files(root, f"{name}.txt"), None)
+        if hit:
+            txt = open(hit).read()
             lists[name] = [c.strip() for c in txt.replace("\n", ",").split(",") if c.strip()]
     return lists.get("train", list(TRAIN_CITIES)), lists.get("test", list(TEST_CITIES))
 
@@ -62,14 +67,33 @@ def split(train, n_val=3, seed=0):
     return [c for c in train if c not in val], val
 
 
-def _find(root, pattern):
-    hits = sorted(glob.glob(os.path.join(root, "**", pattern), recursive=True))
-    return hits[0] if hits else None
+def index(root) -> dict:
+    """Locate every city under `root` with a plain folder walk (no glob: spaces, nesting and slash style are fine).
+
+    Returns {"images": {city: folder holding imgs_1_rect and imgs_2_rect}, "labels": {city: label file}}.
+    City names are matched case-insensitively. The label is the file in <city>/cm/: `<city>-cm.tif` first
+    (values 1 / 2), then cm.png (0 / 255), then any other tif or png.
+    """
+    images, labels = {}, {}
+    for dirpath, dirs, files in os.walk(root):
+        base = os.path.basename(dirpath)
+        if "imgs_1_rect" in dirs and "imgs_2_rect" in dirs:
+            images[base.lower()] = dirpath
+        if base.lower() == "cm":
+            cands = [f for f in files if f.lower().endswith((".tif", ".tiff", ".png"))]
+            cands.sort(key=lambda f: (not f.lower().endswith("-cm.tif"), f.lower() != "cm.png", f.lower()))
+            if cands:
+                labels[os.path.basename(os.path.dirname(dirpath)).lower()] = os.path.join(dirpath, cands[0])
+    return {"images": images, "labels": labels}
 
 
-def _band(root, city, folder, band, shape=None):
-    path = _find(root, f"{city}/{folder}/{band}.tif")
-    if path is None:
+def _band(idx, root, city, folder, band, shape=None):
+    base = idx["images"].get(city.lower())
+    if base is None:
+        raise FileNotFoundError(f"{city}/{folder}/{band}.tif not found under {root} "
+                                f"(found {len(idx['images'])} cities: {', '.join(sorted(idx['images'])[:6])}...)")
+    path = os.path.join(base, folder, f"{band}.tif")
+    if not os.path.exists(path):
         raise FileNotFoundError(f"{city}/{folder}/{band}.tif not found under {root}")
     with rasterio.open(path) as s:
         a = s.read(1).astype(np.float32)
@@ -96,18 +120,20 @@ def _read_label(path):
 
 
 def load_city(root, city, with_label=True) -> City:
-    ref = _band(root, city, "imgs_1_rect", BANDS[0])
+    idx = index(root)
+    ref = _band(idx, root, city, "imgs_1_rect", BANDS[0])
     shape = ref.shape
+
     def stack(folder):
-        return np.stack([ref if (folder == "imgs_1_rect" and b == BANDS[0]) else _band(root, city, folder, b, shape)
+        return np.stack([ref if (folder == "imgs_1_rect" and b == BANDS[0]) else _band(idx, root, city, folder, b, shape)
                          for b in BANDS]) / 10000.0
 
     before, after = stack("imgs_1_rect").astype(np.float32), stack("imgs_2_rect").astype(np.float32)
     label = np.zeros(shape, bool)
     if with_label:
-        lp = _find(root, f"{city}/cm/*-cm.tif") or _find(root, f"{city}/cm/cm.png") or _find(root, f"{city}/cm/*.tif")
+        lp = idx["labels"].get(city.lower())
         if lp is None:
-            raise FileNotFoundError(f"no label for {city} under {root}")
+            raise FileNotFoundError(f"no label for {city} under {root} (labels found for {len(idx['labels'])} cities)")
         label = _read_label(lp)
         if label.shape != shape:
             raise ValueError(f"{city}: label {label.shape} does not match image {shape}")

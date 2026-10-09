@@ -65,6 +65,39 @@ def test_label_conventions():
             assert D._read_label(str(Path(d) / name)).ravel().tolist() == expect, name
 
 
+def test_finds_cities_in_the_kaggle_layout_with_spaces_nesting_and_separate_label_trees(tmp_path):
+    """Real layout: images/<name with spaces - Images>/<city>/imgs_*_rect, train_labels/<city>/cm/cm.png + <city>-cm.tif."""
+    make_dataset(tmp_path / "flat", ["abudhabi", "Brasilia"])
+    root = tmp_path / "oscd"
+    for c in ("abudhabi", "Brasilia"):
+        (root / "images" / "Onera Satellite Change Detection dataset - Images").mkdir(parents=True, exist_ok=True)
+        (tmp_path / "flat" / "images" / c).rename(root / "images" / "Onera Satellite Change Detection dataset - Images" / c)
+        (root / "train_labels" / c).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / "flat" / "labels" / c).rename(root / "train_labels" / c)
+    idx = D.index(str(root))
+    assert set(idx["images"]) == {"abudhabi", "brasilia"} and set(idx["labels"]) == {"abudhabi", "brasilia"}
+    c = D.load_city(str(root), "brasilia")                      # case-insensitive match
+    assert c.before.shape[0] == 5 and c.label.sum() > 0
+    assert D.load_city(str(root), "abudhabi", with_label=False).label.sum() == 0
+
+
+def test_label_file_preference_is_the_tif_with_values_1_and_2(tmp_path):
+    cm = tmp_path / "images" / "x" / "cm"
+    cm.mkdir(parents=True)
+    for n in ("cm.png", "x-cm.tif", "other.tif"):
+        (cm / n).write_bytes(b"")
+    (tmp_path / "images" / "x" / "imgs_1_rect").mkdir()
+    (tmp_path / "images" / "x" / "imgs_2_rect").mkdir()
+    assert D.index(str(tmp_path))["labels"]["x"].endswith("x-cm.tif")
+
+
+def test_a_missing_city_error_says_what_was_found(tmp_path):
+    import pytest
+    make_dataset(tmp_path, ["a", "b"])
+    with pytest.raises(FileNotFoundError, match="found 2 cities"):
+        D.load_city(str(tmp_path), "zzz")
+
+
 def test_default_lists_are_the_official_14_and_10():
     assert len(D.TRAIN_CITIES) == 14 and len(D.TEST_CITIES) == 10
     assert not set(D.TRAIN_CITIES) & set(D.TEST_CITIES)
