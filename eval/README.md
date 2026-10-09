@@ -103,4 +103,4 @@ the 10 test-city labels from `hkristen/oscd` on Hugging Face (`... - Test Labels
 split from `satellite-image-deep-learning/LEVIR-CD` (`test.zip`). The test cities and the gate are used once: `--gate` refuses a second
 run unless `--force`, and `m8_opera.py` refuses to rescore an event.
 
-The Python tests need no data: `python -m pytest -q` (89 pass without torch, 109 with it).
+The Python tests need no data: `python -m pytest -q` (102 pass and 3 skip without torch, 116 with it).

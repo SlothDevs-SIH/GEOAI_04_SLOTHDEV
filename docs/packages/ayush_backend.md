@@ -152,7 +152,7 @@ Data decisions are in `M8_RADAR_FLOOD_DATA.md`. **M8 stays either way** (see `DE
 - [x] `change_learned.detect` and `change_deep.detect` follow Seam 1 and fail soft; ONNX parity passes (max difference 1.2e-5).
 - [x] LEVIR-CD test-split numbers exist and are labelled **reproduced** (128 images, F1 0.9025).
 - [x] `radar_run.run` follows Seams 2, 4 and 5; single-date stays as the fallback. The live access checks are written down (V-M8-1: 403 from the build environment; V-M8-2: not tried).
-- [x] `ruff` and `pytest` are green without torch installed (89 pass, 3 skip; 109 with torch); every engine, eval and ml module imports without torch except the three PyTorch tools, which say how to install it (`tests/test_imports_without_torch.py`). No edits to the partner's files. A clean checkout rebuilds the committed `results.json` exactly.
+- [x] `ruff` and `pytest` are green without torch installed (102 pass, 3 skip; 116 with torch); every engine, eval and ml module imports without torch except the three PyTorch tools, which say how to install it (`tests/test_imports_without_torch.py`). No edits to the partner's files. A clean checkout rebuilds the committed `results.json` exactly.
 
 **Not done, and why:** the radar before/after mode has not been scored on a real event. Sen1Floods11 has no pre-event radar, Planetary
 Computer is blocked from the build environment, and there is no Earthdata token. The tooling is built and tested end to end on synthetic
