@@ -40,5 +40,17 @@
  ],
  "preset": "encroachment",
  "story": "Large construction project: land levelling and airport build-out",
- "demo": true
+ "demo": true,
+ "variants": [
+  {
+   "mode": "learned",
+   "raw_detections": 190,
+   "after_filter": 119
+  },
+  {
+   "mode": "hybrid",
+   "raw_detections": 458,
+   "after_filter": 69
+  }
+ ]
 }

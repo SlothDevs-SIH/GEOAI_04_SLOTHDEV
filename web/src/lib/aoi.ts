@@ -27,7 +27,33 @@ export function boxProblem(b: Box | undefined): string | undefined {
   return undefined;
 }
 
-export const boxPolygon = (b: Box) => ({
+/** Earliest date offered (Sentinel-2 Level-2A coverage used by the server starts in 2017). */
+export const MIN_DATE = "2017-01-01";
+
+/** Today as YYYY-MM-DD in UTC (the latest date that can have imagery). */
+export const todayISO = (now: Date = new Date()) => now.toISOString().slice(0, 10);
+
+/** A plain-language problem with the two dates (YYYY-MM-DD strings compare correctly as text), or undefined. */
+export function dateProblem(before: string, after: string, today: string = todayISO()): string | undefined {
+  if (!before || !after) return "Choose both dates.";
+  if (before < MIN_DATE || after < MIN_DATE) return `Choose dates from ${MIN_DATE.slice(0, 4)} onwards; Sentinel-2 images before that are not used.`;
+  if (before >= after) return "The before date must be earlier than the after date.";
+  if (after > today) return "The after date cannot be in the future.";
+  return undefined;
+}
+
+/** west, south, east, north typed as text to a Box; a plain-language problem string when the numbers do not describe a box. */
+export function parseBox(w: string, s: string, e: string, n: string): Box | string {
+  const v = [w, s, e, n].map((x) => (x.trim() === "" ? NaN : Number(x)));
+  if (v.some((x) => !Number.isFinite(x))) return "Enter all four numbers (degrees).";
+  const [W, S, E, N] = v;
+  if (W < -180 || E > 180 || S < -90 || N > 90) return "Longitude must be between -180 and 180, latitude between -90 and 90.";
+  if (W >= E) return "West must be smaller than east.";
+  if (S >= N) return "South must be smaller than north.";
+  return [W, S, E, N];
+}
+
+export const boxPolygon =(b: Box) => ({
   type: "Feature" as const,
   properties: {},
   geometry: { type: "Polygon" as const, coordinates: [[[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]], [b[0], b[1]]]] },

@@ -27,6 +27,15 @@ export function passes(p: ChangeProps, f: FilterState, status: ReviewStatus = "p
   return true;
 }
 
+export const TAB_KEYS: FilterState["tab"][] = ["all", "review", "confirmed", "dismissed"];
+
+/** How many changes each review tab would list under the current criteria (the tab itself is ignored). */
+export function tabCounts(items: ChangeProps[], f: FilterState, status: (id: number) => ReviewStatus): Record<FilterState["tab"], number> {
+  const out = { all: 0, review: 0, confirmed: 0, dismissed: 0 };
+  for (const p of items) for (const tab of TAB_KEYS) if (passes(p, { ...f, tab }, status(p.id))) out[tab]++;
+  return out;
+}
+
 /** MapLibre filter expression equivalent of `passes` (without the review tab, which is local state). */
 export function mapFilter(f: FilterState, hiddenIds: number[] = []): unknown[] {
   const e: unknown[] = [

@@ -167,6 +167,28 @@ def test_analyze_min_area_override_and_bad_input(offline_jobs):
     assert client.get("/jobs/..%2F..%2Fetc").status_code == 404
 
 
+def test_analyze_rejects_bad_dates_before_saving_or_starting_a_job(offline_jobs):
+    """Regression (system test): upload jobs accepted a before date that was not earlier than the after date."""
+    b, a = _pair(offline_jobs)
+    files = {"before": ("b.tif", b), "after": ("a.tif", a)}
+    for before, after, word in (("2025-02-01", "2025-01-01", "earlier"),      # reversed
+                                ("2025-01-01", "2025-01-01", "earlier"),      # same day
+                                ("not a date", "2025-01-01", "before date"),
+                                ("2025-01-01", "31/01/2025", "after date")):
+        r = client.post("/analyze", files=files, data={"before_date": before, "after_date": after})
+        assert r.status_code == 400 and word in r.json()["detail"], (before, after, r.text)
+    runs = offline_jobs / "runs"
+    assert not runs.exists() or not list(runs.iterdir())          # nothing was saved or queued
+    radar = client.post("/analyze", files={"after": ("s1.tif", synthetic_s1_geotiff())},
+                        data={"mode": "radar", "before_date": "2025-02-01", "after_date": "2025-01-01"})
+    assert radar.status_code == 400
+    # a correct order, or a single date, or none, is still accepted
+    for data in ({"before_date": "2024-11-01", "after_date": "2025-01-10"}, {"after_date": "2025-01-10"}, {}):
+        ok = client.post("/analyze", files=files, data=data)
+        assert ok.status_code == 200, data
+        assert _wait(ok.json()["job_id"])["status"] == "done"
+
+
 def test_radar_job(offline_jobs):
     r = client.post("/analyze", files={"after": ("s1.tif", synthetic_s1_geotiff())}, data={"mode": "radar"})
     j = _wait(r.json()["job_id"])

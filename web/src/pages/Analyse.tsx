@@ -1,28 +1,43 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import AdvancedAccordion from "../components/analyse/AdvancedAccordion";
+import BoxInputs from "../components/analyse/BoxInputs";
+import BoxSizeLabel from "../components/analyse/BoxSizeLabel";
+import DateField from "../components/analyse/DateField";
+import DetectorSelect from "../components/analyse/DetectorSelect";
+import FilePickerField from "../components/analyse/FilePickerField";
+import { modeAvailability } from "../components/analyse/modes";
+import OfflineNotice from "../components/analyse/OfflineNotice";
+import PlaceJumpPicker from "../components/analyse/PlaceJumpPicker";
+import PresetSelect from "../components/analyse/PresetSelect";
+import ProgressStepper from "../components/analyse/ProgressStepper";
+import ResultCard, { type JobResult, isRadarResult } from "../components/analyse/ResultCard";
+import ScenePickTable from "../components/analyse/ScenePickTable";
+import SegmentedTabs, { type Source } from "../components/analyse/SegmentedTabs";
+import { HINT } from "../components/analyse/styles";
+import ValidationLine from "../components/analyse/ValidationLine";
 import AreaPicker from "../components/map/AreaPicker";
-import { Card } from "../components/panel/Panels";
+import { Button, CardSection, InlineAlert, Skeleton } from "../components/ui/Primitives";
+import { useReducedMotion } from "../hooks/motion";
 import {
-  API_URL, type FetchPreview, type JobState, apiHealth, fetchPreview, getJob, getJobSummary, startFetch,
+  API_URL, type ApiHealth, type DetectorMode, type FetchPreview, type JobState,
+  fetchHealth, fetchPreview, getJob, getJobSummary, startAnalyze, startFetch,
 } from "../lib/api";
-import { type Box, PLACES, boxProblem, sizeKm } from "../lib/aoi";
-import { area, num } from "../lib/format";
+import { type Box, MIN_DATE, PLACES, boxProblem, dateProblem, todayISO } from "../lib/aoi";
+import { useUi } from "../store/ui";
 
-type Source = "area" | "upload" | "radar";
-type OpticalResult = { raw_detections: number; after_filter: number; total_area_m2: number; by_tier: Record<string, number> };
-type RadarResult = { mode: "radar"; after_filter: number; flooded_ha: number; threshold_db: number };
-type Result = OpticalResult | RadarResult;
-const STAGES = ["queued", "fetching", "detecting", "vectorising", "done"];
-
-const isRadar = (r: Result): r is RadarResult => (r as RadarResult).mode === "radar";
+type Net = { state: "checking" } | { state: "online"; health: ApiHealth } | { state: "offline"; configured: boolean };
 
 // Same season on both dates avoids crop changes showing up as change; both dates are in the dry season here.
 const DEFAULTS = { before: "2020-01-20", after: "2025-01-20" };
+const POLL_MS = 1000;
+const MAX_POLL_FAILURES = 3;   // a single dropped request must not end a job that is still running on the server
 
 export default function Analyse() {
-  const [online, setOnline] = useState<boolean>();
+  const [net, setNet] = useState<Net>({ state: "checking" });
+  const [retrying, setRetrying] = useState(false);
   const [source, setSource] = useState<Source>("area");
   const [preset, setPreset] = useState("encroachment");
+  const [modePref, setModePref] = useState<DetectorMode>("spectral");
   const [box, setBox] = useState<Box>();
   const [place, setPlace] = useState<(typeof PLACES)[number]>();
   const [beforeDate, setBeforeDate] = useState(DEFAULTS.before);
@@ -34,39 +49,65 @@ export default function Analyse() {
   const [checking, setChecking] = useState(false);
   const [before, setBefore] = useState<File>();
   const [after, setAfter] = useState<File>();
+  const [radarFile, setRadarFile] = useState<File>();
   const [job, setJob] = useState<JobState>();
   const [jobId, setJobId] = useState<string>();
-  const [result, setResult] = useState<Result>();
-  const [openable, setOpenable] = useState(false);
+  const [result, setResult] = useState<JobResult>();
+  const progressCard = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const showToast = useUi((s) => s.showToast);
 
-  useEffect(() => {
-    apiHealth().then(setOnline);
+  const probe = useCallback(async () => {
+    const health = await fetchHealth(8000);   // a sleeping free-tier server can take a few seconds to answer
+    setNet(health ? { state: "online", health } : { state: "offline", configured: !!API_URL });
   }, []);
+  useEffect(() => { void probe(); }, [probe]);
+  const retry = async () => {
+    setRetrying(true);
+    await probe();
+    setRetrying(false);
+  };
 
   useEffect(() => {
     if (!jobId) return;
+    let fails = 0;
     const t = setInterval(async () => {
       try {
         const j = await getJob(jobId);
+        fails = 0;
         setJob(j);
         if (j.status === "done") {
           clearInterval(t);
-          setResult(await getJobSummary<Result>(jobId));
+          setResult(await getJobSummary<JobResult>(jobId));
+          showToast("Analysis complete");
         }
         if (j.status === "error") clearInterval(t);
       } catch (e) {
+        if (++fails < MAX_POLL_FAILURES) return;
         setJob({ status: "error", error: (e as Error).message });
         clearInterval(t);
       }
-    }, 1000);
+    }, POLL_MS);
     return () => clearInterval(t);
-  }, [jobId]);
+  }, [jobId, showToast]);
+
+  const started = !!job;
+  useEffect(() => {
+    if (started) progressCard.current?.scrollIntoView?.({ block: "nearest", behavior: reduced ? "auto" : "smooth" });
+  }, [started, reduced]);
+
+  const online = net.state === "online";
+  const health = net.state === "online" ? net.health : undefined;
+  // a chosen detector that the server turns out not to have falls back to the default instead of failing later
+  const mode: DetectorMode = !online || modeAvailability(health, modePref).available ? modePref : "spectral";
 
   const problem = boxProblem(box);
-  const datesOk = beforeDate < afterDate;
+  const dProblem = dateProblem(beforeDate, afterDate);
+  const datesOk = !dProblem;
   const persistOk = preset !== "flood";   // flood water recedes, so requiring it to persist would remove real change
+  const running = job?.status === "running" || job?.status === "queued" || job?.status === "uploading";
   const request = () => ({
-    bbox: box as Box, before_date: beforeDate, after_date: afterDate, preset, composite,
+    bbox: box as Box, before_date: beforeDate, after_date: afterDate, preset, composite, mode,
     persistence: persist && persistOk ? 2 : 0,
   });
 
@@ -75,12 +116,12 @@ export default function Analyse() {
     setJobId(undefined);
     setResult(undefined);
   };
+  const changeInputs = () => { setPick(undefined); setPickError(undefined); };
 
   const check = async () => {
-    if (!box || problem) return;
+    if (!box || problem || !datesOk) return;
     setChecking(true);
-    setPick(undefined);
-    setPickError(undefined);
+    changeInputs();
     try {
       setPick(await fetchPreview(request()));
     } catch (e) {
@@ -93,7 +134,6 @@ export default function Analyse() {
   const analyseArea = async () => {
     if (!box || problem || !datesOk) return;
     reset();
-    setOpenable(true);
     setJob({ status: "queued", stage: "queued" });
     try {
       setJobId((await startFetch(request())).job_id);
@@ -103,162 +143,172 @@ export default function Analyse() {
   };
 
   const submitUpload = async (radar: boolean) => {
-    if (!after || (!radar && !before)) return;
+    const target = radar ? radarFile : after;
+    if (!target || (!radar && !before)) return;
     reset();
-    setOpenable(!radar);
-    const fd = new FormData();
-    if (before && !radar) fd.append("before", before);
-    fd.append("after", after);
-    fd.append("preset", radar ? "flood" : preset);
-    fd.append("mode", radar ? "radar" : "spectral");
     setJob({ status: "uploading" });
-    const r = await fetch(`${API_URL}/analyze`, { method: "POST", body: fd });
-    const d = await r.json();
-    if (!r.ok) return setJob({ status: "error", error: d.detail ?? r.statusText });
-    setJobId(d.job_id);
+    try {
+      const r = await startAnalyze({ before: radar ? undefined : before, after: target, preset: radar ? "flood" : preset, mode: radar ? "radar" : mode });
+      setJobId(r.job_id);
+    } catch (e) {
+      setJob({ status: "error", error: (e as Error).message });
+    }
   };
 
-  if (online === undefined) return <p className="p-6 text-slate-500">Checking the live analysis service…</p>;
-  if (!online) return (
-    <div className="mx-auto max-w-2xl p-6" data-testid="analyse-offline">
-      <h1 className="text-xl font-semibold">Live analysis is offline</h1>
-      <p className="mt-2 text-slate-600">The analysis server is not reachable{API_URL ? " (it may be waking up; try again in a minute)" : " (no API is configured for this deployment)"}. The demo scenes work without it.</p>
-      <Link to="/" className="mt-3 inline-block underline">Open the demo scenes</Link>
-    </div>
+  const header = (
+    <header className="flex flex-wrap items-start justify-between gap-s12">
+      <div className="min-w-0">
+        <h1 className="text-h1 text-fg">Analyse any area</h1>
+        <p className="mt-s4 max-w-2xl text-body text-secondary">
+          Draw a box anywhere in India, pick two dates, and we fetch the clearest Sentinel-2 images and find what really changed. Or upload your own images.
+        </p>
+      </div>
+      {net.state !== "checking" && (
+        <span data-testid="api-status" data-online={online} className="inline-flex items-center gap-s8 rounded-xs border border-line px-s8 py-s4 text-micro text-secondary">
+          <span aria-hidden="true" className={`h-2 w-2 rounded-full ${online ? "bg-success" : "bg-muted"}`} />
+          {online ? "Analysis server online" : "Analysis server offline"}
+        </span>
+      )}
+    </header>
   );
 
-  const running = job?.status === "running" || job?.status === "queued" || job?.status === "uploading";
-  const tab = (id: Source, label: string) => (
-    <button type="button" role="tab" aria-selected={source === id} onClick={() => { setSource(id); reset(); }}
-      className={`rounded-t px-3 py-1.5 text-sm font-medium ${source === id ? "bg-white text-accent shadow" : "text-slate-600"}`} data-testid={`tab-${id}`}>{label}</button>
-  );
-  const presetSelect = (
-    <label className="block text-sm">What to look for
-      <select className="ml-2 rounded border border-slate-300 p-1" value={preset} onChange={(e) => setPreset(e.target.value)}>
-        <option value="encroachment">Encroachment (construction, water loss)</option>
-        <option value="flood">Flood (new water)</option>
-        <option value="deforestation">Deforestation</option>
-        <option value="general">All change types</option>
-      </select>
-    </label>
-  );
+  if (net.state === "checking") {
+    return (
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-s18 px-s18 py-s26 md:px-s26" aria-busy="true">
+        {header}
+        <p role="status" className="text-small text-muted">Checking the live analysis service…</p>
+        <Skeleton height={48} />
+        <div className="grid gap-s18 lg:grid-cols-[minmax(0,1fr)_380px]"><Skeleton height={420} radius={13} /><Skeleton height={420} radius={13} /></div>
+      </div>
+    );
+  }
+
+  const why = !online ? "The analysis server is not reachable, so the action buttons are off for now. You can still draw and check the box."
+    : running ? "An analysis is running. Wait for it to finish."
+    : undefined;
+  const areaWhy = why ?? (!box ? "Draw an area on the map first."
+    : problem ? "Fix the area first (see the message under the map)."
+    : dProblem ? "Fix the dates first."
+    : undefined);
+  const areaReady = online && !!box && !problem && datesOk;
+
+  const modePicker = <DetectorSelect value={mode} onChange={setModePref} health={health} preview={!online} />;
+  const whyId = "run-why";
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-4 p-4">
-      <h1 className="text-2xl font-semibold">Analyse any area</h1>
-      <p className="text-sm text-slate-600">Draw a box anywhere in India (or the world), pick two dates, and we fetch the two clearest Sentinel-2 images and find what really changed. Or upload your own images.</p>
-      <div role="tablist" className="flex gap-1 border-b border-slate-200">
-        {tab("area", "Draw an area")}{tab("upload", "Upload two images")}{tab("radar", "Radar flood (Sentinel-1)")}
-      </div>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-s18 px-s18 py-s26 md:px-s26">
+      {header}
+      {!online && <OfflineNotice configured={net.state === "offline" && net.configured} retrying={retrying} onRetry={retry} />}
+
+      <SegmentedTabs activeTab={source} onChange={(t) => { setSource(t); reset(); }} />
 
       {source === "area" && (
-        <Card title="1 · Draw the area and choose the dates">
-          <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
-            <label>Jump to
-              <select className="ml-2 rounded border border-slate-300 p-1" onChange={(e) => setPlace(PLACES[Number(e.target.value)])} data-testid="place">
-                {PLACES.map((p, i) => <option key={p.name} value={i}>{p.name}</option>)}
-              </select>
-            </label>
-            {box && <button type="button" className="rounded border border-slate-300 px-2 py-0.5" onClick={() => { setBox(undefined); setPick(undefined); }}>Clear box</button>}
-            {box && !problem && <span className="text-slate-600" data-testid="box-size">{sizeKm(box).map((v) => v.toFixed(1)).join(" × ")} km</span>}
+        <>
+          <div className="grid items-start gap-s18 lg:grid-cols-[minmax(0,1fr)_380px]">
+            <CardSection title="1 · Draw the area" testid="card-area">
+              <div className="flex min-w-0 flex-col gap-s12">
+                <PlaceJumpPicker places={PLACES} selected={place} onSelect={setPlace} />
+                <AreaPicker box={box} onChange={(b) => { setBox(b); changeInputs(); }} place={place} />
+                <div className="flex flex-wrap items-center justify-between gap-s8">
+                  <BoxSizeLabel box={box} />
+                  {box && <Button variant="ghost" data-testid="clear-box" onClick={() => { setBox(undefined); changeInputs(); }}>Clear box</Button>}
+                </div>
+                <ValidationLine problem={problem} drawn={!!box} />
+                <BoxInputs box={box} onChange={(b) => { setBox(b); changeInputs(); }} />
+              </div>
+            </CardSection>
+
+            <CardSection title="2 · Dates and settings" testid="card-params">
+              <div className="flex min-w-0 flex-col gap-s18">
+                {modePicker}
+                <div className="grid gap-s12 sm:grid-cols-2 lg:grid-cols-1">
+                  <DateField label="Before date" testid="date-before" value={beforeDate} min={MIN_DATE} max={todayISO()} errorId="date-error"
+                    onChange={(v) => { setBeforeDate(v); changeInputs(); }} />
+                  <DateField label="After date" testid="date-after" value={afterDate} min={MIN_DATE} max={todayISO()} error={dProblem} errorId="date-error"
+                    onChange={(v) => { setAfterDate(v); changeInputs(); }} />
+                </div>
+                <p className={HINT}>Choose the same time of year for both dates, so growing crops are not mistaken for change. We use the clearest image within about 20 days of each date.</p>
+                <PresetSelect value={preset} onChange={setPreset} />
+                <AdvancedAccordion composite={composite} onComposite={(n) => { setComposite(n); changeInputs(); }}
+                  persistence={persist} onPersistence={setPersist} disabledPersistence={!persistOk} />
+                <div className="flex flex-col gap-s8">
+                  <div className="flex flex-wrap gap-s12">
+                    <Button variant="secondary" data-testid="check-scenes" disabled={!areaReady} loading={checking} onClick={check} aria-describedby={areaWhy ? whyId : undefined}>Check scenes</Button>
+                    <Button data-testid="analyse-area" disabled={!areaReady} loading={running} onClick={analyseArea} aria-describedby={areaWhy ? whyId : undefined}>Analyse this area</Button>
+                  </div>
+                  {areaWhy && <p id={whyId} data-testid="run-why" className={HINT}>{areaWhy}</p>}
+                </div>
+              </div>
+            </CardSection>
           </div>
-          <AreaPicker box={box} onChange={(b) => { setBox(b); setPick(undefined); }} place={place} />
-          <p className={`mt-1 text-xs ${problem && box ? "text-red-700" : "text-slate-500"}`} data-testid="box-problem">{problem ?? "Area looks good."}</p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="text-sm">Before date<input type="date" className="mt-1 block w-full rounded border border-slate-300 p-1" value={beforeDate} min="2017-01-01" onChange={(e) => { setBeforeDate(e.target.value); setPick(undefined); }} /></label>
-            <label className="text-sm">After date<input type="date" className="mt-1 block w-full rounded border border-slate-300 p-1" value={afterDate} min="2017-01-01" onChange={(e) => { setAfterDate(e.target.value); setPick(undefined); }} /></label>
-          </div>
-          <p className="mt-1 text-xs text-slate-500">Choose the same time of year for both dates, so growing crops are not mistaken for change. We use the clearest image within about 20 days of each date.</p>
-          {!datesOk && <p className="mt-1 text-xs text-red-700">The before date must be earlier than the after date.</p>}
-          <div className="mt-3">{presetSelect}</div>
-          <details className="mt-3 text-sm" data-testid="advanced">
-            <summary className="cursor-pointer font-medium">Extra filters (optional, off by default)</summary>
-            <label className="mt-2 block">Images per date
-              <select className="ml-2 rounded border border-slate-300 p-1" value={composite} onChange={(e) => { setComposite(Number(e.target.value)); setPick(undefined); }} data-testid="composite">
-                <option value={1}>The single clearest image</option>
-                <option value={3}>Median of 3 images (smooths one-off clouds; slower; did not reduce false alarms in our test)</option>
-              </select>
-            </label>
-            <label className="mt-2 flex items-start gap-2">
-              <input type="checkbox" checked={persist && persistOk} disabled={!persistOk} onChange={(e) => setPersist(e.target.checked)} data-testid="persistence" />
-              <span>Keep a change only if it is also seen in a second, later image (for construction, not floods). In our test: 27% fewer detections on a no-construction area, and 15% less changed area on a real-construction area, so it trades some real change for fewer false alarms.</span>
-            </label>
-          </details>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" disabled={!box || !!problem || !datesOk || checking} onClick={check} data-testid="check-scenes"
-              className="rounded border border-accent px-4 py-1.5 font-semibold text-accent disabled:opacity-40">{checking ? "Checking…" : "Check scenes"}</button>
-            <button type="button" disabled={!box || !!problem || !datesOk || running} onClick={analyseArea} data-testid="analyse-area"
-              className="rounded bg-accent px-4 py-1.5 font-semibold text-white disabled:opacity-40">Analyse this area</button>
-          </div>
-          {pickError && <p className="mt-2 text-sm text-red-700" data-testid="pick-error">{pickError}</p>}
-          {pick && (
-            <div className="mt-3 text-sm" data-testid="scene-pick">
-              <p className="font-medium">Images that will be used ({pick.size_km.map((v) => v.toFixed(1)).join(" × ")} km):</p>
-              <table className="mt-1 w-full text-left text-xs">
-                <thead className="text-slate-500"><tr><th>Image</th><th>Date</th><th>Cloud / no-data over the box</th><th>Days from your date</th></tr></thead>
-                <tbody>
-                  {(["before", "after"] as const).map((k) => (
-                    <tr key={k}><td className="capitalize">{k}</td><td>{pick[k].date}</td><td>{pick[k].aoi_invalid_pct}%</td><td>{pick[k].days_from_target > 0 ? "+" : ""}{pick[k].days_from_target}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-              {pick.warnings.map((w) => <p key={w} className="mt-1 text-xs text-amber-800">⚠ {w}</p>)}
-            </div>
-          )}
-        </Card>
+
+          <CardSection title="3 · Images that will be used" testid="card-scenes">
+            <ScenePickTable preview={pick} loading={checking} error={pickError} />
+          </CardSection>
+        </>
       )}
 
       {source === "upload" && (
-        <Card title="1 · Upload two co-registered GeoTIFFs (≥ 4 bands incl. NIR, ≥ 5 m pixels)">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="text-sm">Before<input type="file" accept=".tif,.tiff" className="mt-1 block w-full text-sm" onChange={(e) => setBefore(e.target.files?.[0])} /></label>
-            <label className="text-sm">After<input type="file" accept=".tif,.tiff" className="mt-1 block w-full text-sm" onChange={(e) => setAfter(e.target.files?.[0])} /></label>
+        <CardSection title="1 · Upload two co-registered GeoTIFFs" testid="card-upload">
+          <div className="flex min-w-0 flex-col gap-s18">
+            <p className={HINT}>≥ 4 bands incl. NIR, ≥ 5 m pixels. Both files must cover the same place on the same grid.</p>
+            <div className="grid gap-s18 sm:grid-cols-2">
+              <FilePickerField label="Before image" testid="file-before" file={before} onPick={setBefore} onClear={() => setBefore(undefined)} />
+              <FilePickerField label="After image" testid="file-after" file={after} onPick={setAfter} onClear={() => setAfter(undefined)} />
+            </div>
+            {modePicker}
+            <div className="max-w-md"><PresetSelect value={preset} onChange={setPreset} /></div>
+            <div className="flex flex-col gap-s8">
+              <div><Button data-testid="analyse-upload" disabled={!online || !before || !after || running} loading={running} onClick={() => submitUpload(false)} aria-describedby={whyId}>Analyse</Button></div>
+              <p id={whyId} data-testid="run-why" className={HINT}>
+                {why ?? (!before || !after ? "Choose both images to continue." : "Ready.")}
+              </p>
+            </div>
           </div>
-          <div className="mt-3">{presetSelect}</div>
-          <button type="button" disabled={!before || !after || running} onClick={() => submitUpload(false)} data-testid="analyse-upload"
-            className="mt-3 rounded bg-accent px-4 py-1.5 font-semibold text-white disabled:opacity-40">Analyse</button>
-        </Card>
+        </CardSection>
       )}
 
       {source === "radar" && (
-        <Card title="1 · Upload one Sentinel-1 radar image (GeoTIFF: band 1 = VV in dB, band 2 = VH in dB)">
-          <label className="text-sm">Radar image (during the flood)<input type="file" accept=".tif,.tiff" className="mt-1 block w-full text-sm" onChange={(e) => setAfter(e.target.files?.[0])} data-testid="radar-file" /></label>
-          <p className="mt-2 text-xs text-amber-800">Radar sees through cloud, so it works in the monsoon. It maps <b>open flood water from one date</b>, not before/after change; flooded crops and streets can be missed.</p>
-          <button type="button" disabled={!after || running} onClick={() => submitUpload(true)} data-testid="analyse-radar"
-            className="mt-3 rounded bg-accent px-4 py-1.5 font-semibold text-white disabled:opacity-40">Map the flood</button>
-        </Card>
+        <CardSection title="1 · Upload one Sentinel-1 radar image" testid="card-radar">
+          <div className="flex min-w-0 flex-col gap-s18">
+            <p className={HINT}>GeoTIFF: band 1 = VV in dB, band 2 = VH in dB.</p>
+            <div className="max-w-xl">
+              <FilePickerField label="Radar image (during the flood)" testid="file-radar" file={radarFile} onPick={setRadarFile} onClear={() => setRadarFile(undefined)} />
+            </div>
+            <InlineAlert variant="warning" message={<>Radar sees through cloud, so it works in the monsoon. It maps <b>open flood water from one date</b>, not before/after change; flooded crops and streets can be missed.</>} />
+            <div className="flex flex-col gap-s8">
+              <div><Button data-testid="analyse-radar" disabled={!online || !radarFile || running} loading={running} onClick={() => submitUpload(true)} aria-describedby={whyId}>Map the flood</Button></div>
+              <p id={whyId} data-testid="run-why" className={HINT}>
+                {why ?? (!radarFile ? "Choose the radar image to continue." : "Ready.")}
+              </p>
+            </div>
+          </div>
+        </CardSection>
       )}
 
       {job && (
-        <Card title="2 · Progress">
-          <ol className="flex flex-wrap gap-2 text-xs">
-            {STAGES.map((st) => (
-              <li key={st} className={`rounded px-2 py-0.5 ${job.stage === st || (job.status === "done" && st === "done") ? "bg-accent text-white" : "bg-slate-100"}`}>{st}</li>
-            ))}
-          </ol>
-          {job.fetch && (
-            <p className="mt-2 text-xs text-slate-600" data-testid="scenes-used">Used: before {job.fetch.before.date} ({job.fetch.before.scene}) · after {job.fetch.after.date} ({job.fetch.after.scene})</p>
-          )}
-          {job.error && <p className="mt-2 text-sm text-red-700" data-testid="job-error">{job.error}</p>}
-          {job.warnings?.map((w) => <p key={w} className="mt-1 text-xs text-amber-800">⚠ {w}</p>)}
-        </Card>
+        <div ref={progressCard}>
+          <CardSection title="Progress" testid="card-progress">
+            <div className="flex flex-col gap-s12">
+              <ProgressStepper job={job} />
+              {job.fetch && (
+                <p className="text-tiny text-secondary" data-testid="scenes-used">Used: before {job.fetch.before.date} ({job.fetch.before.scene}) · after {job.fetch.after.date} ({job.fetch.after.scene})</p>
+              )}
+              {job.warnings?.map((w) => <InlineAlert key={w} variant="warning" message={w} />)}
+              {job.error && (
+                <div data-testid="job-error" className="flex flex-col items-start gap-s8">
+                  <InlineAlert variant="error" message={job.error} />
+                  <Button variant="secondary" onClick={reset}>Dismiss</Button>
+                </div>
+              )}
+            </div>
+          </CardSection>
+        </div>
       )}
       {result && jobId && (
-        <Card title="3 · Result" testid="analyse-result">
-          {isRadar(result) ? (
-            <p className="text-lg"><b className="text-emerald-700">{num(result.after_filter)}</b> flood areas · {num(result.flooded_ha)} ha of open water</p>
-          ) : (
-            <p className="text-lg"><b>{num(result.raw_detections)}</b> raw → <b className="text-emerald-700">{num(result.after_filter)}</b> real changes · {area(result.total_area_m2)}</p>
-          )}
-          {openable && !isRadar(result) && (
-            <Link to={`/job/${jobId}`} className="mt-2 inline-block rounded bg-accent px-4 py-1.5 font-semibold text-white" data-testid="open-on-map">Open on the swipe map</Link>
-          )}
-          <ul className="mt-2 grid grid-cols-2 gap-1 text-sm">
-            {(isRadar(result) ? ["geojson"] : ["geojson", "gpkg", "pdf", "csv", "kml"]).map((fmt) => (
-              <li key={fmt}><a className="text-accent underline" href={`${API_URL}/jobs/${jobId}/export?format=${fmt}`}>Download {fmt.toUpperCase()}</a></li>
-            ))}
-          </ul>
-        </Card>
+        <CardSection title="Result" testid="analyse-result">
+          <ResultCard jobId={jobId} summary={result} isRadar={isRadarResult(result)} />
+        </CardSection>
       )}
     </div>
   );

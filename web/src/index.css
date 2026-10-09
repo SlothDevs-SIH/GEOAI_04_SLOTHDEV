@@ -1,13 +1,223 @@
 @import "tailwindcss";
 
-@theme {
-  --color-crit: #b5179e;
-  --color-high: #e03131;
-  --color-med: #f08a24;
-  --color-low: #c99700;
-  --color-accent: #0b63ce;
+/* GEOAI 04 design tokens: "Midnight Terrain" (default dark) and "Daylight GIS" (light).
+   Source of truth: FRONTEND.md section A1 (GEOAI04_UI_Style_Guide). Components use the semantic
+   Tailwind classes below (bg-surface, text-fg, text-muted, border-line, text-tier-critical ...), never raw hex. */
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --c-bg: #07111f; --c-surface: #0b1726; --c-surface-alt: #102033; --c-surface-hover: #162a40;
+  --c-line: #294158; --c-line-strong: #3d5a75;
+  --c-fg: #f1f5f9; --c-muted: #8fa3b8; --c-secondary: #bac7d7; --c-on-accent: #07111f;
+  --c-scrim: rgba(0, 0, 0, 0.72);
+  --c-accent: #22d3ee; --c-accent-hover: #67e8f9; --c-accent-pressed: #06b6d4; --c-accent-soft: rgba(34, 211, 238, 0.14);
+  --c-teal: #2dd4bf; --c-focus: #fde047;
+  --c-success: #22c55e; --c-success-soft: #0d3322;
+  --c-warning: #f59e0b; --c-warning-soft: #3d2905;
+  --c-danger: #ef4444; --c-danger-soft: #451416;
+  --c-info: #38bdf8; --c-info-soft: #082f49;
+  --c-tier-critical: #f43f5e; --c-tier-critical-soft: #4c1524;
+  --c-tier-high: #f97316; --c-tier-high-soft: #4a2108;
+  --c-tier-medium: #facc15; --c-tier-medium-soft: #3b3106;
+  --c-tier-low: #38bdf8; --c-tier-low-soft: #082f49;
+  --c-type-built: #a78bfa; --c-type-water-gain: #06b6d4; --c-type-water-loss: #2563eb;
+  --c-type-veg-loss: #d6a514; --c-type-veg-gain: #22c55e; --c-type-other: #94a3b8;
+  --c-status-used: #22c55e; --c-status-progress: #f59e0b; --c-status-planned: #a78bfa;
+  --c-badge-demo-fg: #c4b5fd; --c-badge-demo-bg: #2e2150;
+  --c-badge-live-fg: #5eead4; --c-badge-live-bg: #073b36;
+  --c-badge-offline-fg: #cbd5e1; --c-badge-offline-bg: #233044;
+  --c-skeleton: #102033; --c-skeleton-hi: #162a40;
+  --c-box-fill: rgba(34, 211, 238, 0.2); --c-swipe-ring: #22d3ee; --c-swipe-shadow: rgba(0, 0, 0, 0.6);
+  --c-raw: #94a3b8; --c-raw-line: #cbd5e1;
 }
 
-:root { color-scheme: light; }
-body { margin: 0; background: #f6f7f9; color: #14181f; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+:root[data-theme="light"] {
+  color-scheme: light;
+  --c-bg: #f3f7fb; --c-surface: #ffffff; --c-surface-alt: #e8eef5; --c-surface-hover: #dde5ee;
+  --c-line: #cbd5e1; --c-line-strong: #94a3b8;
+  --c-fg: #102033; --c-muted: #64748b; --c-secondary: #334155; --c-on-accent: #ffffff;
+  --c-scrim: rgba(15, 23, 42, 0.45);
+  --c-accent: #0891b2; --c-accent-hover: #0e7490; --c-accent-pressed: #155e75; --c-accent-soft: rgba(8, 145, 178, 0.12);
+  --c-teal: #0d9488; --c-focus: #ca8a04;
+  --c-success: #16a34a; --c-success-soft: #dcfce7;
+  --c-warning: #d97706; --c-warning-soft: #fef3c7;
+  --c-danger: #dc2626; --c-danger-soft: #fee2e2;
+  --c-info: #0284c7; --c-info-soft: #e0f2fe;
+  --c-tier-critical: #e11d48; --c-tier-critical-soft: #ffe4e6;
+  --c-tier-high: #ea580c; --c-tier-high-soft: #ffedd5;
+  --c-tier-medium: #ca8a04; --c-tier-medium-soft: #fef9c3;
+  --c-tier-low: #0284c7; --c-tier-low-soft: #e0f2fe;
+  --c-type-built: #7c3aed; --c-type-water-gain: #0891b2; --c-type-water-loss: #1d4ed8;
+  --c-type-veg-loss: #a16207; --c-type-veg-gain: #16a34a; --c-type-other: #64748b;
+  --c-status-used: #16a34a; --c-status-progress: #d97706; --c-status-planned: #7c3aed;
+  --c-badge-demo-fg: #5b21b6; --c-badge-demo-bg: #ede9fe;
+  --c-badge-live-fg: #0f766e; --c-badge-live-bg: #ccfbf1;
+  --c-badge-offline-fg: #334155; --c-badge-offline-bg: #f1f5f9;
+  --c-skeleton: #e2e8f0; --c-skeleton-hi: #f8fafc;
+  --c-box-fill: rgba(8, 145, 178, 0.2); --c-swipe-ring: #0891b2; --c-swipe-shadow: rgba(0, 0, 0, 0.3);
+  --c-raw: #94a3b8; --c-raw-line: #94a3b8;
+}
+
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-surface-alt: var(--c-surface-alt);
+  --color-surface-hover: var(--c-surface-hover);
+  --color-line: var(--c-line);
+  --color-line-strong: var(--c-line-strong);
+  --color-fg: var(--c-fg);
+  --color-muted: var(--c-muted);
+  --color-secondary: var(--c-secondary);
+  --color-on-accent: var(--c-on-accent);
+  --color-scrim: var(--c-scrim);
+  --color-accent: var(--c-accent);
+  --color-accent-hover: var(--c-accent-hover);
+  --color-accent-pressed: var(--c-accent-pressed);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-teal: var(--c-teal);
+  --color-focus: var(--c-focus);
+  --color-success: var(--c-success);
+  --color-success-soft: var(--c-success-soft);
+  --color-warning: var(--c-warning);
+  --color-warning-soft: var(--c-warning-soft);
+  --color-danger: var(--c-danger);
+  --color-danger-soft: var(--c-danger-soft);
+  --color-info: var(--c-info);
+  --color-info-soft: var(--c-info-soft);
+  --color-tier-critical: var(--c-tier-critical);
+  --color-tier-critical-soft: var(--c-tier-critical-soft);
+  --color-tier-high: var(--c-tier-high);
+  --color-tier-high-soft: var(--c-tier-high-soft);
+  --color-tier-medium: var(--c-tier-medium);
+  --color-tier-medium-soft: var(--c-tier-medium-soft);
+  --color-tier-low: var(--c-tier-low);
+  --color-tier-low-soft: var(--c-tier-low-soft);
+  --color-type-built: var(--c-type-built);
+  --color-type-water-gain: var(--c-type-water-gain);
+  --color-type-water-loss: var(--c-type-water-loss);
+  --color-type-veg-loss: var(--c-type-veg-loss);
+  --color-type-veg-gain: var(--c-type-veg-gain);
+  --color-type-other: var(--c-type-other);
+  --color-status-used: var(--c-status-used);
+  --color-status-progress: var(--c-status-progress);
+  --color-status-planned: var(--c-status-planned);
+  --color-badge-demo-fg: var(--c-badge-demo-fg);
+  --color-badge-demo-bg: var(--c-badge-demo-bg);
+  --color-badge-live-fg: var(--c-badge-live-fg);
+  --color-badge-live-bg: var(--c-badge-live-bg);
+  --color-badge-offline-fg: var(--c-badge-offline-fg);
+  --color-badge-offline-bg: var(--c-badge-offline-bg);
+  --color-skeleton: var(--c-skeleton);
+  --color-skeleton-hi: var(--c-skeleton-hi);
+  --color-raw: var(--c-raw);
+}
+
+@theme {
+  --radius-xs: 5px;
+  --radius-sm: 9px;
+  --radius-md: 13px;
+  --radius-lg: 18px;
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.18);
+  --shadow-sheet: 0 -4px 16px rgba(0, 0, 0, 0.28);
+  --shadow-panel: 0 12px 32px rgba(0, 0, 0, 0.24);
+  --shadow-modal: 0 16px 36px rgba(0, 0, 0, 0.4);
+  --text-display: 32px;
+  --text-display--line-height: 36px;
+  --text-display--font-weight: 750;
+  --text-h1: 25px;
+  --text-h1--line-height: 30px;
+  --text-h1--font-weight: 700;
+  --text-h2: 19px;
+  --text-h2--line-height: 24px;
+  --text-h2--font-weight: 650;
+  --text-h3: 16px;
+  --text-h3--line-height: 21px;
+  --text-h3--font-weight: 650;
+  --text-metric: 31px;
+  --text-metric--line-height: 33px;
+  --text-metric--font-weight: 720;
+  --text-body: 14px;
+  --text-body--line-height: 21px;
+  --text-small: 13px;
+  --text-small--line-height: 17px;
+  --text-small--font-weight: 600;
+  --text-tiny: 12px;
+  --text-tiny--line-height: 16px;
+  --text-tiny--font-weight: 480;
+  --text-micro: 11px;
+  --text-micro--line-height: 14px;
+  --text-micro--font-weight: 650;
+  --spacing-s4: 4px;
+  --spacing-s8: 8px;
+  --spacing-s12: 12px;
+  --spacing-s18: 18px;
+  --spacing-s26: 26px;
+  --spacing-s36: 36px;
+}
+
+html { background: var(--c-bg); }
+body {
+  margin: 0; background: var(--c-bg); color: var(--c-fg);
+  font: 430 14px/21px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+h1, h2, h3 { margin: 0; }
+a { color: var(--c-accent); }
 .maplibregl-map { font: inherit; }
+
+/* Keyboard focus ring: 2px with 2px offset (A8) */
+:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; border-radius: 4px; }
+
+/* Minimum 48 x 48 touch target (A1) */
+.tap { min-height: 48px; min-width: 48px; display: inline-flex; align-items: center; justify-content: center; }
+
+/* ---- Animation catalogue (A5). All of it is neutralised under prefers-reduced-motion at the bottom. ---- */
+/* A-01 list / card entrance: set style={{ "--i": index }} on the first 12 items */
+.anim-in { animation: fade-in-down 260ms ease-out both; animation-delay: calc(var(--i, 0) * 40ms); }
+@keyframes fade-in-down { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+/* A-10 press feedback; hover raises elevation by one step */
+.press { transition: transform 120ms ease-out, box-shadow 160ms, background-color 160ms, border-color 160ms; cursor: pointer; }
+.press:active { transform: scale(0.97); transition-duration: 80ms; }
+.lift:hover { box-shadow: var(--shadow-panel); }
+/* A-07 change card select flash + confirm/dismiss spring-in */
+.flash { animation: flash-soft 400ms ease-out; }
+@keyframes flash-soft { from { background-color: var(--c-accent-soft); } to { background-color: transparent; } }
+.pop-in { animation: pop-in 260ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes pop-in { from { transform: scale(0.94); } to { transform: scale(1); } }
+.fade-150 { animation: fade-in 150ms ease-out both; }
+.fade-160 { animation: fade-in 160ms ease-out both; }
+.fade-200 { animation: fade-in 200ms ease-out both; }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+/* A-12 stepper pulse while a job runs */
+.pulse-dot { animation: pulse-dot 1000ms ease-in-out infinite; }
+@keyframes pulse-dot { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+/* A-13 offline badge slide */
+.slide-down { animation: slide-down 240ms ease-out both; }
+@keyframes slide-down { from { transform: translateY(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
+/* A-14 skeleton shimmer */
+.skeleton { position: relative; overflow: hidden; background: var(--c-skeleton); border-radius: 9px; }
+.skeleton::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--c-skeleton-hi), transparent); transform: translateX(-100%); animation: shimmer 1200ms linear infinite; }
+@keyframes shimmer { to { transform: translateX(100%); } }
+/* A-04 toggle switch (thumb slides 180ms) */
+.switch { position: relative; width: 44px; height: 26px; border-radius: 999px; border: 2px solid var(--c-line-strong); background: var(--c-surface-alt); transition: border-color 180ms, background-color 180ms; flex: none; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 999px; background: var(--c-muted); transition: transform 180ms, background-color 180ms; }
+.switch[aria-checked="true"] { border-color: var(--c-accent); background: var(--c-accent-soft); }
+.switch[aria-checked="true"]::after { transform: translateX(18px); background: var(--c-accent); }
+/* A-11 accordion */
+.accordion { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 220ms ease; }
+.accordion[data-open="true"] { grid-template-rows: 1fr; }
+.accordion > div { overflow: hidden; }
+.chevron { transition: transform 220ms; }
+[aria-expanded="true"] > .chevron { transform: rotate(180deg); }
+/* A-06 sliding tab underline is positioned from JS (transform + width) */
+.tab-underline { transition: transform 220ms cubic-bezier(0.45, 0, 0.55, 1), width 220ms cubic-bezier(0.45, 0, 0.55, 1); }
+/* Thin scrollbar for wide tables (A4 accuracy) */
+.thin-scroll { scrollbar-width: thin; scrollbar-color: var(--c-line-strong) transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; scroll-behavior: auto !important; }
+  .fade-150, .fade-160, .fade-200, .anim-in { animation: fade-in 120ms ease-out both !important; }
+  .press:active { transform: none; }
+  .skeleton::after { display: none; }
+}

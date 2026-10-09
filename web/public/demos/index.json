@@ -47,7 +47,19 @@
   "story": "Large construction project: land levelling and airport build-out",
   "demo": true,
   "after_filter": 265,
-  "raw_detections": 2185
+  "raw_detections": 2185,
+  "variants": [
+   {
+    "mode": "learned",
+    "raw_detections": 190,
+    "after_filter": 119
+   },
+   {
+    "mode": "hybrid",
+    "raw_detections": 458,
+    "after_filter": 69
+   }
+  ]
  },
  {
   "id": "pune-hinjewadi",
@@ -75,13 +87,25 @@
   "story": "Fast urban growth on the city edge: IT parks and housing",
   "demo": true,
   "after_filter": 475,
-  "raw_detections": 6830
+  "raw_detections": 6830,
+  "variants": [
+   {
+    "mode": "learned",
+    "raw_detections": 1203,
+    "after_filter": 599
+   },
+   {
+    "mode": "hybrid",
+    "raw_detections": 2910,
+    "after_filter": 305
+   }
+  ]
  },
  {
   "id": "season-control",
   "name": "Saswad farmland (season control)",
   "place": "Farmland near Saswad, Pune district, Maharashtra",
-  "event": "False-alarm test: only crops changed",
+  "event": "False-alarm test: farmland with no large new buildings",
   "kind": "control",
   "mode": "spectral",
   "before_date": "2024-11-19",
@@ -103,7 +127,19 @@
   "story": "False-alarm control: green post-monsoon crops vs dry season, a few months apart",
   "demo": true,
   "after_filter": 22,
-  "raw_detections": 3083
+  "raw_detections": 3083,
+  "variants": [
+   {
+    "mode": "learned",
+    "raw_detections": 693,
+    "after_filter": 263
+   },
+   {
+    "mode": "hybrid",
+    "raw_detections": 899,
+    "after_filter": 12
+   }
+  ]
  },
  {
   "id": "delhi-ncr",

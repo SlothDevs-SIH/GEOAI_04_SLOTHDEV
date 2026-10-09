@@ -87,6 +87,7 @@ def analyze(before_path, after_path, preset="general", mode="auto", before_date=
     extra later scenes (see engine/persistence.py). Off by default.
     """
     t0 = time.time()
+    quality.check_dates(before_date, after_date)
     p = params or params_for(preset)
     pair = ingest.read_pair(before_path, after_path)
     mode = choose_mode(pair, mode)

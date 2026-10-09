@@ -40,5 +40,17 @@
  ],
  "preset": "encroachment",
  "story": "Fast urban growth on the city edge: IT parks and housing",
- "demo": true
+ "demo": true,
+ "variants": [
+  {
+   "mode": "learned",
+   "raw_detections": 1203,
+   "after_filter": 599
+  },
+  {
+   "mode": "hybrid",
+   "raw_detections": 2910,
+   "after_filter": 305
+  }
+ ]
 }

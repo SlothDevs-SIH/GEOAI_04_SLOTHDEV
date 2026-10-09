@@ -118,6 +118,20 @@ def test_quality_flags_season_mismatch(tmp):
     assert any("different seasons" in w for w in warn)
 
 
+def test_check_dates_and_analyze_refuse_a_before_date_that_is_not_earlier(tmp):
+    quality.check_dates("2024-11-19", "2025-03-14")           # fine
+    quality.check_dates("2016-08-12", None)                   # one date, or none: nothing to compare
+    quality.check_dates(None, None)
+    quality.check_dates("2002-05-01", "2018-05-01")           # an upload may be older than Sentinel-2
+    for before, after, word in (("2025-03-14", "2024-11-19", "earlier"), ("2025-03-14", "2025-03-14", "earlier"),
+                                ("soon", "2025-03-14", "before date"), ("2025-03-14", "14 March", "after date")):
+        with pytest.raises(ValueError, match=word):
+            quality.check_dates(before, after)
+    b, a = _pair(tmp, [], [])
+    with pytest.raises(ValueError, match="earlier"):           # the engine itself refuses, not only the API
+        run.analyze(b, a, "general", before_date="2025-03-14", after_date="2024-11-19")
+
+
 # ---------------------------------------------------------------- impact
 def test_impact_cropland_from_worldcover(tmp):
     b, a = _pair(tmp, [((40, 80, 40, 80), SOIL)], [((40, 80, 40, 80), BUILT)])

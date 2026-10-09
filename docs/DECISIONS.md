@@ -114,3 +114,17 @@ The official statement asks for an **interactive split-view (before/after) web m
 - OSCD pairs are **locations**, not cities. The plans now say "locations".
 - The earlier note that LEVIR "ships with no coordinates" may be out of date; Ayush checks whether his download includes the 2023 update.
 - The README credits must say LEVIR-CD is for academic use and follows Google Earth terms.
+
+---
+
+## 11. Frontend design system and detector switch (9 to 10 Oct 2026)
+
+| Topic | Decision |
+|---|---|
+| Design spec | `FRONTEND.md` (the "Midnight Terrain" style guide, component registry R-/A-/Q-/B- IDs, animation catalogue, state map, test matrix) is the visual and UX source of truth for `web/`. |
+| Stack | The spec was written for Expo and React Native Web. We implement it on the **existing Vite + React 19 + MapLibre app** instead of rewriting: the map, offline PWA, sensitivity lab and test suite already work, and the judged deliverable is the web map. React Native primitives are translated to web components with the same names, props, test IDs and behaviour. |
+| Themes | Midnight Terrain (dark) is the default, Daylight GIS (light) is a toggle that is remembered. Tokens live in `web/src/index.css`; components use semantic classes, never raw hex. Low severity is **blue**, never green (green means done or healthy). |
+| Detector switch | The Result page offers Spectral (default), Learned (PyTorch trained, ONNX served) and Hybrid for the three optical demo scenes, precomputed by `scripts/export_detector_variants.py` into `web/public/demos/<id>/variants/<mode>/`. The Analyse page offers the same modes for live areas and uploads, enabled from `/health`. `deep` (BIT) is not offered in the UI: it is for 0.5 m RGB imagery and needs PyTorch on the server. |
+| Default stays spectral | On the no-change farmland scene the learned model alone raises about 12 times more polygons than the rules (263 against 22), so the UI says so next to the switch. |
+| Season-control wording | Presented as "farmland with no large new buildings"; 0.62 false alarms per km² is an upper bound (remaining detections may include real small changes such as road works). |
+| Still open | Pune clutter (minimum area 300 m² against 1,000 m², or hide the Low tier by default): left unchanged because it changes headline numbers; the Sensitivity lab already lets a viewer see the effect. |

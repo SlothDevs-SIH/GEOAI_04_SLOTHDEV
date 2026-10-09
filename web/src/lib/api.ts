@@ -53,11 +53,15 @@ export async function loadJobScene(jobId: string): Promise<SceneData> {
   return { meta, summary, filtered, base };
 }
 
+/** Detectors for Sentinel-2 pairs (`deep` BIT is for 0.5 m RGB imagery and is not offered on the Analyse screen). */
+export type DetectorMode = "spectral" | "learned" | "hybrid";
+
 export interface FetchRequest {
   bbox: [number, number, number, number]; // west, south, east, north
   before_date: string;
   after_date: string;
   preset: string;
+  mode?: DetectorMode; // default "spectral" on the server
   composite?: number; // median of this many clear images per date (1 = the single clearest image)
   persistence?: number; // 0 = off; 2 to 4 = a change must appear in this many later images
 }
@@ -87,10 +91,18 @@ export interface JobState {
   fetch?: { before: ScenePick; after: ScenePick };
 }
 
+/** FastAPI sends `detail` as a string for our errors and as a list of {msg} objects for request validation errors. */
+function detailText(d: unknown, fallback: string): string {
+  const detail = (d as { detail?: unknown } | null)?.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) return detail.map((x) => (x as { msg?: string })?.msg ?? String(x)).join("; ") || fallback;
+  return fallback;
+}
+
 async function postJSON<T>(path: string, body: unknown): Promise<T> {
   const r = await fetch(`${API_URL}${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error((d as { detail?: string }).detail ?? `${r.status} ${r.statusText}`);
+  if (!r.ok) throw new Error(detailText(d, `${r.status} ${r.statusText}`));
   return d as T;
 }
 
@@ -116,12 +128,58 @@ export async function loadMetrics(): Promise<Metrics> {
   }
 }
 
-export async function apiHealth(): Promise<boolean> {
-  if (!API_URL) return false;
+export interface ModeStatus {
+  available?: boolean;
+  reason?: string;
+  backend?: string;
+  threshold?: number | null;
+  note?: string;
+}
+
+/** The parts of GET /health the site uses. Every field is optional: an older server may omit some. */
+export interface ApiHealth {
+  ok?: boolean;
+  version?: string;
+  modes?: string[];                                   // available detectors, plus "radar"
+  models?: { learned?: boolean; deep?: boolean };
+  model_status?: Record<string, ModeStatus>;
+  default_mode?: string;
+  measured_default_method?: string | null;
+}
+
+/** The parsed /health body, or undefined when no API is configured or it does not answer (4 s limit). */
+export async function fetchHealth(timeoutMs = 4000): Promise<ApiHealth | undefined> {
+  if (!API_URL) return undefined;
   try {
-    const r = await fetch(`${API_URL}/health`, { signal: AbortSignal.timeout(4000) });
-    return r.ok;
+    const r = await fetch(`${API_URL}/health`, { signal: AbortSignal.timeout(timeoutMs) });
+    if (!r.ok) return undefined;
+    const body = await r.json().catch(() => ({}));
+    return (body && typeof body === "object" ? body : {}) as ApiHealth;
   } catch {
-    return false;
+    return undefined;
   }
+}
+
+export async function apiHealth(): Promise<boolean> {
+  return (await fetchHealth()) !== undefined;
+}
+
+export interface UploadRequest {
+  before?: File;
+  after: File;
+  preset: string;
+  mode: DetectorMode | "radar";
+}
+
+/** Start an analysis of uploaded GeoTIFFs (`/analyze`). Resolves with the job id; throws with the server's message. */
+export async function startAnalyze(req: UploadRequest): Promise<{ job_id: string }> {
+  const fd = new FormData();
+  if (req.before && req.mode !== "radar") fd.append("before", req.before);
+  fd.append("after", req.after);
+  fd.append("preset", req.preset);
+  fd.append("mode", req.mode);
+  const r = await fetch(`${API_URL}/analyze`, { method: "POST", body: fd });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(detailText(d, r.statusText || `HTTP ${r.status}`));
+  return d as { job_id: string };
 }

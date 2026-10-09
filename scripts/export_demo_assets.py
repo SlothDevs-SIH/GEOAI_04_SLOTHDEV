@@ -29,7 +29,7 @@ OPTICAL = {
                                 kind="encroachment", preset="encroachment"),
     "pune-hinjewadi": dict(name="Pune city edge (Hinjewadi)", event="Urban growth on the city edge",
                            kind="encroachment", preset="encroachment"),
-    "season-control": dict(name="Saswad farmland (season control)", event="False-alarm test: only crops changed",
+    "season-control": dict(name="Saswad farmland (season control)", event="False-alarm test: farmland with no large new buildings",
                            kind="control", preset="encroachment"),
 }
 RADAR_CHIP = "India_1018327"

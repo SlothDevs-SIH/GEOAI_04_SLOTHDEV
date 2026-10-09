@@ -1,0 +1,110 @@
+{
+ "mode": "learned",
+ "preset": "encroachment",
+ "raw_detections": 190,
+ "after_filter": 119,
+ "dropped": {
+  "cloud": 4,
+  "seasonal": 77,
+  "not_in_preset": 254,
+  "speckle": 1296,
+  "min_area": 0
+ },
+ "total_area_m2": 1927500.0,
+ "by_tier": {
+  "critical": 15,
+  "high": 30,
+  "medium": 38,
+  "low": 36
+ },
+ "by_type": {
+  "built_up_gain": 117,
+  "water_loss": 2
+ },
+ "runtime_s": 5.5,
+ "area_km2": 35.73,
+ "s_per_km2": 0.154,
+ "change_threshold": 0.85,
+ "impact": {
+  "changed_ha": 192.75,
+  "cropland_ha": 93.07,
+  "built_up_ha": 5.18,
+  "buildings": null,
+  "road_segments": null,
+  "sources": [
+   "ESA WorldCover 2021 v200 (10 m), CC-BY 4.0"
+  ],
+  "notes": [
+   "Land cover is ESA WorldCover 2021, newer than the before image (2019): land already cleared or under construction can be mislabelled as cropland, so treat cropland as an upper bound",
+   "Buildings and road segments need OpenStreetMap, which was not reachable when this result was built: shown as unknown, not zero"
+  ],
+  "cropland_reliability": "upper_bound"
+ },
+ "quality": {
+  "cloud_or_invalid_pct_before": 0.03,
+  "cloud_or_invalid_pct_after": 0.0,
+  "shift_px": [
+   0.1,
+   -0.4
+  ],
+  "pixel_m": 10.0,
+  "season_before": "winter",
+  "season_after": "winter",
+  "days_apart": 2165
+ },
+ "warnings": [],
+ "persistence": null,
+ "sources": [
+  "Copernicus Sentinel-2 L2A (ESA), via the Element84 Earth Search COG bucket"
+ ],
+ "limits": [
+  "Optical imagery cannot see through cloud; flagged areas with cloud are removed, not analysed.",
+  "Change type comes from spectral index rules (no training); check critical changes on the ground.",
+  "10 m pixels cannot resolve single small buildings or people.",
+  "Rivers, sandbars and lake edges move between dates and can be flagged as change; bare soil in dry regions can look like construction. Check flagged areas near water.",
+  "The learned model was trained on OSCD urban change (Sentinel-2, 2015 to 2018). On farmland with no real construction it can raise many more false alarms than the spectral rules; check results on the ground."
+ ],
+ "params": {
+  "mode": "auto",
+  "min_area_m2": 300.0,
+  "morph_kernel_px": 5,
+  "prob_threshold": 0.5,
+  "d_ndbi_built": 0.1,
+  "after_ndvi_max_built": 0.25,
+  "before_ndvi_max_built": 0.35,
+  "bare_ndvi_max": 0.25,
+  "sealed_swir_blue_max": 2.3,
+  "d_swir_blue_sealed": -0.1,
+  "d_ndvi_veg_loss": -0.2,
+  "before_ndvi_dense": 0.45,
+  "ndwi_water": 0.0,
+  "d_ndwi_water": 0.2,
+  "keep_types": [
+   "built_up_gain",
+   "water_loss"
+  ],
+  "review_band": [
+   0.5,
+   0.7
+  ],
+  "tiers": [
+   [
+    1000.0,
+    "critical"
+   ],
+   [
+    300.0,
+    "high"
+   ],
+   [
+    120.0,
+    "medium"
+   ],
+   [
+    0.0,
+    "low"
+   ]
+  ]
+ },
+ "subtitle": "Navi Mumbai International Airport site, Maharashtra | before 2019-01-13 | after 2024-12-17"
+}

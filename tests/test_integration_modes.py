@@ -220,3 +220,10 @@ def test_fetch_rejects_reversed_dates_before_starting_a_job():
     r = client.post("/fetch-s2", json=body)
     assert r.status_code == 400 and "earlier" in r.json()["detail"]
     assert client.post("/fetch-s2", json={**body, "after_date": "2025-02-01"}).status_code == 400
+
+
+def test_a_nul_byte_in_a_file_url_is_a_404_not_a_server_error():
+    """Regression (found by the system test against the Linux container): realpath raised ValueError, a 500 and a dropped connection."""
+    for url in ("/demos/navi-mumbai-airport/files/meta.json%00.png", "/demos/navi%00x/summary", "/jobs/abc%00/summary",
+                "/jobs/abc%00/files/meta.json"):
+        assert client.get(url).status_code == 404, url
