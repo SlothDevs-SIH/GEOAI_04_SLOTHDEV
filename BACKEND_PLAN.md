@@ -1,123 +1,147 @@
-# GEOAI 04 — Backend & Pipeline Plan
+# GEOAI 04: Backend, ML and Deployment Plan
 
-**What it is:** the change-detection engine (ingest → detect → filter → vectorise → attribute) plus a FastAPI service around it.
-**Folders:** `engine/` (pure Python pipeline, no web code) · `api/` (FastAPI) · `eval/` (metrics) · `demos/` (preloaded scenes)
-**Stack:** Python 3.11+ · Rasterio · NumPy · OpenCV · scikit-image · Shapely 2 · GeoPandas · pyproj · PyTorch (CPU) · FastAPI + Uvicorn · pystac-client · WeasyPrint
-**Starting point:** [`prototype/pipeline.py`](prototype/pipeline.py). It already runs end to end on real pairs (F1 0.93 on sample tiles, about 7 s on CPU for 11 tiles).
-**Master doc:** [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) · **Overview:** [`README.md`](README.md) · **Android app:** [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md)
+**What it is:** the change-detection engine (ingest → detect → filter → vectorise → attribute → impact) plus a FastAPI service around it, an ML track that **retrains a model on real Sentinel-2 change data**, an evaluation harness that produces the numbers we show judges, and the deployment recipe.
+**Folders:** `engine/` (pure Python pipeline, no web code) · `api/` (FastAPI) · `ml/` (data loaders, models, training, evaluation) · `eval/` (metric scripts + `results.json`) · `demos/` (preloaded scenes) · `tests/` · `scripts/`
+**Stack:** Python 3.11 · Rasterio · NumPy · OpenCV · scikit-image · Shapely 2 · GeoPandas · pyproj · PyTorch (CPU at serve time; GPU on Kaggle/Colab for training) · FastAPI + Uvicorn · pytest + ruff · Docker
+**Starting point:** [`prototype/pipeline.py`](prototype/pipeline.py) (runs end to end on LEVIR-CD pairs) and `engine/s2.py` + `engine/config.py` (Sentinel-2 scene search and AOI reads, written, not yet tested end to end).
+**Deadline:** project submission **10:00, 10 October 2026**. Hour-by-hour schedule: [`docs/TASK_SPLIT.md`](docs/TASK_SPLIT.md).
+**Related:** [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md) (the web app) · [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) (master doc) · [`README.md`](README.md)
+
+> **What changed from the earlier plan.** (1) The client is a **website**, not an Android app, because the official statement asks for an interactive split-view **web** map. (2) We now **retrain a model** on real labelled Sentinel-2 change data (OSCD) and report held-out numbers, instead of relying only on pretrained weights. (3) A new **impact** stage turns polygons into numbers a public official cares about. (4) The architecture is **static-first**: demo results are precomputed, so the deployed site always works even if the live backend is asleep.
 
 ---
 
 ## 1. The backend in one picture
 
 ```
-            ┌──────────────── engine/ (importable, testable, no FastAPI) ────────────────┐
-before.tif ─┤ ingest.py → change_spectral.py ┐                                           │
-after.tif  ─┤   (validate,  change_deep.py  ─┴→ filters.py → vectorise.py → attributes.py ├─→ result.gpkg / .geojson
-            │   resample,                        (season, SCL, morph,  (shapes, simplify)  (area, magnitude,  │    summary.json
-            │   hist-match,                       min-area, shift)                         centroid, type,    │    audit.json
-            │   shift check)                                                               reason, tier)      │
-            └────────────────────────────────────────────────────────────────────────────┘
-                                   ▲                                        │
-                         api/ (FastAPI: jobs, results, exports, review) ◀───┘ → Android app
+             ┌──────────────────── engine/ (importable, testable, no FastAPI) ─────────────────────┐
+before.tif ─┤ ingest.py ──► change_spectral.py ─┐                                                  │
+after.tif  ─┤ (validate,    change_learned.py  ─┼─► filters.py ─► vectorise.py ─► attributes.py ─► impact.py ─► export.py
+            │  resample,    change_deep.py     ─┘   (season, SCL,   (shapes,        (area, magnitude,   (ha flooded,     (GPKG, GeoJSON,
+            │  hist-match,                           morph, min-area)  simplify)       centroid, type,     buildings,       PDF, CSV/KML,
+            │  shift check)                                                            reason, tier)       cropland, roads)  audit.json)
+            └──────────────────────────────────────────────────────────────────────────────────────┘
+                              ▲                                              │
+                   api/ (FastAPI: demos, jobs, results, exports, review) ◀──┘ ──► web app (static demos + live API)
+
+   ml/  (train + evaluate)  ──► models/*.pt (weights)  ──► engine/change_learned.py
+   eval/ (metrics)          ──► eval/results.json      ──► GET /metrics and the Accuracy page
 ```
 
-**Rule:** `engine/` never imports from `api/`. Every stage is a pure function that takes arrays and returns arrays, so each one can be unit-tested and re-run from the CLI.
+**Rule:** `engine/` never imports from `api/`. Every stage is a pure function over arrays or GeoDataFrames, so each stage is unit-testable and re-runnable from the CLI.
 
 ---
 
-## 1a. Requirements coverage
+## 2. Requirements coverage
 
-| Requirement (master doc §2.3) | Module | Phase |
+Checked against the official GEOAI 04 text (`docs/PROJECT_PLAN.md` §2.1).
+
+| Official requirement | Module | Test / evidence |
 |---|---|---|
-| R1 Accept co-registered GeoTIFF pairs | `ingest.py` (check, resample, shift check) | 1 |
-| R2 Siamese model or spectral index | `change_deep.py`, `change_spectral.py`, mode routing | 1, 3 |
-| R3 Suppress false alarms | `filters.py` (seasonal rule, SCL), histogram match in `ingest.py` | 4 |
-| R4 Morphological clean-up | `filters.py` | 1 |
-| R5 Vectorise with Rasterio | `vectorise.py` | 1 |
-| R6 Area, magnitude, centroid | `attributes.py` | 1 |
-| R7 Severity tiers | `attributes.py` + `config.py` | 4 |
-| R8 Data for the split-view map | `/preview`, `/result`, `/crop` | 2 |
-| R9 GIS-ready export | `export.py` (GPKG, GeoJSON) | 1, 5 |
-| Measured accuracy (winning feature) | `eval/` → `GET /metrics` | 3, 4 |
-
-> Re-check this table once the official GEOAI 04 text is pasted into the master doc.
+| Input: two co-registered orthorectified GeoTIFF tiles over the same bounding box | `ingest.py` | `test_ingest.py` |
+| Siamese CNN, pretrained ViT feature difference, **or** spectral change index (NDVI change, optionally with a lightweight U-Net) | `change_spectral.py`, `change_learned.py` (our lightweight Siamese U-Net), `change_deep.py` (BIT) | `eval/` on OSCD and LEVIR-CD |
+| Separate critical change from false alarms (seasonal vegetation, sun angle) | `filters.py`, histogram match in `ingest.py` | `eval/false_alarms.py`, `test_filters.py` |
+| Morphological filtering to prune noise | `filters.py` | `test_filters.py` |
+| Contour-to-polygon vectorisation with Rasterio | `vectorise.py` | `test_vectorise.py` |
+| Attributed polygons: area (m²), change magnitude, centroid | `attributes.py` | `test_attributes.py` |
+| GIS-ready GeoPackage / GeoJSON categorised into severity tiers | `export.py`, tiers in `config.py` | opens in QGIS (manual check, screenshot kept) |
+| Interactive before/after split-view web map | API + web app | Playwright smoke test |
 
 ---
 
-## 2. Modules and what each does
+## 3. Modules
 
-| Module | Input → Output | Key details |
+| Module | Input → output | Key details |
 |---|---|---|
-| `engine/ingest.py` | two paths → `Pair(a, b, transform, crs, meta, warnings)` | Check CRS/bounds/resolution; `rasterio.warp.reproject` after → before grid; `match_histograms`; windowed reads for large scenes; **sub-pixel shift check** with `phase_cross_correlation`, warning if > 1 px (A5) |
-| `engine/change_spectral.py` | Sentinel-2 bands → `magnitude`, `mask`, `type_map` | NDVI/NDBI/NDWI per date, differences, change-vector magnitude, **Otsu** per index; `type_map` = built-up gain / vegetation loss / water gain |
-| `engine/change_deep.py` | RGB pair → `prob`, `mask` | BIT (LEVIR-CD weights) loaded once at startup; 256 px tiles **with overlap** + averaged stitching; threshold 0.5; the torchvision shim + `safe_globals` loader from the prototype |
-| `engine/filters.py` | mask (+ indices, SCL) → clean mask + `drop_counts` | Seasonal-vegetation rule (NDVI changed, NDBI didn't → drop); SCL cloud/shadow mask; morph open/close (5×5 ellipse); min-area; counts of what each rule removed |
-| `engine/vectorise.py` | clean mask → polygons | `rasterio.features.shapes`, simplify ≈ 1 px; optional **watershed split** of touching buildings (A7) |
-| `engine/attributes.py` | polygons + rasters → GeoDataFrame | Area in **local UTM**; mean magnitude; centroid (WGS84); `change_type`; `reason` string; `score = area × magnitude`; `tier`; `confidence`; `needs_review`; `review_status = pending` |
-| `engine/context.py` *(additions)* | GeoDataFrame + layers → enriched GeoDataFrame | Permit join → `permit_status` (A1); no-build-zone join → tier +1 and reason (A2); ward/village name (A3) |
-| `engine/export.py` | GeoDataFrame → files | GPKG (UTM), GeoJSON (WGS84), CSV/KML field pack (A4), PDF report, `audit.json` (A10) |
-| `engine/run.py` | CLI: `python -m engine.run before.tif after.tif --mode auto --out out/` | Runs the whole chain; the API calls the same function |
-| `engine/config.py` | | Tier thresholds, min area, kernel size, prob threshold, presets (A9). Nothing hardcoded elsewhere |
+| `engine/ingest.py` | two paths → `Pair(a, b, transform, crs, meta, warnings)` | Check CRS, bounds, resolution; `rasterio.warp.reproject` after → before grid; `match_histograms`; windowed reads; **sub-pixel shift check** (`phase_cross_correlation`), warn if > 1 px |
+| `engine/s2.py` *(exists)* | AOI + months → Sentinel-2 stacks | Scene search through the public COG bucket, AOI window reads (B02, B03, B04, B08, B11, SCL), DN-offset handling for baseline ≥ 04.00. **Test it on a normal laptop first.** The code contains sandbox-specific paths |
+| `engine/change_spectral.py` | S2 bands → `magnitude`, `mask`, `type_map` | NDVI / NDBI / NDWI per date, differences, change-vector magnitude, **Otsu**; types: built-up gain, vegetation loss, water gain / loss. Thresholds live in `config.Params` |
+| `engine/change_learned.py` | S2 bands → `prob`, `mask` | **Our retrained model (see §5).** Loaded once at startup; 128 px tiles with overlap, averaged stitching; threshold chosen on the validation cities |
+| `engine/change_deep.py` | RGB pair (VHR) → `prob`, `mask` | BIT with LEVIR-CD weights, ported from the prototype (torchvision shim + `safe_globals` loader). Only for ≤ 2 m RGB |
+| `engine/filters.py` | mask (+ indices, SCL) → clean mask + `drop_counts` | Seasonal-vegetation rule (NDVI changed, NDBI did not → drop); SCL cloud / shadow mask; morphological open / close; min-area; counts what each rule removed |
+| `engine/vectorise.py` | clean mask → polygons | `rasterio.features.shapes`, simplify ≈ 1 px; optional watershed split of touching buildings |
+| `engine/attributes.py` | polygons + rasters → GeoDataFrame | Area in **local UTM**; mean magnitude; centroid (WGS84); `change_type`; `reason`; `score = area × magnitude`; `tier`; `confidence`; `needs_review`; `review_status` |
+| `engine/impact.py` | GeoDataFrame + context layers → impact summary | See §4. Hectares changed, hectares of **cropland** affected, **buildings** and **road segments** touched, per tier |
+| `engine/context.py` *(stretch)* | GeoDataFrame + layers → enriched | Permit join (`permit_status`), no-build-zone escalation, ward name |
+| `engine/export.py` | GeoDataFrame → files | GPKG (UTM), GeoJSON (WGS84), CSV/KML field pack, one-page PDF, `audit.json` |
+| `engine/run.py` | CLI | `python -m engine.run before.tif after.tif --mode auto --out out/`; the API calls the same function |
+| `engine/config.py` *(exists)* | | Tier thresholds, min area, kernel size, presets. Nothing hard-coded elsewhere |
 
-### Confidence
+### Confidence, reasons, tiers
+- `confidence`: mean model probability inside the polygon (learned / deep) or the polygon's mean change-vector magnitude as a percentile of the scene (spectral). Mid-range confidence → `needs_review = true`.
+- `reason` is built from what actually fired, e.g. `"water index rose (+0.42), vegetation fell (−0.31)"` or `"model confidence 0.91 over 1,089 m²"`.
+- Tiers use `score = area_m2 × magnitude`: critical ≥ 1000, high ≥ 300, medium ≥ 120, else low. **These thresholds are guesses**: tune them on the demo scenes and write the final values in `config.py`.
 
-`confidence` is the mean model probability inside the polygon (deep mode), or the polygon's mean change-vector magnitude as a percentile of the scene (spectral mode). Polygons with confidence between 0.5 and 0.7 get `needs_review = true` (A8).
-
-### Reason strings (explainability)
-
-`attributes.py` builds the reason from what actually fired, for example:
-- spectral: `"built-up index rose (+0.21), vegetation fell (−0.34)"`
-- deep: `"model confidence 0.91 over 1,089 m²"`
-- context: `"… · inside lake buffer (50 m)"`
-
-### Tiers (defaults; preset-configurable)
-
-| Tier | `score = area_m2 × magnitude` |
-|---|---|
-| critical | ≥ 1000 |
-| high | 300–999 |
-| medium | 120–299 |
-| low | < 120 |
-
----
-
-## 3. Mode selection (`--mode auto`)
+### Mode selection (`--mode auto`)
 
 | Condition | Mode |
 |---|---|
-| ≥ 4 bands incl. NIR/SWIR **and** pixel size ≥ 5 m | `spectral` |
-| 3-band RGB **and** pixel size ≤ 2 m | `deep` |
-| Anything else | Reject with a clear message (never run a model on the wrong resolution) |
+| ≥ 4 bands incl. NIR/SWIR **and** pixel size ≥ 5 m | `learned` if `eval/results.json` shows it beating spectral on the OSCD test cities, else `spectral` |
+| 3-band RGB **and** pixel size ≤ 2 m | `deep` (BIT) |
+| Anything else | Reject with a clear message (never run a model at the wrong resolution) |
 
 ---
 
-## 4. Data and model setup
+## 4. Impact stage: turning polygons into numbers
 
-- **BIT weights:** `models/BIT_LEVIR/best_ckpt.pt` (from the BIT_CD repo). Loaded once per process.
-- **Demo scenes** (`demos/<name>/`): `before.tif`, `after.tif`, `meta.json` (dates, place, source), prerendered previews, and a cached result so the demo never waits.
-- **Sentinel-2 fetch** (A6, `engine/fetch_s2.py`): `pystac-client` on Earth Search, filtered by AOI and date ±15 days, sorted by `eo:cloud_cover`. Reads only the AOI window from the COGs (B02, B03, B04, B08, B11, SCL), then resamples B11/SCL to 10 m.
-- **Context layers:** OSM water bodies, parks/forest and admin boundaries for the demo areas, saved as GPKG in `demos/context/`.
+The point of the disaster framing is that officials act on **quantities**, so every run also produces an `impact` block.
+
+| Quantity | Source | Notes |
+|---|---|---|
+| Area changed (ha), by tier and type | the polygons | Always available |
+| **Cropland affected (ha)** | **ESA WorldCover 2021** (10 m, class 40), windowed read from the open COG bucket | Ties the work to farmers; cache a crop per demo AOI |
+| **Buildings touched** | OpenStreetMap building footprints (Overpass), intersected with the polygons | Pre-fetch and cache as GPKG for each demo AOI so deployment never depends on a live Overpass call |
+| **Road segments touched** | OSM roads | Same caching rule |
+| Population (stretch) | WorldPop 100 m raster | Only if time remains |
+
+Honesty rules: label OSM and WorldCover figures as **estimates from open data**; show the source and date next to each number; never present synthetic or placeholder values as real.
 
 ---
 
-## 5. API contract (FastAPI, `api/main.py`)
+## 5. ML track: retrain on real data
+
+**Why:** the pretrained BIT model was trained on 0.5 m RGB building change (LEVIR-CD). It does not transfer to 10 m Sentinel-2, so for the disaster and encroachment demos we currently rely on thresholded spectral indices. Training on **OSCD** (Onera Satellite Change Detection: Sentinel-2 pairs with pixel-level urban-change labels; official split of 14 training and 10 test cities) gives us a learned model on the right resolution and an honest held-out score.
+
+| Step | What | Output |
+|---|---|---|
+| **M0** | Download OSCD (Kaggle: `soumikrakshit/onera-satellite-change-detection-dataset`). Write `ml/oscd_data.py`: reads the 13-band pairs, normalises per band, makes 128 px patches with stride, random flips / 90° rotations, and **holds out 3 training cities as validation** | Loader + a unit test on shapes |
+| **M1** | **Baselines on the 10 test cities:** (a) our spectral mode; (b) naive differencing; (c) pretrained BIT on RGB bands without training | `eval/oscd_baselines.json`: precision, recall, F1, IoU on the change class |
+| **M2a** | Train a **lightweight Siamese U-Net** (FC-Siam-diff style, ~1 to 2 M parameters) on the 13 bands (or the 10 usable bands), loss = weighted BCE + Dice, AdamW, cosine schedule, early stopping on the validation cities, on a free Kaggle or Colab GPU | `models/siamunet_oscd.pt` |
+| **M2b** *(parallel if a second person has GPU time)* | **Fine-tune BIT** on OSCD RGB patches starting from the LEVIR weights | `models/bit_oscd.pt` |
+| **M3 (decision gate)** | Pick the winner **by validation F1, then report once on the test cities**. Choose the probability threshold on validation, never on test. If neither beats the spectral baseline on test, **ship spectral as default and report the learned result honestly** | `eval/results.json` |
+| **M4** *(stretch)* | Flood water model check: NDWI + Otsu water IoU on a labelled flood set (Sen1Floods11 hand-labelled Sentinel-2 chips) | Number for the flood claim |
+
+**Rules for the numbers we show judges:**
+- Test cities are touched **once**. Everything is tuned on validation.
+- OSCD is small and hard: published F1 values are modest. We report what we measure and do not compare against LEVIR numbers, which are on an easier task.
+- Always show **spectral vs learned vs naive** side by side, plus false alarms per km² with the filter off and on.
+- Record seed, commit hash, training time and hardware in `eval/results.json`.
+- Full-test-split LEVIR-CD for BIT (`eval/levir_eval.py`) is optional. If we skip it, quote the published value and label it **published, not reproduced**.
+
+**Training budget (rough):** 1 to 2 hours of GPU for M2a. If the first run is poor, check normalisation, the positive-class weight and patch sampling before changing the architecture.
+
+---
+
+## 6. API contract (FastAPI, `api/main.py`)
+
+The web app works **without** this API for the demo scenes (see §8). The API adds live analysis, uploads and exports.
 
 | Method | Path | Request | Response |
 |---|---|---|---|
-| `GET` | `/health` | | `{ ok, model_loaded, version }` |
-| `GET` | `/metrics` | | Contents of `eval/results.json`: LEVIR-CD test F1/IoU/P/R, false alarms per km² with filter off/on, no-change result, seconds per km² per mode |
-| `GET` | `/demos` | | `[{ id, name, place, before_date, after_date, mode }]` |
-| `POST` | `/analyze` | multipart `before`, `after` **or** `demo_id`; `mode`, `preset`, `min_area_m2`; optional `permits`, `zones` files | `{ job_id }` |
-| `GET` | `/jobs/{id}` | | `{ status: queued|running|done|error, stage, progress 0–1, warnings[], error? }` |
-| `GET` | `/jobs/{id}/result` | `filtered=true|false` | GeoJSON FeatureCollection (WGS84) + `summary` |
-| `GET` | `/jobs/{id}/preview/{before|after}` | | PNG/WebP + bounds |
-| `GET` | `/jobs/{id}/crop/{fid}/{before|after}` | | PNG crop of one polygon |
-| `PATCH` | `/jobs/{id}/features/{fid}` | `{ review_status }` | Updated feature |
-| `GET` | `/jobs/{id}/export` | `format=gpkg|geojson|pdf|csv|kml`, `confirmed_only`, `lang=en|en-hi` (PDF only, A11) | File |
-| `POST` | `/fetch-s2` *(A6)* | `{ aoi (GeoJSON), date_before, date_after, preview_only? }` | `preview_only=true`: the chosen scenes `[{ date, cloud_pct }]`; otherwise `{ job_id }` (then same flow) |
+| `GET` | `/health` | | `{ ok, models: { learned, deep }, version }` |
+| `GET` | `/metrics` | | Contents of `eval/results.json` |
+| `GET` | `/demos` | | `[{ id, name, place, event, before_date, after_date, mode, bounds }]` |
+| `GET` | `/demos/{id}/result` | `filtered=true\|false` | GeoJSON FeatureCollection (WGS84) |
+| `GET` | `/demos/{id}/summary` | | `summary` + `impact` |
+| `GET` | `/demos/{id}/preview/{before\|after}` | | WebP + bounds |
+| `POST` | `/analyze` | multipart `before`, `after` **or** `demo_id`; `mode`, `preset`, `min_area_m2` | `{ job_id }` |
+| `POST` | `/fetch-s2` *(stretch)* | `{ aoi (GeoJSON), date_before, date_after }` | `{ job_id }` |
+| `GET` | `/jobs/{id}` | | `{ status, stage, progress, warnings[], error? }` |
+| `GET` | `/jobs/{id}/result` · `/summary` · `/preview/{side}` · `/crop/{fid}/{side}` | | Same shapes as the demo routes |
+| `PATCH` | `/jobs/{id}/features/{fid}` | `{ review_status }` | Updated feature (idempotent) |
+| `GET` | `/jobs/{id}/export` | `format=gpkg\|geojson\|pdf\|csv\|kml`, `confirmed_only` | File |
 
-**`summary` shape:**
+**`summary` shape** (numbers illustrative):
 ```json
 {
   "raw_detections": 412, "after_filter": 37,
@@ -126,87 +150,102 @@ after.tif  ─┤   (validate,  change_deep.py  ─┴→ filters.py → vectori
   "by_tier": { "critical": 2, "high": 8, "medium": 17, "low": 10 },
   "by_type": { "built_up_gain": 30, "vegetation_loss": 5, "water_gain": 2 },
   "mode": "spectral", "runtime_s": 18.4, "area_km2": 4.2, "s_per_km2": 4.4,
+  "impact": { "cropland_ha": 0.0, "buildings": 0, "road_segments": 0, "sources": ["ESA WorldCover 2021", "OSM 2026-10"] },
   "warnings": []
 }
 ```
-_Numbers are illustrative._
 
-**Feature properties:** `id, area_m2, magnitude, confidence, needs_review, centroid_lat, centroid_lon, change_type, reason, score, tier, review_status` (+ `permit_status, zone, ward` when context layers are given).
+**Feature properties:** `id, area_m2, magnitude, confidence, needs_review, centroid_lat, centroid_lon, change_type, reason, score, tier, review_status`.
 
-**Jobs:** in-process background tasks (`BackgroundTasks` / a thread pool), with results under `runs/<job_id>/`. That is enough for a hackathon. No database: job state is a JSON file per job.
-
-**Serving a mobile client (the Android app):**
-- **Small payloads.** Previews are WebP capped at 2048 px on the long side, with bounds in the response. Crops are ≤ 512 px. GeoJSON coordinates are rounded to 6 decimals, and responses are gzip-compressed (`GZipMiddleware`).
-- **Raw layer cap.** The `filtered=false` layer can hold thousands of noise blobs. Simplify it harder and cap it at the 2,000 largest, while reporting the true count in `summary.raw_detections`, so the toggle stays instant on a phone.
-- **Resumable jobs.** Job state lives on disk, so the app can reopen and poll the same `job_id` after being closed.
-- **Idempotent review.** `PATCH` with the same status twice is a no-op, so the app's offline review queue can safely retry.
-- **Upload limit** configurable (default 500 MB); temporary files deleted after the export window. CORS open only if a web client is added later.
+**Jobs:** in-process thread pool, state as one JSON file per job under `runs/<job_id>/`, no database. CORS allow-list from an environment variable (`ALLOWED_ORIGINS`) so the Vercel site can call the Space. Responses use `GZipMiddleware`; the `filtered=false` layer is simplified and capped at the 2,000 largest blobs while the true count is reported. Upload limit 200 MB by default.
 
 ---
 
-## 6. Build phases
+## 7. Tests
 
-### Phase 1: Spectral mode end to end (CLI)
-- **Implementation:** `ingest.py` + `change_spectral.py` + `filters.py` (morph, min-area) + `vectorise.py` + `attributes.py` + `export.py` (GeoJSON/GPKG) on **one Sentinel-2 pair**.
-- **Done when:** the GPKG opens correctly in QGIS, with the right CRS, areas and attributes.
+Run `ruff check .` and `pytest -m "not slow"` locally and in CI on every push.
 
-### Phase 2: API skeleton + demo scenes
-- **Implementation:** `/health`, `/demos`, `/analyze`, `/jobs/{id}`, `/jobs/{id}/result`, `/preview`. Two demo scenes with cached results.
-- **Done when:** the Android app switches from its bundled demo data to the real API by changing the backend URL in Settings.
-
-### Phase 3: Deep mode
-- **Implementation:** port `prototype/pipeline.py`'s BIT loader and inference into `change_deep.py` (load once, tiled with overlap); `mode=auto` routing.
-- **Eval:** `eval/levir_eval.py` on the **full LEVIR-CD test split**, reporting P/R/F1/IoU and seconds per km² in `eval/results.md` and `eval/results.json` (served by `GET /metrics`).
-
-### Phase 4: False-alarm suppression + tiers
-- **Implementation:** seasonal rule, SCL mask, drop counters, `filtered=false` raw layer, reason strings, tiers from `config.py`, shift check (A5).
-- **Eval:** `eval/false_alarms.py` reports raw vs filtered detections per km² on a matched-season pair, a mismatched-season pair and an **unseen no-change pair**.
-
-### Phase 5: Review + exports
-- **Implementation:** `PATCH` review, `confirmed_only` export, PDF report (map snapshot, totals, top 10), field pack CSV/KML with Maps links (A4), `audit.json` (A10).
-
-### Phase 6: Additions (pick by priority)
-- **A6** S2 fetch (the main phone input; move it earlier if the app depends on it) → **A2** no-build zones → **A1** permits → **A3** wards → **A7** watershed split → **A9** presets → **A11** bilingual PDF (stretch) → **A12** Sentinel-1 radar flood mode (stretch; verify data access first).
-
----
-
-## 7. Tests (`tests/`, pytest)
-
-| Test | Checks |
+| File | Checks |
 |---|---|
-| `test_ingest.py` | Mismatched CRS gets resampled; identical grids pass untouched; a synthetic 2 px shift is detected |
-| `test_spectral.py` | A synthetic pair with a known built-up square gives `built_up_gain` at that location |
-| `test_filters.py` | Specks under the min area are removed; an NDVI-only change is dropped by the seasonal rule |
-| `test_vectorise.py` | A known square mask gives one polygon with the right area in m² (±1 px) |
+| `test_ingest.py` | A mismatched CRS is reprojected; identical grids pass untouched; a synthetic 2 px shift is detected |
+| `test_spectral.py` | A synthetic pair with a known built-up square gives `built_up_gain` at that location; a flooded square gives `water_gain` |
+| `test_filters.py` | Specks under the minimum area are removed; an NDVI-only change is dropped by the seasonal rule; cloud pixels are masked |
+| `test_vectorise.py` | A known square mask gives one polygon with the right area in m² (± 1 pixel) |
 | `test_attributes.py` | Score and tier boundaries; centroid round-trips WGS84 ↔ UTM |
-| `test_api.py` | The demo job runs to `done`; result is valid GeoJSON; export formats download |
-| `test_deep.py` *(slow, marked)* | BIT loads; a sample tile's F1 is within tolerance of the prototype's |
+| `test_impact.py` | A polygon over a known cropland patch and a known building footprint returns the expected hectares and counts |
+| `test_oscd_data.py` | Loader shapes, normalisation and that validation cities never appear in train |
+| `test_learned.py` *(slow)* | Weights load; a small fixture patch gives a probability map in [0, 1]; F1 on a fixture is within tolerance |
+| `test_deep.py` *(slow)* | BIT loads; a sample tile's F1 is within tolerance of the prototype |
+| `test_api.py` | `/health`; a demo job runs to `done`; result is valid GeoJSON with all required properties; each export format downloads; review `PATCH` is idempotent |
+| `test_e2e_cli.py` | `python -m engine.run` on a tiny synthetic pair produces GPKG + GeoJSON + summary + audit |
 
-Run `ruff check` + `pytest -m "not slow"` in CI on every push.
-
----
-
-## 8. Performance and limits
-
-- Load the model once. Use windowed reads and tiled inference so memory is bounded by tile size, not scene size.
-- Target under 2 minutes for a demo scene on a laptop CPU. Measure and report seconds per km² per mode.
-- The deep model is for buildings only. Floods and vegetation go through spectral mode (state this in the UI and the pitch).
-- LEVIR-CD has no coordinates, so use it **for metrics only**. Live demos use real GeoTIFFs.
+CI (`.github/workflows/ci.yml`): Python 3.11, install CPU torch, `ruff`, `pytest -m "not slow"`, then the web job from `FRONTEND_PLAN.md`.
 
 ---
 
-## 9. Hosting
+## 8. Static-first demo data
 
-- **Demo:** run on the presenter's laptop with `uvicorn api.main:app --host 0.0.0.0 --port 8000`, with demo scenes and weights on disk. The phone connects over the same Wi-Fi or the phone's hotspot (`http://<laptop-ip>:8000`, set in the app's Settings). If even that fails, the app's bundled demo mode still runs the demo.
-- **Optional deploy:** a Docker image (`python:3.11-slim` + GDAL wheels via rasterio) on Render, Railway or a VM. A CPU instance is enough for the demo scenes.
+For each demo scene the script `scripts/export_demo_assets.py` runs the engine once and writes:
+
+```
+web/public/demos/<id>/
+  meta.json          place, event, dates, scene ids, cloud %, source, mode
+  before.webp  after.webp   (≤ 2048 px long side) + bounds.json
+  result_filtered.geojson   result_raw.geojson
+  summary.json       counts, drop counts, tiers, types, impact block
+  crops/<fid>_before.webp  <fid>_after.webp   (top 20 changes)
+```
+
+The web app reads these static files directly. The live API is an **optional extra**: if the Space is asleep, over quota or unreachable, the demo still works. The `/demos/*` API routes serve the same files.
+
+**Demo scenes (decide in the first two hours; verify with `engine/s2.py` that the area is clear of cloud):**
+
+| Scene | Purpose | Notes |
+|---|---|---|
+| **Flood / disaster event** | Main story: ranked flood polygons, hectares of cropland affected, buildings and roads touched | Candidates: a recent flood in India or a clear-sky event elsewhere. **Pick by the post-event AOI cloud percentage (< 5 %) and a before date from the same season.** Floods during the monsoon are often cloudy, so test several |
+| **Urban encroachment** | Second story: new construction on a city edge | `pune-hinjewadi` and `navi-mumbai-airport` are already defined in `scripts/fetch_demo_scenes.py` |
+| **Season control** | False-alarm proof: nothing real changed, only crops and lighting | `season-control` (Saswad) is defined; also try an **unseen** no-change pair |
 
 ---
 
-## 10. Definition of done
+## 9. Deployment
 
-- [ ] `python -m engine.run` produces GPKG + GeoJSON + summary + audit for both modes.
+| Piece | Where | How |
+|---|---|---|
+| **Web app** | **Vercel** (free) | Connect the repo, root directory `web/`, build `npm run build`, env `VITE_API_URL`. Static demo data ships inside the build |
+| **API** | **Hugging Face Spaces** (Docker SDK). **Check first:** the official docs and July 2026 forum posts say Docker Spaces may now need a paid plan, so confirm in the Space creation dialog before building around it (see `docs/TECH_OPTIONS.md` §2, B2). If it is paid, use the fallbacks below or the browser-first design | `Dockerfile` based on `python:3.11-slim`, CPU torch wheels, `uvicorn api.main:app --host 0.0.0.0 --port 7860`. Weights and cropped demo TIFFs live in the Space (Git LFS) or are downloaded in the Dockerfile from a GitHub Release |
+| Fallback API | Render or a laptop with a tunnel | Render's free tier has about 512 MB RAM, which is too small for torch. Use it only for spectral mode |
+
+**Rules:**
+1. **Deploy a skeleton by the first checkpoint, and redeploy often.** Do not leave deployment to the last hours.
+2. The deployed demo must work with the backend **off** (static-first).
+3. `/health` is the Space's health check; add a cold-start note in the UI ("first live analysis can take about a minute").
+4. No secrets in the repo. Use `.env` locally and the host's secret store in production. `.env.example` is committed.
+5. Keep large files out of git: weights and TIFFs via LFS or release assets, and reflect that in `.gitignore`.
+
+---
+
+## 10. Build phases (mapped to clock times in `docs/TASK_SPLIT.md`)
+
+| Phase | Deliverable | Done when |
+|---|---|---|
+| **B1** | Spectral mode end to end on one Sentinel-2 pair, `engine.run` CLI, GPKG + GeoJSON | The GPKG opens in QGIS with the right CRS and attributes |
+| **B2** | `export_demo_assets.py` produces the static demo folder for two scenes; API skeleton (`/health`, `/demos`, `/analyze`, `/jobs`) | The web app renders a demo from the static folder |
+| **B3** | False-alarm rules, drop counts, raw and filtered layers, tiers, impact block | The counter shows raw → filtered; the no-change pair gives about 0 polygons |
+| **B4** | ML: OSCD loader, baselines, trained model, decision gate, `eval/results.json` | Numbers are generated by one command and served by `/metrics` |
+| **B5** | Live `/analyze` with `learned` and `deep` modes, review `PATCH`, exports (GPKG, GeoJSON, PDF, CSV/KML), `audit.json` | Every endpoint in §6 passes `test_api.py` |
+| **B6** | Dockerfile, Space deploy, CORS, health check, CI green | The Vercel site calls the Space successfully |
+| **B7** *(stretch)* | `/fetch-s2` area + dates, no-build zones, permits, Sentinel-1 radar flood mode | Only if everything above is green |
+
+---
+
+## 11. Definition of done
+
+- [ ] `python -m engine.run` produces GPKG + GeoJSON + summary + audit for every mode that ships.
 - [ ] Every polygon has area, magnitude, centroid, type, reason, score and tier.
-- [ ] The raw vs filtered layers and drop counts are returned; the no-change pair gives ~0 polygons.
-- [ ] Full-test-split LEVIR-CD metrics and speed are recorded in `eval/results.md`.
-- [ ] Every endpoint in §5 works with the Android app (including `/metrics`); exports open in QGIS / QField.
-- [ ] `pytest -m "not slow"` and `ruff` are green in CI.
+- [ ] Raw vs filtered layers and drop counts are produced; the unseen no-change pair gives about 0 polygons.
+- [ ] `eval/results.json` holds held-out OSCD results for spectral, naive and the learned model, with seed and commit, and the API serves it.
+- [ ] The impact block is filled for the flood scene, with sources named.
+- [ ] `ruff` and `pytest -m "not slow"` are green in CI; slow tests were run once locally and the result noted in the README.
+- [ ] The API is live on a public URL and the deployed web app works with and without it.
+- [ ] The GPKG opens in QGIS (screenshot saved in `docs/`).

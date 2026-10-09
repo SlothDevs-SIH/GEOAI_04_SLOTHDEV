@@ -2,7 +2,9 @@
 
 **FUSION 2026 | GeoAI track | Problem statement GEOAI 04 | Team Slothdev**
 
-> Upload a "before" and an "after" image of the same place. Within a minute or two, get a map of what actually changed (new buildings, vegetation loss, flooding), with seasonal and lighting noise filtered out. Each change is ranked by how much it matters and explained in one line, and the whole layer exports as a file that opens in QGIS.
+> Open a "before" and an "after" image of the same place, or upload your own pair. Within a minute or two, get a **web map** of what actually changed (new buildings, vegetation loss, flooding), with seasonal and lighting noise filtered out. Each change is ranked by how much it matters, explained in one line, and counted in an impact summary. The whole layer exports as a file that opens in QGIS.
+
+> **Revision (9 Oct 2026, 12:30).** The product is now a **website** (React + MapLibre on Vercel) backed by a FastAPI service on a Hugging Face Space, not an Android app, because the official statement asks for an interactive split-view **web** map. We also **retrain a model on OSCD** (real Sentinel-2 change labels) and report held-out numbers. Where this document still says Android, Kotlin or phone app, read it as the web app: the authoritative plans are [`../FRONTEND_PLAN.md`](../FRONTEND_PLAN.md), [`../BACKEND_PLAN.md`](../BACKEND_PLAN.md) and [`TASK_SPLIT.md`](TASK_SPLIT.md) (hour-by-hour schedule to the 10:00, 10 Oct submission).
 
 ---
 
@@ -46,7 +48,7 @@ This document is built from the team's planning conversation about GEOAI 04 (the
 - what the winning end product should look like and do
 - a worked example, where the pipeline ran on real before/after image pairs and produced measured results
 
-**The product is an Android app** (Kotlin + Jetpack Compose + MapLibre Android) backed by a Python/FastAPI processing service. The build is split into two plan files: [`FRONTEND_PLAN.md`](../FRONTEND_PLAN.md) (the Android app) and [`BACKEND_PLAN.md`](../BACKEND_PLAN.md) (pipeline + API).
+**The product is a web app** (React + Vite + MapLibre GL, deployed on Vercel) backed by a Python/FastAPI processing service (Hugging Face Space). The build is split into two plan files: [`FRONTEND_PLAN.md`](../FRONTEND_PLAN.md) (the web app) and [`BACKEND_PLAN.md`](../BACKEND_PLAN.md) (pipeline, ML track, API, deployment), with the schedule in [`TASK_SPLIT.md`](TASK_SPLIT.md).
 
 Most sections restate and expand that plan. These go beyond it:
 
@@ -62,7 +64,19 @@ Most sections restate and expand that plan. These go beyond it:
 
 ### 2.1 Official statement
 
-> _Paste the official FUSION 2026 GEOAI 04 text here (title, background, expected solution, deliverables, evaluation criteria)._
+> **GEOAI 04: Bi-Temporal Satellite Change Detection for Rapid Urban Encroachment & Disaster Impact**
+>
+> **Problem statement.** Satellite data providers make pre- and post-event imagery available within hours of an event, but manual visual inspection across wide swaths of land creates operational bottlenecks. Emergency agencies and urban planning authorities need automated tooling to rapidly cross-reference "Before" and "After" imagery of an area and separate critical structural / land-cover changes from false alarms (such as seasonal vegetation shifts or sun-angle variations). The challenge is to create an automated change-intelligence engine that accepts co-registered bi-temporal satellite/aerial tiles and extracts actionable change polygons.
+>
+> **Expected solution.**
+> - **Input:** two co-registered orthorectified GeoTIFF image tiles covering the same geographic bounding box (e.g. open Sentinel-2, Planet or OpenAerialMap pre/post-disaster data).
+> - **AI task:** pixel-wise or feature-wise difference mapping using a dual-branch Siamese CNN, a pretrained Vision Transformer feature difference, or a spectral change index (e.g. NDVI change thresholded with a lightweight U-Net).
+> - **Geospatial extraction:** apply morphological filtering to prune noise, run contour-to-polygon vectorisation using Rasterio, and generate attributed change polygons (area in m², change magnitude, centroid coordinate).
+> - **Output:** a GIS-ready GeoPackage / GeoJSON layer categorised into severity tiers, overlaid on an interactive split-view (before/after) web map.
+>
+> **Dataset / reference:** LEVIR-CD (<https://justchenhao.github.io/LEVIR/>) and Onera Satellite Change Detection (<https://www.kaggle.com/datasets/soumikrakshit/onera-satellite-change-detection-dataset>).
+>
+> _Source: FUSION 2026 GeoAI problem statements PDF. The judging rubric was not in the PDF: paste it here when the organisers share it (see `TASK_SPLIT.md` §5)._
 
 ### 2.2 The problem in our words
 
@@ -103,21 +117,21 @@ From the expected-solution points we planned against:
 | **Forest and environment departments** | Spot clearing, mining scars and loss of green cover in protected zones |
 | **Revenue and land-records departments** | Evidence of land-use change on specific parcels |
 | **GIS analysts** (the hands-on user in all of the above) | Polygons they can open in QGIS or ArcGIS, with attributes, few false alarms, and a reason for every detection |
-| **Field verification teams** | The exact location of each change, with directions, on a phone |
+| **Field verification teams** | The exact location of each change, with a directions link, on a phone browser |
 | **Researchers, NGOs, journalists** | Reproducible, explainable change statistics for an area |
 
 ---
 
 ## 4. Our approach in one paragraph
 
-**We do not train a model from scratch.** In a hackathon that is the slowest and riskiest path. We use:
+**Update (9 Oct):** we now also **retrain a lightweight Siamese U-Net on OSCD** (real Sentinel-2 change labels) and report held-out numbers against the spectral and naive baselines (`BACKEND_PLAN.md` §5). If it does not beat the spectral baseline on the test cities, spectral stays the default and we say so. The original approach, which is still the fallback, uses:
 
 - **a pretrained Siamese change-detection model** (BIT, trained on LEVIR-CD) for high-resolution imagery
 - **a training-free spectral method** (NDVI / NDBI / NDWI differences) for Sentinel-2
 
 We spend our effort where the problem statement puts its weight: **false-alarm suppression**, **attributed GIS-ready polygons**, **severity ranking**, and a **map UI that proves it**.
 
-The results are delivered through an **Android app** for officers and field teams, backed by a Python processing service.
+The results are delivered through a **web app** for officers and analysts, backed by a Python processing service.
 
 Why this is better than what exists today is in §5–§7. Why each technology was chosen is in §14.
 
@@ -153,7 +167,7 @@ People already find change between two images in several ways. Each one solves p
 | **G4** | **Explainability.** Deep change detection is a black box | Officers, courts and auditors must justify action on a detection | A **reason string** on every polygon, before/after crops, and an **audit sidecar** (input hashes, dates, model, thresholds) | Designed (§10.1, A10) |
 | **G5** | **Size is not importance.** Severity is usually just area or pixel count | A 200 m² structure on a lake bed matters more than a 2,000 m² approved project | **Context-aware severity**: no-build zones raise the tier, approved permits lower it, ward tags route it | Designed (A1, A2, A3) |
 | **G6** | **No feedback loop.** Detections are rarely verified, and the verification is never captured | Unverified alerts erode trust; the labels that could improve models are lost | **Confirm/dismiss on the phone, even offline**; exports can include confirmed changes only. The confirmations build a local labelled dataset for future fine-tuning | Designed (FRONTEND_PLAN phase 7) |
-| **G7** | **Accessibility.** Today's tools need GIS or coding skills and a desktop | Field and district staff work on phones | An **Android app** with presets, area + dates input, offline demo, share sheet | Designed (FRONTEND_PLAN) |
+| **G7** | **Accessibility.** Today's tools need GIS or coding skills and a desktop | District and field staff need a tool that opens from a link | A **web app** with presets, demo scenes, a swipe map and one-click exports | Designed (FRONTEND_PLAN) |
 | **G8** | **Monsoon clouds blind optical imagery**, exactly when floods happen in India | Flood mapping during the monsoon is a key use case | Cloud masking (SCL) and least-cloudy date selection now; a proposed **radar (Sentinel-1) flood mode** that sees through clouds (A12) | Honest limitation; A12 is a stretch addition |
 
 ---
@@ -166,7 +180,7 @@ People already find change between two images in several ways. Each one solves p
 2. **Every change explains itself.** Each polygon carries a plain-language reason ("built-up index rose, vegetation fell"), its confidence and before/after crops.
 3. **Decisions, not masks.** The output is ranked, attributed polygons with area, location, type and severity tier, ready for QGIS, ArcGIS or QField.
 4. **It knows *where* change matters.** Changes inside lakes, river buffers or forests are escalated, approved projects are de-escalated, and every change is tagged with its ward or village.
-5. **From office to field and back, on a phone.** Review changes offline, navigate to the site, confirm or dismiss, and share a field pack, all from an Android app.
+5. **From office to field and back, from a link.** Review changes, open the location in Maps, confirm or dismiss, and download a field pack, all from a website that also works in a phone browser.
 6. **Free and works anywhere.** Free Sentinel-2 imagery, open models, open maps, no API keys, CPU-only processing (measured at ~7 s for 11 tiles). Zero licence cost for an agency.
 7. **Right model for the right resolution.** Automatic routing between a spectral engine (10 m) and a Siamese deep model (≤ 2 m), refusing combinations that would give garbage.
 8. **Evidence-grade.** An audit sidecar with input hashes, dates, model and thresholds makes every result reproducible and defensible.
@@ -183,7 +197,7 @@ General characterisation of each approach (from §5), not a benchmark. ✅ = yes
 | Context-aware severity (zones, permits, wards) | ⚠️ manual | ❌ | ⚠️ custom code | ❌ | ⚠️ | ✅ |
 | Works on free global imagery | ✅ | ✅ | ✅ | ⚠️ needs high-res | ❌ paid | ✅ |
 | Usable without GIS or coding skills | ⚠️ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| On a phone, with offline review | ❌ | ❌ | ❌ | ❌ | ⚠️ | ✅ |
+| In a browser, no GIS skills needed | ❌ | ❌ | ❌ | ❌ | ⚠️ | ✅ |
 | Cost to an agency | Staff time | Free software, expert time | Free for non-commercial use, coding time | Free, ML expertise | Paid | **Free / open source** |
 | Time for one area | Hours–days | Minutes + expert clean-up | Minutes + scripting | Minutes + ML setup | Minutes | **Minutes** |
 
@@ -193,7 +207,7 @@ General characterisation of each approach (from §5), not a benchmark. ✅ = yes
 - **Training-free spectral engine.** It needs only index maths and Otsu, so it works on day one, anywhere.
 - **The core pipeline already exists** (`prototype/pipeline.py`). The build turns it into a service and an app.
 - **Every addition is small** (hours, not days) and uses libraries already in the stack (§21).
-- **The team has shipped this exact app stack before** (Kotlin + MapLibre on Dhruva).
+- **The team has shipped a React + MapLibre app before** (PS_121) and the pipeline already runs on real pairs.
 
 ---
 
@@ -211,7 +225,7 @@ flowchart LR
     F --> P[4. Vectorise & attribute<br/>polygons, area m², magnitude,<br/>centroid, type, reason, tier]
     P --> O1[GeoPackage / GeoJSON]
     P --> O2[FastAPI /analyze]
-    O2 --> UI[5. Android app: Kotlin + MapLibre<br/>swipe map, filters, ranked list,<br/>review, share, PDF report]
+    O2 --> UI[5. Web app: React + MapLibre GL<br/>swipe map, filters, ranked list,<br/>review, export, PDF report]
 ```
 
 **Two modes, each on the resolution it was built for.** A model trained on 0.5 m imagery does not work on 10 m imagery, so we never mix them (see §20).
@@ -278,9 +292,9 @@ Every dropped region is counted, so the UI can show something like "412 raw dete
 
 ### 9.5 Output and UI
 
-- Export **GeoPackage** (for QGIS / ArcGIS / QField) and **GeoJSON** (for the app and web tools).
+- Export **GeoPackage** (for QGIS / ArcGIS / QField) and **GeoJSON** (for the web app).
 - **FastAPI** backend with an `/analyze` endpoint (§16).
-- **Android app** (Kotlin, Jetpack Compose, MapLibre Android SDK) (§11, [`FRONTEND_PLAN.md`](../FRONTEND_PLAN.md)).
+- **Web app** (React, Vite, MapLibre GL JS) (§11, [`FRONTEND_PLAN.md`](../FRONTEND_PLAN.md)).
 
 ---
 
@@ -324,11 +338,11 @@ These thresholds are **starting values** we picked for the worked example. Tune 
 2. **Wait briefly.** A progress bar shows the stages: *aligning → detecting → filtering → vectorising*.
 3. **Explore** the result on the split-view map.
 4. **Review** each change: confirm or dismiss it.
-5. **Share** the change layer (GeoPackage / GeoJSON), a one-page PDF summary and a field pack through the Android share sheet.
+5. **Export** the change layer (GeoPackage / GeoJSON), a one-page PDF summary and a field pack from the export menu.
 
-### 11.2 Screen layout (Android app)
+### 11.2 Screen layout (web app)
 
-The product is an **Android app** (Kotlin, Jetpack Compose, MapLibre Android SDK). The full screen list, the reasons for choosing Kotlin and the build phases are in [`FRONTEND_PLAN.md`](../FRONTEND_PLAN.md).
+The product is a **web app** (React, Vite, MapLibre GL JS). The full page list, the build phases and the tests are in [`FRONTEND_PLAN.md`](../FRONTEND_PLAN.md).
 
 _Numbers in this mock-up are illustrative._
 
@@ -355,7 +369,7 @@ _Numbers in this mock-up are illustrative._
 - **Bottom sheet:** collapsed, it shows the summary (total area, counts per tier and type). Expanded, it shows the ranked list. Tapping a row flies the map to that polygon.
 - **Detail sheet on tap:** area, magnitude, confidence, centroid, type, tier, reason, before/after crops, zone/permit/ward chips, confirm/dismiss, and **Navigate** (Google Maps).
 - **Filter sheet:** tier and type chips, minimum-area and confidence sliders, applied live.
-- **Share sheet:** GeoPackage, GeoJSON, PDF and field pack, through the Android share sheet (WhatsApp, email, Drive, QField).
+- **Export menu:** GeoPackage, GeoJSON, PDF and field pack.
 
 ---
 
@@ -366,7 +380,7 @@ The statement's real problem is separating critical change from false alarms, so
 1. **A "false-alarm filter" toggle.** With it off, the map is covered in seasonal vegetation and lighting noise. With it on, only real structural change remains, and a counter reads e.g. *"412 raw detections, 37 after filtering"*. **This is the best single moment in the demo.**
 2. **A reason on every polygon.** Each one says why it was kept, e.g. *"built-up index rose, vegetation fell"*. The output is explainable, not a black box.
 3. **Measured accuracy.** Report F1 and IoU on a public test set, plus processing time per km², on an **Accuracy screen inside the app** (`GET /metrics`).
-4. **Proof of GIS-readiness.** Share the exported file from the phone and open it in **QGIS on the laptop (or QField on the phone) live during the demo**.
+4. **Proof of GIS-readiness.** Download the exported file and open it in **QGIS on the laptop live during the demo**.
 5. **Analyst review.** Confirm and dismiss buttons on each polygon. The export contains only confirmed polygons.
 6. **One-page report.** An auto-generated PDF with the map, totals and the top ten changes. This is what an emergency agency would actually forward.
 
@@ -438,10 +452,10 @@ The first row is the false-alarm demo in miniature. The naive method raises 188 
 
 | Layer | Choice |
 |---|---|
-| **Product form** | Android app (field + office) talking to a Python processing service |
-| **App language / UI** | Kotlin · Jetpack Compose · Material 3 |
-| **Map SDK / base maps** | MapLibre Android SDK · OpenFreeMap styles (`positron` / `dark`) |
-| **App networking / state / storage** | Retrofit + OkHttp · kotlinx.serialization · Coroutines + Flow · ViewModel · Coil · DataStore + files |
+| **Product form** | Web app (Vercel) talking to a Python processing service (Hugging Face Space), with static-first demo data |
+| **App language / UI** | React 19 · Vite · TypeScript · Tailwind CSS |
+| **Map SDK / base maps** | MapLibre GL JS · maplibre-gl-compare (swipe) · OpenFreeMap styles (`positron` / `dark`) |
+| **App networking / state / storage** | TanStack Query · Zustand · static files in `public/demos/` · `localStorage` for review state |
 | **Service language / framework** | Python 3.11+ · FastAPI + Uvicorn · Pydantic |
 | **Jobs / storage** | In-process background jobs + one JSON state file per job · results as GPKG / GeoJSON files on disk |
 | **Raster / vector / image processing** | Rasterio (GDAL) · GeoPandas · Shapely 2 · pyproj · NumPy · OpenCV · scikit-image |
@@ -452,7 +466,7 @@ The first row is the false-alarm demo in miniature. The naive method raises 188 
 | **Outputs** | GeoPackage (primary) · GeoJSON (app) · KML/CSV (field pack) · PDF via WeasyPrint · JSON audit sidecar |
 | **Evaluation data** | LEVIR-CD (deep mode) · OSCD (spectral mode) · our own unseen no-change pairs |
 | **Hosting** | Presenter's laptop on LAN / hotspot for the demo · Docker image for any CPU VM |
-| **Quality** | pytest + ruff (service) · JUnit, Turbine, Compose UI tests, Android lint (app) · GitHub Actions CI |
+| **Quality** | pytest + ruff (service) · Vitest, Testing Library, Playwright, ESLint (web) · GitHub Actions CI |
 
 ### 14.2 Every decision, with the alternatives we rejected
 
@@ -460,12 +474,12 @@ The first row is the false-alarm demo in miniature. The naive method raises 188 
 
 | Decision | We chose | Why | Alternatives considered | Why not |
 |---|---|---|---|---|
-| **D1. Product form** | **Android app + Python processing service** | Stakeholders include field teams who only have phones; officers review on the move; heavy GIS/ML work belongs on a server | Web app only · desktop QGIS plugin · all processing on the phone | A web app works but loses offline review, native file and share flows, and the field experience. A QGIS plugin only reaches GIS experts. On-phone processing would need GDAL + PyTorch on Android, scenes of hundreds of MB, and heavy battery and heat |
-| **D2. App framework** | **Kotlin (native)** | First-party MapLibre SDK; two synced maps for the swipe are straightforward; native Storage Access Framework / MediaStore / share sheet; the team already shipped Kotlin + MapLibre (Dhruva) | React Native · Flutter | React Native: the MapLibre wrapper lags the native SDK, camera sync crosses the JS bridge, and the team hit release-only bugs on Dhruva's React Native version before moving to Kotlin on mentor advice. Flutter: the `maplibre_gl` plugin is the least mature, multiple synced platform-view maps with clipping are fragile, and the team has no Flutter experience. Full comparison: [`FRONTEND_PLAN.md` §1](../FRONTEND_PLAN.md#1-tech-stack-choice-kotlin--jetpack-compose--maplibre-android) |
-| **D3. UI toolkit** | **Jetpack Compose + Material 3** | Declarative, state-driven UI suits screens that react to job state, filters and review status; bottom sheets and animations are built in; less code | XML Views | More boilerplate and manual state syncing; Compose is Google's recommended toolkit for new apps. The map itself is embedded through `AndroidView`, so nothing is lost |
-| **D4. Map SDK** | **MapLibre Android SDK** | Open source (BSD), no API key or billing; vector styling with **filter expressions**, so tier, type and area filters run live on the phone; GeoJSON and image sources; `queryRenderedFeatures` for taps; team experience | Google Maps SDK · Mapbox SDK · osmdroid | Google Maps needs an API key and a billing account, and offers weaker data-driven styling and filtering of large GeoJSON layers. Mapbox v2+ needs an access token with usage-based pricing and a non-open licence. osmdroid is raster-tile based, with weak vector/GeoJSON performance and styling |
+| **D1. Product form** | **Web app + Python processing service** | The official statement asks for an interactive split-view **web** map; a website is the fastest to deploy and share with judges and works on any device; heavy GIS/ML work belongs on a server | Android app · desktop QGIS plugin · all processing in the browser | An Android app is more scope than a 24-hour build allows. A QGIS plugin only reaches GIS experts. Browser-only processing cannot run GDAL or the models |
+| **D2. App framework** | **React + Vite + TypeScript** | Fast to build and deploy; the team built PS_121 in the same stack; huge ecosystem | Next.js · Svelte · plain JS | Next.js adds server concerns we do not need (the site is static plus an API); Svelte is new to the team |
+| **D3. UI toolkit** | **Tailwind CSS** | Quick, consistent styling without a design system | Material UI · hand-written CSS | MUI is heavy for a map-first app; hand-written CSS is slower |
+| **D4. Map SDK** | **MapLibre GL JS** | Open source, no API key or billing; data-driven styling with **filter expressions** so tier, type and area filters run live in the browser; image and GeoJSON sources; a compare plugin for the swipe; team experience | Leaflet · Mapbox GL JS · OpenLayers | Leaflet has no vector filter expressions at this scale; Mapbox needs a token and billing; OpenLayers is heavier to learn |
 | **D5. Base maps** | **OpenFreeMap** `positron` / `dark` | Free, no key, light and dark styles; the team found it avoids a known MapLibre offline-pack crash seen with the MapLibre demo style | Google / Mapbox tiles · self-hosted tiles | Keys and costs; self-hosting is unnecessary work for a hackathon |
-| **D6. App networking** | **Retrofit + OkHttp + kotlinx.serialization** | Industry standard; multipart upload with progress; interceptors for timeouts and logging; Kotlin-native serialization without reflection | Ktor client · Volley | Ktor is fine but adds a second HTTP stack to learn. Volley is dated and awkward for large multipart uploads |
+| **D6. Client data layer** | **TanStack Query + typed fetch client** | Caching, retries and loading / error states for free; one hook serves static demos and live jobs | Redux Toolkit Query · raw fetch | Heavier or more boilerplate |
 | **D7. App storage** | **DataStore + cached result files** | The data is small (settings, job IDs, the review queue); job results are already GeoJSON files | Room (SQLite) | Overkill for a few key-value pairs and files. We'd adopt it if the review queue grows into a real dataset |
 
 #### Processing service
@@ -473,7 +487,7 @@ The first row is the false-alarm demo in miniature. The naive method raises 188 
 | Decision | We chose | Why | Alternatives considered | Why not |
 |---|---|---|---|---|
 | **D8. Service language** | **Python 3.11+** | GDAL/Rasterio, GeoPandas and PyTorch are Python-first; the prototype is already Python; one language for pipeline and API | Node.js · Go · Java | Their geospatial and deep-learning ecosystems are thin; we'd need a Python sidecar anyway |
-| **D9. Web framework** | **FastAPI** | Async; **Pydantic models are the typed API contract** the Android app is built against; auto-generated OpenAPI docs at `/docs`; built-in background tasks; gzip middleware | Flask · Django | Flask has no built-in typing, validation or docs. Django's ORM, admin and templates aren't needed and add weight |
+| **D9. Web framework** | **FastAPI** | Async; **Pydantic models are the typed API contract** the web app is built against; auto-generated OpenAPI docs at `/docs`; built-in background tasks; gzip middleware | Flask · Django | Flask has no built-in typing, validation or docs. Django's ORM, admin and templates aren't needed and add weight |
 | **D10. Job execution** | **In-process background jobs + JSON state file per job** | One machine and a few concurrent jobs; nothing extra to install; jobs survive an app restart because state is on disk | Celery + Redis · a cloud queue | A broker and workers are extra infrastructure that can fail during a demo. This is the upgrade path once there are many users |
 | **D11. Storage** | **Files on disk** (GPKG / GeoJSON / JSON) | No multi-user querying is needed; a GeoPackage is itself SQLite with a spatial index | PostGIS | Needs a database server. It's the right choice later, for many agencies and historical queries |
 | **D12. Raster I/O** | **Rasterio** (on GDAL) | Pythonic GDAL; windowed reads for big scenes; `warp.reproject`; `features.shapes` for vectorising (named in the expected solution) | Raw GDAL Python bindings · rioxarray / xarray | GDAL bindings are verbose and error-prone. xarray shines for long time-series stacks, but is an extra layer for two-date pairs |
@@ -567,7 +581,7 @@ Summary only. The full contract, including previews, crops, metrics and Sentinel
 | Phase | Deliverable | Done when |
 |---|---|---|
 | **1** | Spectral mode end to end on one Sentinel-2 pair, producing GeoJSON | It opens correctly in QGIS |
-| **2** | Android app showing that GeoJSON on the swipe map | Swipe, polygons and detail sheet all work on a phone |
+| **2** | Web app showing that GeoJSON on the swipe map | Swipe, polygons and detail card all work in the browser |
 | **3** | Deep mode added, F1/IoU reported on the LEVIR-CD test set | Metrics table generated by a script |
 | **4** | False-alarm filters, severity tiers, GeoPackage export, filter toggle and counter | Toggle shows raw → filtered |
 | **5** | Two polished demo cases (encroachment, disaster), PDF report, analyst review | Demo rehearsed twice |
@@ -585,7 +599,7 @@ Summary only. The full contract, including previews, crops, metrics and Sentinel
 |---|---|
 | **Model** | Deep-mode inference (tiling, stitching), metrics on LEVIR-CD, speed benchmarks |
 | **Geospatial** | Ingest/validation, spectral mode, false-alarm rules, vectorisation, attributes, tiers |
-| **Backend + Android app** | FastAPI jobs and endpoints; the Kotlin app (swipe map, filters, ranked list, detail sheet, review, share) |
+| **Frontend** | The web app (swipe map, filters, ranked list, detail card, review, export) |
 | **Data, demo and pitch** | Sourcing and checking image pairs, the with/without-filter comparison, the PDF report layout, slides, demo script, Q&A prep |
 
 Names: _fill in_.
@@ -644,15 +658,15 @@ Each addition below is **small (hours, not days)**, uses data and libraries alre
 Five minutes, two scenes.
 
 1. **(30 s) The problem.** "Agencies compare before/after images to find illegal construction and disaster damage. Naive methods drown them in false alarms."
-2. **(60 s) On the phone (screen-mirrored), open the encroachment scene.** Show the progress stages. The swipe map appears.
+2. **(60 s) On the deployed site, open the flood scene.** The swipe map appears; swipe across the damaged area.
 3. **(45 s) The moment.** Toggle the false-alarm filter **off**: the map fills with noise, *412 raw detections*. Toggle **on**: *37 remain*. Swipe across one to show it is real.
 4. **(30 s) Tap a critical polygon.** Show its area, magnitude, reason, before/after crops and *"inside lake buffer"* (A2). Confirm it.
-5. **(30 s) Share.** Share the GeoPackage from the phone and **open it in QGIS** (laptop) or QField live. The attributes are all there.
+5. **(30 s) Export.** Download the GeoPackage and **open it in QGIS** on the laptop. The attributes are all there.
 6. **(45 s) Disaster scene.** Spectral mode, flood → water-gain polygons ranked by size. Download the one-page PDF and field pack (A4).
 7. **(30 s) Numbers.** The in-app Accuracy screen: F1/IoU (full test set), the no-change scene giving 0 polygons, and seconds per km² on a laptop CPU.
 8. **(30 s) Close.** "Pretrained models, honest metrics, explainable output, GIS-ready from minute one."
 
-**Rehearse on the release APK, with Wi-Fi off.** All demo scenes and model weights should be local, and the app's bundled demo mode is the last-resort fallback.
+**Rehearse on the deployed URL, with the API off.** The demo scenes are static files, so the demo still works; keep a screen recording as the last-resort fallback.
 
 ---
 
@@ -669,8 +683,8 @@ Five minutes, two scenes.
 | What can an officer do with the output? | Open it in QGIS, forward the PDF, send the field pack to a ground team, and keep the audit sidecar as evidence |
 | What is novel if the model is pretrained? | The model is one component. The novelty is the system around it: measured false-alarm suppression, explainable and context-aware ranking, and a field review loop on a phone (§6, §7) |
 | How is this different from Google Earth Engine or Global Forest Watch? | Earth Engine is a coding platform: powerful, but every analysis is a custom script. Global Forest Watch covers forests only. We give a non-expert a ranked, explained list of any kind of change for their own area, on a phone (§5) |
-| Why an Android app and not a website? | Field teams verify on site with phones and patchy network. The app reviews offline, navigates to the change and shares through the phone's share sheet. The processing still runs on a server (§14, D1) |
-| Why Kotlin and not Flutter or React Native? | Native MapLibre gives the most reliable swipe compare and live filtering, and the team has already shipped Kotlin + MapLibre (§14, D2) |
+| Why a website? | The statement asks for an interactive split-view web map. A link works on any device, needs no install and can be opened by judges directly. Heavy processing runs on the server (§14, D1) |
+| Why MapLibre and React? | MapLibre GL JS is open source with live filter expressions, so tier and type filters update instantly in the browser, and the team has shipped React + MapLibre before (§14, D2, D4) |
 | What about clouds during monsoon floods? | We mask clouds and pick the least-cloudy dates. For heavy monsoon cloud, the radar flood mode (A12) sees through clouds |
 | Where does the data go? Privacy? | Processing runs on the agency's own machine or server. Only public satellite imagery is downloaded; uploaded images never go to a third party |
 | What does it cost to run? | Nothing in licences: open-source software, free Sentinel-2 imagery, OSM data. A single CPU machine is enough |
@@ -682,7 +696,7 @@ Five minutes, two scenes.
 ```
 .
 ├── README.md                ← short project overview and setup
-├── FRONTEND_PLAN.md         ← Android app: stack choice, screens, phases, structure, UX rules, done criteria
+├── FRONTEND_PLAN.md         ← web app: stack, pages, phases, tests, UX rules, done criteria
 ├── BACKEND_PLAN.md          ← engine modules, API contract, phases, tests, done criteria
 ├── docs/PROJECT_PLAN.md     ← this document
 ├── prototype/
@@ -692,7 +706,7 @@ Five minutes, two scenes.
 └── (planned)
     ├── engine/              ← ingest, spectral, deep, filters, vectorise (from prototype)
     ├── api/                 ← FastAPI app
-    ├── app/                 ← Android app (Kotlin + Compose + MapLibre)
+    ├── web/                 ← web app (React + Vite + MapLibre)
     ├── demos/               ← preloaded before/after scenes
     └── eval/                ← metric scripts and results
 ```
@@ -747,4 +761,4 @@ python prototype/figures.py ./out              # → out/walkthrough.png, out/mo
 - Daudt, R. C., Le Saux, B., Boulch, A. *Fully Convolutional Siamese Networks for Change Detection* (FC-Siam-diff), ICIP 2018.
 - Daudt, R. C. et al. *Urban Change Detection for Multispectral Earth Observation Using Convolutional Neural Networks* (OSCD), IGARSS 2018.
 - Sentinel-2 L2A on AWS via Earth Search STAC: <https://earth-search.aws.element84.com/v1>
-- Rasterio: <https://rasterio.readthedocs.io> · GeoPandas: <https://geopandas.org> · MapLibre Android SDK: <https://maplibre.org>
+- Rasterio: <https://rasterio.readthedocs.io> · GeoPandas: <https://geopandas.org> · MapLibre GL JS: <https://maplibre.org>

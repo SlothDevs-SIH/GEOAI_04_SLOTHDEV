@@ -1,253 +1,216 @@
-# GEOAI 04 — Frontend Plan: the Android App
+# GEOAI 04: Frontend Plan, the Web App
 
-**Product:** an Android app where an officer or analyst picks an area (or uploads a before/after pair) and gets a map of what really changed, ranked by severity, with the noise filtered out. They can review each change on the spot and share the result.
-**Module:** `app/` (Android Studio project, package `com.slothdevs.geoai`)
-**Talks to:** the FastAPI backend in [`BACKEND_PLAN.md`](BACKEND_PLAN.md) (§5 API contract)
-**Target:** Android 8.0+ (minSdk 26), targetSdk 35, tested on a real phone (Nothing Phone / Android 16) and the emulator
-**Design philosophy:** map first · every number has a source · the false-alarm story is visible in one tap · works with one hand in the field
+**Product:** a website where an officer or analyst opens a disaster or encroachment scene (or uploads a before/after pair) and sees a **before/after swipe map** of what really changed, ranked by severity, with the false alarms filtered out, an **impact summary** (hectares, cropland, buildings, roads) and one-click exports.
+**Module:** `web/` (Vite + React + TypeScript)
+**Talks to:** the FastAPI service in [`BACKEND_PLAN.md`](BACKEND_PLAN.md) §6, **but works without it** for the demo scenes (static files in `web/public/demos/`).
+**Hosting:** Vercel. **Deadline:** 10:00, 10 October 2026 ([`docs/TASK_SPLIT.md`](docs/TASK_SPLIT.md)).
+**Design philosophy:** map first · every number has a source · the false-alarm story is visible in one click · usable on a laptop projector **and** on a phone browser.
 **Master doc:** [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) · **Overview:** [`README.md`](README.md)
 
----
-
-## 1. Tech stack choice: Kotlin + Jetpack Compose + MapLibre Android
-
-We compared the three options for **this** app:
-
-| | **Kotlin (native)** ✅ | React Native | Flutter |
-|---|---|---|---|
-| Map engine | **MapLibre Android SDK**, first-party, full API: GeoJSON sources, fill/line layers, feature taps, camera control | `@maplibre/maplibre-react-native`, a wrapper that lags the native SDK | `maplibre_gl` plugin, the least mature; feature taps and multiple synced maps are fragile |
-| Before/after swipe (two synced maps) | Two `MapView`s, the top one clipped by a draggable divider, cameras synced in a listener: straightforward | Possible, but camera sync crosses the JS bridge and lags | Hard: platform views + clipping + sync |
-| File picker, downloads, share sheet, PDF viewer | Native APIs (Storage Access Framework, MediaStore, `Intent.ACTION_SEND`) | Several third-party packages | Several plugins |
-| Release-build surprises | Few | Team hit real ones on Dhruva (asset loading broke only in release; Gradle/NDK pain) | New to the team |
-| Team experience | **Dhruva was rewritten to Kotlin + MapLibre Android on mentor advice and shipped**, with its gotchas solved | Previous Dhruva version, abandoned | None |
-
-**Decision: Kotlin.** The heavy work (GDAL, the BIT model) runs on the Python backend, so the app is a map-heavy viewer and reviewer. Native MapLibre is the most reliable way to render polygons and do the swipe compare, and the team has already shipped exactly this stack.
-
-**Libraries:**
-
-| Need | Library |
-|---|---|
-| UI | **Jetpack Compose** + Material 3 |
-| Map | **MapLibre Android SDK** (in Compose via `AndroidView`) |
-| Base map styles | OpenFreeMap `positron` (light) / `dark`. Same as Dhruva; avoids the known offline-pack crash with the MapLibre demo style |
-| Networking | **Retrofit + OkHttp** (multipart upload with progress) + **kotlinx.serialization** |
-| Async | Kotlin **Coroutines + Flow**; `ViewModel` per screen |
-| Images (crops, previews) | **Coil** |
-| Area drawing (A6) | Custom tap-to-add-vertex polygon on the map (no extra dependency) |
-| Local storage | **DataStore** (settings, backend URL); job results cached as files in app storage; review status queued offline |
-| Navigation | Navigation-Compose |
-| Exports | **MediaStore** (save to Downloads), `FileProvider` + share sheet, system PDF viewer |
-| Tests | JUnit + Turbine (ViewModels), Compose UI tests, MockWebServer |
-| CI | GitHub Actions: `./gradlew testDebugUnitTest lint assembleDebug` |
+> **What changed from the earlier plan.** The Android app is dropped. The official statement asks for an interactive split-view **web** map, a website is the fastest thing to deploy and share with judges, and the team already built a React + MapLibre app on PS_121.
 
 ---
 
-## 2. What the app must make obvious
+## 1. Tech stack
 
-Within ten seconds an officer should be able to answer:
+| Need | Choice | Why |
+|---|---|---|
+| Framework | **React 19 + Vite + TypeScript** | Fast to build and deploy; the team has used it |
+| Styling | **Tailwind CSS** | Quick, consistent UI |
+| Map | **MapLibre GL JS** | Open source, no API key, polygon fills and **filter expressions** run live in the browser; already used in PS_121 |
+| Swipe compare | **`@maplibre/maplibre-gl-compare`** (two synced maps and a divider) | The standard solution; fallback: opacity slider |
+| Base map | OpenFreeMap styles (`positron`, `dark`) | No key or billing |
+| Data fetching | **TanStack Query** | Caching, retries, loading and error states |
+| UI state | **Zustand** | Filters, selected feature, toggle state |
+| Routing | **React Router** | Few routes |
+| Charts | Small inline SVG or **Recharts** for tier and type bars | Light |
+| Tests | **Vitest** + Testing Library; **Playwright** for one smoke test | See §7 |
+| Lint / format | ESLint + Prettier (or oxlint as in PS_121) | CI gate |
+| Deploy | **Vercel**, root directory `web/` | Free, preview URLs per push |
 
-1. **What changed?** Polygons on the map.
-2. **Which changes matter most?** Tier colours and the ranked list.
-3. **How do you know it's real and not season or lighting?** The false-alarm toggle and the reason on each polygon.
-4. **What do I do with it?** Confirm or dismiss it, navigate there, share the GeoPackage / PDF / field pack.
+---
 
-The flow is **choose input → progress → map → review → share**.
+## 2. What the site must make obvious (within ten seconds)
+
+1. **What changed?** Polygons on a swipe map.
+2. **Which changes matter most?** Tier colours (plus tier text) and a ranked list.
+3. **How do we know it's real and not season or lighting?** The false-alarm toggle ("412 raw → 37 real") and the reason on each polygon.
+4. **So what?** The impact panel: hectares changed, **cropland affected**, buildings and road segments touched, each with its data source.
+5. **What do I do with it?** Download GeoPackage, GeoJSON, PDF or the field pack; open it in QGIS.
 
 ---
 
 ## 3. Requirements coverage
 
-Every requirement in [`docs/PROJECT_PLAN.md` §2.3](docs/PROJECT_PLAN.md#23-what-the-expected-solution-asks-for) and every "winning" feature in §12 has a home in the app:
-
-| Requirement / feature | Where in the app | Phase |
+| Requirement / feature | Where on the site | Phase |
 |---|---|---|
-| R1 Accept a GeoTIFF pair | Upload screen: pick two `.tif` files (Storage Access Framework) | 2 |
-| R2 Siamese or spectral detection | Mode chip (Auto / Spectral / Deep) | 2 |
-| R3, R4 False-alarm suppression, clean-up | Raw vs filtered toggle and drop counts | 6 |
-| R5, R6 Polygons with area, magnitude, centroid | Map layer, detail sheet, ranked list | 4, 5 |
-| R7 Severity tiers | Tier colours + text label, tier filter, legend | 4, 6 |
-| R8 Before/after split view | Swipe compare map | 4 |
-| R9 GIS-ready export | Share GeoPackage / GeoJSON | 8 |
-| Win 1 False-alarm toggle | Toggle on the map + animated counter | 6 |
-| Win 2 Reason on every polygon | Detail sheet and list row | 5 |
-| Win 3 Measured accuracy | Accuracy screen (`GET /metrics`) | 10 |
-| Win 4 GIS proof | Share the GPKG to QGIS on the laptop or **QField** on the phone | 8 |
-| Win 5 Analyst review | Confirm / dismiss, review tabs, confirmed-only export | 7 |
-| Win 6 One-page report | PDF export, opened in the system viewer | 8 |
-| Additions A1–A4, A6, A8–A11 | Layer import, zone chips, wards, field pack, area+date picker, review queue, presets, About sheet, report language | 3, 5, 7, 8, 9, 10 |
-
-> The official GEOAI 04 text is still to be pasted into the master doc. Re-check this table against it once it is.
+| Interactive before/after split-view map | Result page, swipe compare | F2 |
+| Severity-tiered polygons | Map layer, legend, ranked list, tier filter | F2, F3 |
+| Area, magnitude, centroid per polygon | Detail panel and list rows | F3 |
+| GIS-ready export | Export menu (GPKG, GeoJSON, PDF, CSV/KML) | F5 |
+| False alarms separated from real change | Raw/filtered toggle with animated counter and drop counts | F3 |
+| Reason on every polygon | Detail panel and list row | F3 |
+| Measured accuracy | Accuracy page (`eval/results.json`) | F6 |
+| Impact numbers | Impact panel | F4 |
+| Analyst review | Confirm / dismiss, "confirmed only" export | F5 |
+| Live analysis | Upload two GeoTIFFs, progress, result | F6 |
 
 ---
 
-## 4. Screens
+## 4. Pages
 
 ```
- ┌─────────────────────┐   ┌─────────────────────┐   ┌─────────────────────┐
- │ GEOAI 04            │   │ ← Analysing         │   │ ≡  Pune East  [◉ F] │
- │                     │   │                     │   │ BEFORE  ┃  AFTER    │
- │ ┌─────────────────┐ │   │ ✓ Aligning          │   │         ┃ ▓▓  ▓     │
- │ │ ▶ Demo scenes   │ │   │ ✓ Detecting         │   │      ◀━━╋━━▶  ▓▓    │
- │ └─────────────────┘ │   │ ● Filtering   62%   │   │         ┃    ▓      │
- │ ┌─────────────────┐ │   │ ○ Vectorising       │   │ 412 raw → 37 real   │
- │ │ ⌖ Pick area +   │ │   │                     │   ├─────────────────────┤
- │ │   two dates     │ │   │ ⚠ After image was   │   │ ▔▔▔ (drag up)       │
- │ └─────────────────┘ │   │   resampled to the  │   │ 1 ■ 3,229 m² CRIT   │
- │ ┌─────────────────┐ │   │   before grid       │   │ 2 ■ 1,089 m² HIGH   │
- │ │ ⬆ Upload 2 TIFs │ │   │                     │   │ 3 ■   651 m² HIGH   │
- │ └─────────────────┘ │   │                     │   │ [All|Review|✓|✗]    │
- │ Recent runs ▸       │   │      [Cancel]       │   │ [Share ⬆]           │
- └─────────────────────┘   └─────────────────────┘   └─────────────────────┘
-        Home                     Progress                 Result map
+ ┌──────────────────────────────────────────────────────────────────────────────┐
+ │ GEOAI 04 · Change that matters           [Scenes] [Analyse] [Accuracy] [About]│
+ ├───────────────────────────────────────────────┬──────────────────────────────┤
+ │   BEFORE 2023-08-20  ┃  AFTER 2023-09-18      │ 412 raw → 37 real   [filter ◉]│
+ │                      ┃   ▓▓      ▓            │  IMPACT                       │
+ │                   ◀━━╋━━▶   ▓▓▓                │  1,240 ha changed             │
+ │                      ┃      ▓                  │  310 ha cropland · 85 bldgs   │
+ │                      ┃                         │  [Tier ▾][Type ▾][Min area]   │
+ │  legend ■crit ■high ■med ■low                  │  1 ■ 3,229 m² CRITICAL  ✓ ✗   │
+ │                                                │  2 ■ 1,089 m² HIGH            │
+ └───────────────────────────────────────────────┴──────────────────────────────┘
 ```
 _Numbers in this mock-up are illustrative._
 
-| Screen | Shows |
+| Route | Shows |
 |---|---|
-| **Home** | Three inputs: **Demo scenes** (always works offline), **Pick an area + two dates** (Sentinel-2, A6), **Upload two GeoTIFFs**; preset chip (Flood / Encroachment / Deforestation, A9); recent runs |
-| **Area + dates** | A map where the user taps to draw an area, picks a before and an after date, and sees the scenes the backend chose (date, cloud %) before running |
-| **Upload** | Two file slots (*Before*, *After*), file names and sizes, dates, mode chip, optional permits / no-build-zone layers (A1, A2) |
-| **Progress** | Stage stepper (Aligning → Detecting → Filtering → Vectorising), percent, backend warnings, cancel |
-| **Result map** | Full-screen swipe compare map, tier-coloured polygons, the **false-alarm toggle** with counter, legend, and a bottom sheet (summary → ranked list) |
-| **Change detail** (bottom sheet) | Rank, tier, type, area, magnitude, confidence, centroid (copy), **reason**, before/after crops, zone/permit/ward chips, **Confirm / Dismiss**, **Navigate** (Google Maps intent) |
-| **Filters** (sheet) | Tier and type chips, minimum-area slider, confidence slider; all applied live |
-| **Share** (sheet) | GeoPackage, GeoJSON, PDF (language option), field pack CSV/KML; "confirmed only" switch |
-| **About this result** | Model and version, thresholds, image dates, run time, seconds per km², input hashes (A10) |
-| **Accuracy** | F1, IoU, precision, recall on the LEVIR-CD test split; false alarms per km² with the filter off and on; no-change test result (`/metrics`) |
-| **Settings** | Backend URL (with a "test connection" button), light/dark theme, demo/offline mode |
+| `/` **Scenes** | Hero line, three scene cards (flood, encroachment, season control) with thumbnails, event, dates, mode, and a "Demo data" badge; a "Try your own" card |
+| `/scene/:id` **Result** | Swipe map, false-alarm toggle with counter, legend, side panel with summary, **impact**, filters and ranked list; clicking a polygon opens the **detail card** (rank, tier, type, area, magnitude, confidence, centroid, **reason**, before/after crops, Confirm / Dismiss, link to Google Maps); **Export** menu |
+| `/analyse` **Analyse** | Two file slots (Before, After), mode and preset selector, upload with progress, stage stepper (Aligning → Detecting → Filtering → Vectorising), warnings from the backend, then the same Result page for the job; shows a clear "backend is waking up" state |
+| `/accuracy` **Accuracy** | Table from `/metrics`: precision, recall, F1, IoU on the held-out OSCD test cities for **naive, spectral and learned**; false alarms per km² with filter off and on; the unseen no-change result; seconds per km². Footnote with seed, commit and dataset split |
+| `/about` **About** | How it works in four steps, data sources and licences, limits and honest caveats (what it does not do; why it cannot find people) |
+
+**Header banner:** whenever a demo scene is shown, a "Demo data (precomputed)" badge is visible. Live results show "Live analysis".
 
 ---
 
-## 5. Build phases
-
-### Phase 1: Project skeleton, API client, offline demo mode
-- **Implementation:**
-  - Android Studio project (`app/`), Compose + Material 3, Navigation-Compose, light/dark theme.
-  - `data/ApiService.kt` (Retrofit) with one function per backend endpoint; `data/model/` data classes written straight from the backend's response shapes (`Job`, `Summary`, `ChangeFeature`, `DemoScene`, `Metrics`).
-  - **Demo/offline mode:** two demo scenes bundled in `assets/demos/` (previews + result GeoJSON + summary, produced by the backend). A `FakeRepository` serves them, so the whole demo path runs **with no network** and the UI is never blocked by the backend.
-  - Settings screen with the backend URL (DataStore). For the live demo it points at the laptop on the same Wi-Fi (`http://192.168.x.x:8000`), with a `network_security_config` that allows cleartext only for local addresses.
-
-### Phase 2: Home + upload
-- **Implementation:**
-  - Home with the three input cards and a "Demo data" badge on demo scenes.
-  - Upload via the Storage Access Framework (`OpenDocument`, `.tif/.tiff`), with a size check and a warning on mobile data.
-  - Multipart upload with a progress bar (OkHttp `RequestBody` wrapper); `POST /analyze` → `job_id`.
-
-### Phase 3: Progress
-- **Implementation:**
-  - Poll `GET /jobs/{id}` every 1 s with a Flow; stage stepper + percent.
-  - Store `job_id` in DataStore, so if the app is closed mid-run it resumes polling on reopen.
-  - Show warnings inline (resampled grid, shift detected and corrected). If the backend rejects the pair (e.g. RGB at 10 m), show its reason in plain words and suggest the right mode.
-
-### Phase 4: Result map with swipe compare (the core)
-- **Implementation:**
-  - Two stacked `MapView`s: **before** underneath, **after** on top, clipped to the right of a draggable divider (`clipBounds` updated on drag). The cameras are synced through `addOnCameraMoveListener`, with a guard against feedback loops.
-  - Fallback if the swipe is unstable on a device: a single map with an **opacity slider** between before and after.
-  - Before/after imagery as `ImageSource` layers from `/preview` (WebP + bounds).
-  - Change polygons as one `GeoJsonSource`, drawn on both maps: `FillLayer` at 35% opacity plus a 2 px `LineLayer` in the tier colour. Tier is **also shown as text** in the list and detail sheet, never colour alone.
-  - Fit to bounds on load; compass, scale bar, "my location" (useful for field teams standing at the site).
-
-### Phase 5: Detail sheet + ranked list
-- **Implementation:**
-  - Tapping a polygon (`queryRenderedFeatures`) opens the **detail sheet** with the attributes, the reason, before/after crops (Coil, from `/crop`), chips and a **Navigate** button (`google.navigation:` intent).
-  - Bottom sheet, collapsed: summary (changes, total area, **raw → filtered** counter, per-tier counts). Expanded: the ranked list. Tapping a row flies the camera to the polygon and opens its detail.
-
-### Phase 6: The false-alarm toggle + filters (the demo moment)
-- **Implementation:**
-  - A toggle on the map. **Off** loads `/result?filtered=false` and draws it in grey, so the noise is obvious. **On** shows the filtered polygons in tier colours. Both layers are cached after the first load, so the toggle is instant.
-  - The counter animates between the two numbers.
-  - Filter sheet (tier, type, minimum area, confidence) applies MapLibre **filter expressions** on the layer, live with no network.
-
-### Phase 7: Analyst review
-- **Implementation:**
-  - Confirm ✓ / Dismiss ✗ in the detail sheet, plus swipe actions on list rows. `PATCH /jobs/{id}/features/{fid}` with an optimistic update.
-  - **Offline-tolerant:** if there is no network (common in the field), queue the change in a local file and sync when back online. Show a "2 changes waiting to sync" chip.
-  - List tabs: *All · Needs review · Confirmed · Dismissed* ("Needs review" = mid-confidence, A8).
-
-### Phase 8: Share and export
-- **Implementation:**
-  - Share sheet: GeoPackage, GeoJSON, PDF report (English or English + Hindi, A11), field pack (CSV/KML, A4), with a "confirmed only" switch.
-  - Files are downloaded from `GET /jobs/{id}/export` and saved to Downloads (MediaStore), then shared through the Android share sheet (WhatsApp, email, Drive, **QField**) or opened (PDF in the system viewer).
-  - File names include the scene and dates, e.g. `geoai04_pune-east_2025-03_2026-03.gpkg`.
-
-### Phase 9: Area + dates picker and context layers (additions)
-- **Implementation:**
-  - **Pick an area + two dates** (A6): tap on the map to place polygon vertices (undo, clear), pick two dates, then call `POST /fetch-s2`. Show the scenes the backend chose (date, cloud %) before starting. **This is the main input on a phone**, since officers rarely have GeoTIFFs on their device.
-  - Optional import of a permits layer (A1) or a no-build-zone layer (A2) as GeoJSON/KML from the device; chips in the detail sheet (`authorised` / `unauthorised`, `inside lake buffer`).
-  - **Ward/village** chip and a *group by ward* switch in the list (A3).
-  - Preset chip on Home (A9).
-
-### Phase 10: About, accuracy, polish
-- **Implementation:**
-  - **About this result** sheet (audit sidecar, A10) and the **Accuracy** screen (`/metrics`), so judges see measured accuracy inside the app.
-  - Light/dark map styles + Material 3 dynamic colour; spring animations on sheets; skeleton loaders.
-  - App icon, splash screen, release signing, a `assembleRelease` APK for the demo phone.
-
----
-
-## 6. Project structure
+## 5. Data flow
 
 ```
-app/src/main/java/com/slothdevs/geoai/
-├── MainActivity.kt
-├── GeoAiApp.kt                     ← NavHost, theme
-├── data/
-│   ├── ApiService.kt               ← Retrofit interface (BACKEND_PLAN §5)
-│   ├── model/                      ← Job, Summary, ChangeFeature, DemoScene, Metrics
-│   ├── Repository.kt               ← interface
-│   ├── RemoteRepository.kt         ← real backend
-│   ├── FakeRepository.kt           ← bundled demo scenes (offline)
-│   ├── ReviewQueue.kt              ← offline confirm/dismiss queue
-│   └── SettingsStore.kt            ← DataStore
-├── ui/
-│   ├── home/  upload/  areapicker/  progress/
-│   ├── result/                     ← ResultScreen, CompareMap, ChangeSheet, FilterSheet, ShareSheet
-│   ├── about/  accuracy/  settings/
-│   └── theme/
-└── util/                           ← file save/share, formatting (m², ha, coords)
-app/src/main/assets/demos/          ← two demo scenes (previews + results)
+Scene page ──► fetch /demos/<id>/summary.json, result_filtered.geojson, result_raw.geojson, before.webp, after.webp
+                   (static files in the build; fall back order: static → API)
+Analyse page ─► POST /analyze → poll GET /jobs/{id} → same fetches from /jobs/{id}/...
+Accuracy page ─► GET /metrics, fall back to a static copy of eval/results.json
 ```
 
----
-
-## 7. UX rules
-
-- **Trust first.** Every number comes from the backend (or the bundled demo results), never hardcoded in UI code. Show the *reason* for every polygon. Label estimates as estimates.
-- **Never present demo data as a live run.** The "Demo data" badge is always visible on demo scenes.
-- **Every screen has a state** for loading, empty ("no change found — that's a result too"), error and backend-unreachable (with "try a demo scene").
-- **Field-friendly:** large touch targets (≥ 48 dp), one-hand reach for the main actions (bottom sheet, toggle), readable in sunlight (high contrast), works with patchy network (cached results, review queue).
-- **Accessibility:** colour is never the only signal (tier text), contrast ≥ 4.5:1, TalkBack labels on map controls and list rows.
-- **Units:** m² with thousands separators; hectares in brackets for large areas; coordinates to 6 decimals.
+- One `useScene(source, id)` hook returns the same shape for demos and live jobs, so the Result page does not care where data came from.
+- A typed API client in `web/src/lib/api.ts`; types mirror the backend's `summary` and feature properties.
+- If `VITE_API_URL` is missing or the API times out, hide the Analyse page behind a "Live analysis is offline, try the demo scenes" message. **No page may show a blank screen.**
 
 ---
 
-## 8. Known risks for the app
+## 6. Build phases
 
-| Risk | Mitigation |
+### F1: Skeleton and mock data
+- Vite + React + TS + Tailwind, router, layout, theme, CI job (`lint`, `typecheck`, `test`, `build`).
+- Copy the first static demo folder (or a hand-made fixture with the **same schema**) into `web/public/demos/`. **Use the frozen contract from the kickoff so the frontend is never blocked by the backend.**
+- **Done when:** `npm run build` works and Vercel shows the skeleton.
+
+### F2: Swipe map
+- Two MapLibre maps synced through the compare plugin; before and after as image sources with bounds; fit to bounds; basemap beneath.
+- Polygon layer (35 % fill + 2 px outline in the tier colour) on the after map.
+- Fallback: a single map with an opacity slider if the compare plugin misbehaves on mobile.
+- **Done when:** swiping works on a laptop and a phone browser with a real demo scene.
+
+### F3: Polygons, toggle, list, detail
+- Ranked list from the GeoJSON; click a row → fly to the polygon and open the detail card; click a polygon → same.
+- **False-alarm toggle:** off shows `result_raw.geojson` in grey, on shows the tiered layer; counter animates between `raw_detections` and `after_filter`; the drop counts appear on hover.
+- Filter bar (tier, type, minimum area, confidence) applied as MapLibre filter expressions and list filters, live and offline.
+- Reason, magnitude, area, centroid (with a copy button), crops.
+- **Done when:** the whole demo path in §9 works.
+
+### F4: Impact panel
+- Cards for hectares changed, **cropland affected**, buildings, road segments, with source labels from `summary.impact.sources`; tier and type bars.
+- Empty states: "No cropland data for this area" rather than zero.
+
+### F5: Review and export
+- Confirm / dismiss with local state (persist in `localStorage` for demo scenes, `PATCH` for live jobs); tabs *All · Needs review · Confirmed · Dismissed*.
+- Export menu: for demo scenes link to prebuilt files in `public/demos/<id>/exports/`; for live jobs call `/jobs/{id}/export`. A "confirmed only" switch.
+
+### F6: Analyse, Accuracy, About
+- Upload flow with progress and stage stepper; Accuracy page; About page with the caveats.
+- Accessibility pass (keyboard focus on the toggle and list, tier shown as text, contrast ≥ 4.5:1).
+
+### F7 *(stretch)*
+- Draw-an-area + dates picker calling `/fetch-s2`; permits and no-build-zone layer upload; Hindi labels for the PDF button; dark mode.
+
+---
+
+## 7. Tests
+
+| Type | What |
 |---|---|
-| Venue Wi-Fi blocks the phone from reaching the laptop backend | Offline demo mode with bundled results; a phone hotspot as backup |
-| Large GeoTIFF uploads from a phone are slow | Area + dates picker as the main phone input; upload is for small clips; the backend sends small WebP previews |
-| Two synced `MapView`s are heavy on low-end phones | Opacity-slider fallback; previews capped at 2048 px |
-| MapLibre offline-pack crash with the demo style (seen on Dhruva) | Use OpenFreeMap styles only |
-| Release build differs from debug | Build and install `assembleRelease` on the demo phone early, and rehearse on that build |
+| **Unit (Vitest)** | Tier → colour and label mapping; area formatting (m², hectares, thousands separators); filter functions (tier, type, minimum area, confidence); the raw/filtered counter logic; GeoJSON parsing and required-property validation; `useScene` fallback order (static → API → error) |
+| **Component (Testing Library)** | Result page renders list and legend from a fixture; the toggle switches datasets and updates the counter; the detail card shows the reason; Confirm updates the list tab; Accuracy page renders a table from a fixture; the offline state of the Analyse page |
+| **E2E (Playwright, one smoke test)** | Open `/`, open the flood scene, the map container and swipe handle exist, toggle the filter and check the counter text changes, open Export and see the GPKG link, open `/accuracy` and see the F1 column. Runs against `vite preview` in CI |
+| **Quality gates** | `eslint`, `tsc --noEmit`, `vitest run`, `vite build`, all in CI |
+
+MapLibre needs WebGL, which jsdom lacks: **mock `maplibre-gl` in unit tests** and test the real map only in Playwright (headless Chromium with SwiftShader).
+
+---
+
+## 8. Project structure
+
+```
+web/
+├── index.html  vite.config.ts  package.json  tailwind.config.ts
+├── public/demos/<id>/…                 ← static demo data (BACKEND_PLAN §8)
+└── src/
+    ├── main.tsx  App.tsx  routes.tsx
+    ├── lib/        api.ts  types.ts  tiers.ts  format.ts  filters.ts
+    ├── hooks/      useScene.ts  useJob.ts
+    ├── store/      filters.ts  review.ts          ← Zustand
+    ├── components/
+    │   ├── map/        CompareMap.tsx  PolygonLayer.tsx  Legend.tsx
+    │   ├── panel/      Summary.tsx  ImpactPanel.tsx  FilterBar.tsx  ChangeList.tsx  ChangeCard.tsx
+    │   ├── ExportMenu.tsx  DemoBadge.tsx  StageStepper.tsx
+    └── pages/      Scenes.tsx  Result.tsx  Analyse.tsx  Accuracy.tsx  About.tsx
+```
 
 ---
 
 ## 9. Demo path to keep working (about 3 minutes)
 
-Open the **encroachment** demo → progress stages → map appears → **toggle the filter off (noise) / on (clean)** → drag the swipe divider over the top critical polygon → tap it (reason, crops, *inside lake buffer*) → **Confirm** → **Share → GeoPackage** (opened in QGIS on the laptop, or QField on the phone) → switch to the **flood** demo → share the PDF and the field pack → open **Accuracy**.
+Open the **live URL** → pick the **flood scene** → swipe the divider → toggle the false-alarm filter **off (noise) / on (clean)** and watch the counter → open the **impact panel** ("310 ha of cropland, 85 buildings", with sources) → click the top critical polygon (reason, crops) → **Confirm** → **Export GeoPackage** and open it in **QGIS** on the laptop → switch to the **encroachment** scene → open **Accuracy** (held-out numbers: naive vs spectral vs learned) → open the **season control** scene, where the filter leaves almost nothing.
 
-Rehearse this exact path on the **release APK**, with Wi-Fi on **and** off.
+Rehearse this path on the **deployed** site, on a phone browser and on a laptop with throttled network, and keep a screen recording as the last-resort backup.
 
 ---
 
-## 10. Definition of done
+## 10. UX rules
 
-- [ ] Demo, area+dates and upload inputs all reach the result map; progress shows every backend stage and resumes after the app is reopened.
-- [ ] Swipe compare, tier colours, detail sheet and ranked list work and stay in sync.
-- [ ] The raw/filtered toggle and filters update instantly; the counter is correct.
-- [ ] Confirm/dismiss persists (including offline queueing), and "confirmed only" exports respect it.
-- [ ] All exports save to Downloads and share through the share sheet; the GPKG opens in QGIS/QField.
-- [ ] About and Accuracy screens show real values from the backend.
-- [ ] Loading, empty and error states exist on every screen; works in light and dark.
-- [ ] `testDebugUnitTest`, `lint` and `assembleDebug` green in CI; the release APK is installed and rehearsed on the demo phone.
+- **Trust first.** Every number comes from the data files, never hard-coded in a component. The reason is shown for every polygon. Estimates are labelled as estimates, with a source.
+- **Never present demo data as live.** The badge is always visible.
+- **Every page has loading, empty, error and backend-offline states.**
+- **Do not claim what the data cannot show.** The About page states that 10 m satellite imagery cannot detect people, and that the site prioritises where to look.
+- **Accessibility:** colour is never the only signal; contrast ≥ 4.5:1; keyboard-operable toggle and list.
+- **Units:** m² with separators; hectares for large areas; coordinates to 6 decimals.
+
+---
+
+## 11. Known risks
+
+| Risk | Mitigation |
+|---|---|
+| The API Space is asleep or fails during judging | Static-first demo data; the Analyse page degrades gracefully |
+| Swipe compare is unstable on mobile | Opacity-slider fallback built in F2 |
+| Large GeoJSON makes the map slow | The raw layer is simplified and capped by the backend; load it only when the toggle is switched off |
+| WebGL missing in CI | Mock `maplibre-gl` in unit tests; Playwright uses headless Chromium |
+| Vercel build differs from local | Deploy a skeleton in F1 and redeploy on every merge |
+
+---
+
+## 12. Definition of done
+
+- [ ] The three demo scenes load from static data on the deployed URL, with the API off.
+- [ ] Swipe compare, tier colours, detail card and ranked list work and stay in sync.
+- [ ] The raw/filtered toggle and filters update instantly and the counter is correct.
+- [ ] The impact panel shows real values with sources for the flood scene.
+- [ ] Confirm / dismiss works and "confirmed only" exports respect it.
+- [ ] Exports download; the GPKG opens in QGIS.
+- [ ] Accuracy page shows the real held-out numbers; About page states the limits.
+- [ ] Loading, empty and error states exist on every page.
+- [ ] `eslint`, `tsc`, `vitest`, `vite build` and the Playwright smoke test are green in CI.
+- [ ] The live URL is in the README and works on a phone.
