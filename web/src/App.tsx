@@ -31,6 +31,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Scenes />} />
           <Route path="/scene/:id" element={<Result />} />
+          <Route path="/job/:id" element={<Result job />} />
           <Route path="/analyse" element={<Analyse />} />
           <Route path="/accuracy" element={<Accuracy />} />
           <Route path="/about" element={<About />} />

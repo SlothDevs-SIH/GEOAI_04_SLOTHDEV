@@ -46,6 +46,11 @@ The thresholds were fitted without labels, and the held-out splits were never us
 
 ## Architecture
 
+![System architecture](docs/img/geoai04_architecture.png)
+
+_The same diagram, with every layer marked built, in progress or optional, is on the site's About page._
+
+
 ```
  Web app (React + Vite + MapLibre)           static demo files            FastAPI (api/main.py)
  scenes · swipe map · filter toggle   ◀── web/public/demos/<id> ──    /demos  /analyze  /jobs  /metrics

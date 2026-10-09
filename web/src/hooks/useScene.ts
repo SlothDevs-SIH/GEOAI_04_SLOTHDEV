@@ -1,21 +1,22 @@
 import { useEffect, useState } from "react";
-import { loadRaw, loadScene } from "../lib/api";
+import { loadJobScene, loadRaw, loadScene } from "../lib/api";
 import type { FeatureCollection, SceneData } from "../lib/types";
 
 type State<T> = { data?: T; error?: string; loading: boolean };
 
-export function useScene(id: string | undefined): State<SceneData> {
+/** A demo scene by id, or (job = true) a finished live analysis by job id. */
+export function useScene(id: string | undefined, job = false): State<SceneData> {
   const [s, setS] = useState<State<SceneData>>({ loading: true });
   useEffect(() => {
     if (!id) return;
     let alive = true;
-    loadScene(id)
+    (job ? loadJobScene(id) : loadScene(id))
       .then((data) => alive && setS({ data, loading: false }))
       .catch((e: Error) => alive && setS({ error: e.message, loading: false }));
     return () => {
       alive = false;
     };
-  }, [id]);
+  }, [id, job]);
   return s;
 }
 

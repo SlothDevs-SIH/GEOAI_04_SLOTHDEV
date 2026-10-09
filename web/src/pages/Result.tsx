@@ -7,9 +7,9 @@ import { DEFAULT_FILTERS, type FilterState, counterText, mapFilter, passes } fro
 import { num } from "../lib/format";
 import { useReview } from "../store/review";
 
-export default function Result() {
+export default function Result({ job = false }: { job?: boolean }) {
   const { id = "" } = useParams();
-  const { data, error, loading } = useScene(id);
+  const { data, error, loading } = useScene(id, job);
   const [params, setParams] = useSearchParams();
   const filterOn = params.get("filter") !== "off";
   const selected = params.get("sel") ? Number(params.get("sel")) : undefined;
