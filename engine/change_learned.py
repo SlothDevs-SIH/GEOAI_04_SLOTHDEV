@@ -1,6 +1,7 @@
 """Learned change detector for Sentinel-2 (Seam 1): an OSCD-trained Siamese U-Net.
 
-`detect(pair, p)` returns the same dict as `change_spectral.detect`:
+`detect(pair, p)` returns the same dict as `change_spectral.detect` (`spectral_typed_only=True` is the hybrid variant:
+a candidate must also have a real spectral change type, which removes the model's farmland false alarms):
   * `candidate` and `magnitude` come from the model (probability >= the threshold chosen on validation);
   * `type_map`, `deltas`, `ib`, `ia`, `valid` are kept from the spectral detector so the filters still
     work. Candidates the spectral rules cannot name become `built_up_gain` (OSCD labels urban change).
@@ -123,13 +124,18 @@ def probability(pair, fn=None, meta=None):
     return predict_tiled(fn, x)
 
 
-def detect(pair, p, fn=None, meta=None, threshold=None):
+REAL_TYPES = (CODE["built_up_gain"], CODE["water_loss"], CODE["vegetation_loss"], CODE["water_gain"])
+
+
+def detect(pair, p, fn=None, meta=None, threshold=None, spectral_typed_only=False):
     if fn is None:
         fn, meta, _ = load()                       # fail fast, before any work, if the model is unavailable
     spec = change_spectral.detect(pair, p)
     prob = probability(pair, fn, meta)
     thr = float(threshold if threshold is not None else meta["threshold"])
     cand = (prob >= thr) & spec["valid"]
+    if spectral_typed_only:                     # hybrid: the model proposes, the spectral rules must also name a real change type
+        cand &= np.isin(spec["type_map"], REAL_TYPES)
     t = np.where(cand, spec["type_map"], CODE["none"]).astype(np.uint8)
     t[cand & np.isin(t, [CODE["none"], CODE["other"]])] = CODE["built_up_gain"]
     return dict(magnitude=prob.astype(np.float32), candidate=cand, type_map=t, deltas=spec["deltas"], ib=spec["ib"],
