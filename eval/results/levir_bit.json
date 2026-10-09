@@ -1,76 +1,76 @@
 {
  "dataset": "LEVIR-CD",
- "images": 7,
- "scope": "7 sample tiles from the BIT repository (NOT the full test split)",
+ "images": 128,
+ "scope": "full official test split",
  "bit": {
   "precision": {
-   "value": 0.9062,
+   "value": 0.9052,
    "ci95": [
-    0.8765,
-    0.9376
+    0.8971,
+    0.9124
    ]
   },
   "recall": {
-   "value": 0.9499,
+   "value": 0.8999,
    "ci95": [
-    0.9174,
-    0.9755
+    0.878,
+    0.9166
    ]
   },
   "f1": {
-   "value": 0.9276,
+   "value": 0.9025,
    "ci95": [
-    0.9084,
-    0.951
+    0.89,
+    0.9124
    ]
   },
   "iou": {
-   "value": 0.8649,
+   "value": 0.8223,
    "ci95": [
-    0.8323,
-    0.9065
+    0.8017,
+    0.8389
    ]
   },
-  "tiles": 7
+  "tiles": 128
  },
  "naive": {
   "precision": {
-   "value": 0.2418,
+   "value": 0.0832,
    "ci95": [
-    0.1682,
-    0.3346
+    0.0699,
+    0.0975
    ]
   },
   "recall": {
-   "value": 0.4043,
+   "value": 0.3871,
    "ci95": [
-    0.2962,
-    0.5153
+    0.3475,
+    0.4295
    ]
   },
   "f1": {
-   "value": 0.3026,
+   "value": 0.1369,
    "ci95": [
-    0.2174,
-    0.3998
+    0.1181,
+    0.1571
    ]
   },
   "iou": {
-   "value": 0.1783,
+   "value": 0.0735,
    "ci95": [
-    0.122,
-    0.2498
+    0.0628,
+    0.0853
    ]
   },
-  "tiles": 7
+  "tiles": 128
  },
  "published_bit": {
   "f1": 0.8931,
   "iou": 0.8068,
   "source": "Chen, Qi, Shi (2021), IEEE TGRS, BIT on the LEVIR-CD test split"
  },
- "note": "published, not reproduced",
+ "note": "reproduced",
  "bootstrap": "95% percentile interval over images, 2000 resamples, seed 0",
- "s_per_km2": 36.3,
- "commit": "4622dce"
+ "s_per_km2": 2.2,
+ "commit": "328b6bb"
 }
