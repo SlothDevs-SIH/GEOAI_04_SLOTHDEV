@@ -22,7 +22,8 @@ WIN = os.name == "nt"
 def run(name, cmd, cwd, results, env=None):
     t = time.time()
     print(f"\n=== {name}", flush=True)
-    p = subprocess.run(cmd, cwd=cwd, shell=isinstance(cmd, str), env=env, capture_output=True, text=True)
+    p = subprocess.run(cmd, cwd=cwd, shell=isinstance(cmd, str), env=env, capture_output=True, text=True,
+                         encoding="utf-8", errors="replace")   # npm prints non-ASCII; the Windows default codec cannot read it
     ok = p.returncode == 0
     tail = "\n".join((p.stdout + p.stderr).strip().splitlines()[-6:])
     print(tail, flush=True)
