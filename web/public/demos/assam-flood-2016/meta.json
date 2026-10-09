@@ -1,0 +1,38 @@
+{
+ "id": "assam-flood-2016",
+ "name": "Assam flood 2016 (radar, M8)",
+ "place": "Brahmaputra floodplain, Assam, India",
+ "event": "Monsoon flood mapped through cloud with Sentinel-1 radar",
+ "kind": "flood",
+ "mode": "radar",
+ "before_date": "2016-08-12",
+ "after_date": "2016-08-12",
+ "before_label": "Optical \u00b7 Sentinel-2 \u00b7 2016-08-12 (same day)",
+ "after_label": "Radar \u00b7 Sentinel-1 VV \u00b7 2016-08-12",
+ "scenes": {
+  "chip": "India_1018327"
+ },
+ "source": "Sen1Floods11 v1.1 hand-labelled chip (Copernicus Sentinel-1/2)",
+ "corners": [
+  [
+   93.781241,
+   26.630377
+  ],
+  [
+   93.827235,
+   26.630377
+  ],
+  [
+   93.827235,
+   26.584383
+  ],
+  [
+   93.781241,
+   26.584383
+  ]
+ ],
+ "preset": "flood",
+ "story": "Flood water is dark on radar. Expert labels available: toggle them on.",
+ "labels": "labels.png",
+ "demo": true
+}

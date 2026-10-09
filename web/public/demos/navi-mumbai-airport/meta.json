@@ -1,0 +1,44 @@
+{
+ "id": "navi-mumbai-airport",
+ "name": "Navi Mumbai airport build-out",
+ "place": "Navi Mumbai International Airport site, Maharashtra",
+ "event": "Large construction project",
+ "kind": "encroachment",
+ "mode": "spectral",
+ "before_date": "2019-01-13",
+ "after_date": "2024-12-17",
+ "before_label": "Before \u00b7 Sentinel-2 \u00b7 2019-01-13",
+ "after_label": "After \u00b7 Sentinel-2 \u00b7 2024-12-17",
+ "scenes": {
+  "before": "S2A_43QBB_20190113_0_L2A",
+  "after": "S2B_43QBB_20241217_0_L2A"
+ },
+ "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket",
+ "corners": [
+  [
+   73.039365,
+   19.015019
+  ],
+  [
+   73.099954,
+   19.015652
+  ],
+  [
+   73.100528,
+   18.965068
+  ],
+  [
+   73.039958,
+   18.964437
+  ]
+ ],
+ "bbox": [
+  73.04,
+  18.965,
+  73.1,
+  19.015
+ ],
+ "preset": "encroachment",
+ "story": "Large construction project: land levelling and airport build-out",
+ "demo": true
+}

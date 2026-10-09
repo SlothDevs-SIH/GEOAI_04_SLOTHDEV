@@ -176,3 +176,17 @@ def test_mode_auto_rejects_unsupported_input(tmp):
         d.write(np.zeros((2, 10, 10), np.float32))
     with pytest.raises(ValueError):
         ingest.read_pair(path, path)
+
+
+def test_cropland_flagged_upper_bound_when_worldcover_newer_than_before(tmp):
+    import geopandas as gpd
+    from shapely.geometry import box
+    g = gpd.GeoDataFrame({"area_ha": [1.0], "cid": [1]}, geometry=[box(0, 0, 1, 1)], crs=4326)
+    lab = np.zeros((10, 10), int)
+    lab[2:5, 2:5] = 1
+    wc = np.full((10, 10), impact.CROPLAND, np.uint8)
+    crs = rasterio.crs.CRS.from_epsg(32643)
+    old = impact.compute(g.copy(), lab, TRANSFORM, crs, (10, 10), wc, before_date="2019-01-13")
+    new = impact.compute(g.copy(), lab, TRANSFORM, crs, (10, 10), wc, before_date="2024-11-19")
+    assert old["cropland_reliability"] == "upper_bound" and any("upper bound" in n for n in old["notes"])
+    assert new["cropland_reliability"] == "ok"

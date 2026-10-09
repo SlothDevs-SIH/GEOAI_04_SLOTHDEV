@@ -1,0 +1,108 @@
+{
+ "mode": "spectral",
+ "preset": "encroachment",
+ "raw_detections": 3083,
+ "after_filter": 22,
+ "dropped": {
+  "cloud": 0,
+  "seasonal": 31591,
+  "not_in_preset": 35921,
+  "speckle": 1643,
+  "min_area": 0
+ },
+ "total_area_m2": 118950.0,
+ "by_tier": {
+  "critical": 0,
+  "high": 5,
+  "medium": 5,
+  "low": 12
+ },
+ "by_type": {
+  "built_up_gain": 19,
+  "water_loss": 3
+ },
+ "runtime_s": 0.22,
+ "area_km2": 35.48,
+ "s_per_km2": 0.006,
+ "change_threshold": 0.4102,
+ "impact": {
+  "changed_ha": 11.89,
+  "cropland_ha": 3.83,
+  "built_up_ha": 0.38,
+  "buildings": null,
+  "road_segments": null,
+  "sources": [
+   "ESA WorldCover 2021 v200 (10 m), CC-BY 4.0"
+  ],
+  "notes": [
+   "Buildings and road segments need OpenStreetMap, which was not reachable when this result was built: shown as unknown, not zero"
+  ],
+  "cropland_reliability": "ok"
+ },
+ "quality": {
+  "cloud_or_invalid_pct_before": 0.0,
+  "cloud_or_invalid_pct_after": 0.0,
+  "shift_px": [
+   0.3,
+   -0.4
+  ],
+  "pixel_m": 10.0,
+  "season_before": "post-monsoon",
+  "season_after": "summer",
+  "days_apart": 115
+ },
+ "warnings": [
+  "different seasons (post-monsoon vs summer): vegetation change is expected and is filtered as seasonal"
+ ],
+ "sources": [
+  "Copernicus Sentinel-2 L2A (ESA), via the Element84 Earth Search COG bucket"
+ ],
+ "limits": [
+  "Optical imagery cannot see through cloud; flagged areas with cloud are removed, not analysed.",
+  "Change type comes from spectral index rules (no training); check critical changes on the ground.",
+  "10 m pixels cannot resolve single small buildings or people."
+ ],
+ "params": {
+  "mode": "auto",
+  "min_area_m2": 300.0,
+  "morph_kernel_px": 5,
+  "prob_threshold": 0.5,
+  "d_ndbi_built": 0.1,
+  "after_ndvi_max_built": 0.25,
+  "before_ndvi_max_built": 0.35,
+  "bare_ndvi_max": 0.25,
+  "sealed_swir_blue_max": 2.3,
+  "d_swir_blue_sealed": -0.1,
+  "d_ndvi_veg_loss": -0.2,
+  "before_ndvi_dense": 0.45,
+  "ndwi_water": 0.0,
+  "d_ndwi_water": 0.2,
+  "keep_types": [
+   "built_up_gain",
+   "water_loss"
+  ],
+  "review_band": [
+   0.5,
+   0.7
+  ],
+  "tiers": [
+   [
+    1000.0,
+    "critical"
+   ],
+   [
+    300.0,
+    "high"
+   ],
+   [
+    120.0,
+    "medium"
+   ],
+   [
+    0.0,
+    "low"
+   ]
+  ]
+ },
+ "subtitle": "Farmland near Saswad, Pune district, Maharashtra | before 2024-11-19 | after 2025-03-14"
+}

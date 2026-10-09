@@ -1,0 +1,44 @@
+{
+ "id": "pune-hinjewadi",
+ "name": "Pune city edge (Hinjewadi)",
+ "place": "Hinjewadi / Maan, Pune, Maharashtra",
+ "event": "Urban growth on the city edge",
+ "kind": "encroachment",
+ "mode": "spectral",
+ "before_date": "2019-01-25",
+ "after_date": "2025-02-17",
+ "before_label": "Before \u00b7 Sentinel-2 \u00b7 2019-01-25",
+ "after_label": "After \u00b7 Sentinel-2 \u00b7 2025-02-17",
+ "scenes": {
+  "before": "S2B_43QCA_20190125_1_L2A",
+  "after": "S2C_43QCA_20250217_0_L2A"
+ },
+ "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket",
+ "corners": [
+  [
+   73.679545,
+   18.620048
+  ],
+  [
+   73.760009,
+   18.620595
+  ],
+  [
+   73.760447,
+   18.560054
+  ],
+  [
+   73.680012,
+   18.559509
+  ]
+ ],
+ "bbox": [
+  73.68,
+  18.56,
+  73.76,
+  18.62
+ ],
+ "preset": "encroachment",
+ "story": "Fast urban growth on the city edge: IT parks and housing",
+ "demo": true
+}

@@ -1,0 +1,65 @@
+{
+ "mode": "radar",
+ "preset": "flood",
+ "raw_detections": 3490,
+ "after_filter": 37,
+ "dropped": {
+  "permanent_water": 2529,
+  "speckle_morphology": 661,
+  "below_min_area": 95
+ },
+ "total_area_m2": 1390149.8,
+ "by_tier": {
+  "critical": 0,
+  "high": 6,
+  "medium": 3,
+  "low": 28
+ },
+ "by_type": {
+  "water_gain": 37
+ },
+ "threshold_db": -14.06,
+ "impact": {
+  "changed_ha": 139.04,
+  "cropland_ha": null,
+  "built_up_ha": null,
+  "buildings": null,
+  "road_segments": null,
+  "sources": [],
+  "notes": [
+   "Impact layers are not computed for this 2016 test chip"
+  ]
+ },
+ "evaluation": {
+  "against": "Sen1Floods11 expert hand labels (flood water, JRC permanent water excluded)",
+  "m8": {
+   "tp": 14839,
+   "fp": 781,
+   "fn": 19134,
+   "iou": 0.427,
+   "precision": 0.95,
+   "recall": 0.437
+  },
+  "naive": {
+   "tp": 22513,
+   "fp": 19547,
+   "fn": 11460,
+   "iou": 0.421,
+   "precision": 0.535,
+   "recall": 0.663
+  }
+ },
+ "warnings": [],
+ "quality": {
+  "pixel_m": 10
+ },
+ "sources": [
+  "Copernicus Sentinel-1 IW GRD (dB) and Sentinel-2, via Sen1Floods11 v1.1 (CC-BY 4.0)",
+  "JRC Global Surface Water (permanent water mask)"
+ ],
+ "limits": [
+  "Open-water flood extent estimate: flooded crops and streets can look bright on radar and may be missed.",
+  "Single date shown; the full M8 compares before/after radar scenes."
+ ],
+ "subtitle": "Brahmaputra flood, Assam, India | Sentinel-1 radar 2016-08-12 | expert labels: Sen1Floods11"
+}

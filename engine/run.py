@@ -76,7 +76,7 @@ def analyze(before_path, after_path, preset="general", mode="auto", before_date=
     polys, lab = vectorise.polygons(mask, pair.transform)
     gdf = attributes.build(polys, lab, det, tmap, pair, det["magnitude"][det["valid"]])
     wc = impact.worldcover_on_grid(mask.shape, pair.transform, pair.crs, worldcover_cache)
-    imp = impact.compute(gdf, lab, pair.transform, pair.crs, mask.shape, wc)
+    imp = impact.compute(gdf, lab, pair.transform, pair.crs, mask.shape, wc, before_date)
     q, warnings = quality.flags(pair, before_date, after_date)
     h, w = mask.shape
     area_km2 = h * w * pair.pixel_m ** 2 / 1e6

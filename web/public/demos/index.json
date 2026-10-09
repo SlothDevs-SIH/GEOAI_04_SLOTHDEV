@@ -1,0 +1,108 @@
+[
+ {
+  "id": "assam-flood-2016",
+  "name": "Assam flood 2016 (radar, M8)",
+  "place": "Brahmaputra floodplain, Assam, India",
+  "event": "Monsoon flood mapped through cloud with Sentinel-1 radar",
+  "kind": "flood",
+  "mode": "radar",
+  "before_date": "2016-08-12",
+  "after_date": "2016-08-12",
+  "before_label": "Optical \u00b7 Sentinel-2 \u00b7 2016-08-12 (same day)",
+  "after_label": "Radar \u00b7 Sentinel-1 VV \u00b7 2016-08-12",
+  "scenes": {
+   "chip": "India_1018327"
+  },
+  "source": "Sen1Floods11 v1.1 hand-labelled chip (Copernicus Sentinel-1/2)",
+  "preset": "flood",
+  "story": "Flood water is dark on radar. Expert labels available: toggle them on.",
+  "labels": "labels.png",
+  "demo": true,
+  "after_filter": 37,
+  "raw_detections": 3490
+ },
+ {
+  "id": "navi-mumbai-airport",
+  "name": "Navi Mumbai airport build-out",
+  "place": "Navi Mumbai International Airport site, Maharashtra",
+  "event": "Large construction project",
+  "kind": "encroachment",
+  "mode": "spectral",
+  "before_date": "2019-01-13",
+  "after_date": "2024-12-17",
+  "before_label": "Before \u00b7 Sentinel-2 \u00b7 2019-01-13",
+  "after_label": "After \u00b7 Sentinel-2 \u00b7 2024-12-17",
+  "scenes": {
+   "before": "S2A_43QBB_20190113_0_L2A",
+   "after": "S2B_43QBB_20241217_0_L2A"
+  },
+  "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket",
+  "bbox": [
+   73.04,
+   18.965,
+   73.1,
+   19.015
+  ],
+  "preset": "encroachment",
+  "story": "Large construction project: land levelling and airport build-out",
+  "demo": true,
+  "after_filter": 265,
+  "raw_detections": 2185
+ },
+ {
+  "id": "pune-hinjewadi",
+  "name": "Pune city edge (Hinjewadi)",
+  "place": "Hinjewadi / Maan, Pune, Maharashtra",
+  "event": "Urban growth on the city edge",
+  "kind": "encroachment",
+  "mode": "spectral",
+  "before_date": "2019-01-25",
+  "after_date": "2025-02-17",
+  "before_label": "Before \u00b7 Sentinel-2 \u00b7 2019-01-25",
+  "after_label": "After \u00b7 Sentinel-2 \u00b7 2025-02-17",
+  "scenes": {
+   "before": "S2B_43QCA_20190125_1_L2A",
+   "after": "S2C_43QCA_20250217_0_L2A"
+  },
+  "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket",
+  "bbox": [
+   73.68,
+   18.56,
+   73.76,
+   18.62
+  ],
+  "preset": "encroachment",
+  "story": "Fast urban growth on the city edge: IT parks and housing",
+  "demo": true,
+  "after_filter": 475,
+  "raw_detections": 6830
+ },
+ {
+  "id": "season-control",
+  "name": "Saswad farmland (season control)",
+  "place": "Farmland near Saswad, Pune district, Maharashtra",
+  "event": "False-alarm test: only crops changed",
+  "kind": "control",
+  "mode": "spectral",
+  "before_date": "2024-11-19",
+  "after_date": "2025-03-14",
+  "before_label": "Before \u00b7 Sentinel-2 \u00b7 2024-11-19",
+  "after_label": "After \u00b7 Sentinel-2 \u00b7 2025-03-14",
+  "scenes": {
+   "before": "S2A_43QCA_20241119_0_L2A",
+   "after": "S2B_43QCA_20250314_1_L2A"
+  },
+  "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket",
+  "bbox": [
+   74.0,
+   18.33,
+   74.06,
+   18.38
+  ],
+  "preset": "encroachment",
+  "story": "False-alarm control: green post-monsoon crops vs dry season, a few months apart",
+  "demo": true,
+  "after_filter": 22,
+  "raw_detections": 3083
+ }
+]

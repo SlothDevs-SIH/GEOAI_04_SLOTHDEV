@@ -1,0 +1,107 @@
+{
+ "mode": "spectral",
+ "preset": "encroachment",
+ "raw_detections": 2185,
+ "after_filter": 265,
+ "dropped": {
+  "cloud": 58,
+  "seasonal": 54162,
+  "not_in_preset": 8612,
+  "speckle": 10353,
+  "min_area": 0
+ },
+ "total_area_m2": 2506900.0,
+ "by_tier": {
+  "critical": 17,
+  "high": 35,
+  "medium": 69,
+  "low": 144
+ },
+ "by_type": {
+  "built_up_gain": 233,
+  "water_loss": 32
+ },
+ "runtime_s": 0.88,
+ "area_km2": 35.73,
+ "s_per_km2": 0.025,
+ "change_threshold": 0.4211,
+ "impact": {
+  "changed_ha": 250.69,
+  "cropland_ha": 156.89,
+  "built_up_ha": 2.51,
+  "buildings": null,
+  "road_segments": null,
+  "sources": [
+   "ESA WorldCover 2021 v200 (10 m), CC-BY 4.0"
+  ],
+  "notes": [
+   "Land cover is ESA WorldCover 2021, newer than the before image (2019): land already cleared or under construction can be mislabelled as cropland, so treat cropland as an upper bound",
+   "Buildings and road segments need OpenStreetMap, which was not reachable when this result was built: shown as unknown, not zero"
+  ],
+  "cropland_reliability": "upper_bound"
+ },
+ "quality": {
+  "cloud_or_invalid_pct_before": 0.03,
+  "cloud_or_invalid_pct_after": 0.0,
+  "shift_px": [
+   0.1,
+   -0.4
+  ],
+  "pixel_m": 10.0,
+  "season_before": "winter",
+  "season_after": "winter",
+  "days_apart": 2165
+ },
+ "warnings": [],
+ "sources": [
+  "Copernicus Sentinel-2 L2A (ESA), via the Element84 Earth Search COG bucket"
+ ],
+ "limits": [
+  "Optical imagery cannot see through cloud; flagged areas with cloud are removed, not analysed.",
+  "Change type comes from spectral index rules (no training); check critical changes on the ground.",
+  "10 m pixels cannot resolve single small buildings or people."
+ ],
+ "params": {
+  "mode": "auto",
+  "min_area_m2": 300.0,
+  "morph_kernel_px": 5,
+  "prob_threshold": 0.5,
+  "d_ndbi_built": 0.1,
+  "after_ndvi_max_built": 0.25,
+  "before_ndvi_max_built": 0.35,
+  "bare_ndvi_max": 0.25,
+  "sealed_swir_blue_max": 2.3,
+  "d_swir_blue_sealed": -0.1,
+  "d_ndvi_veg_loss": -0.2,
+  "before_ndvi_dense": 0.45,
+  "ndwi_water": 0.0,
+  "d_ndwi_water": 0.2,
+  "keep_types": [
+   "built_up_gain",
+   "water_loss"
+  ],
+  "review_band": [
+   0.5,
+   0.7
+  ],
+  "tiers": [
+   [
+    1000.0,
+    "critical"
+   ],
+   [
+    300.0,
+    "high"
+   ],
+   [
+    120.0,
+    "medium"
+   ],
+   [
+    0.0,
+    "low"
+   ]
+  ]
+ },
+ "subtitle": "Navi Mumbai International Airport site, Maharashtra | before 2019-01-13 | after 2024-12-17"
+}

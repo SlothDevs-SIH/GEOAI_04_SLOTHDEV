@@ -1,0 +1,44 @@
+{
+ "id": "season-control",
+ "name": "Saswad farmland (season control)",
+ "place": "Farmland near Saswad, Pune district, Maharashtra",
+ "event": "False-alarm test: only crops changed",
+ "kind": "control",
+ "mode": "spectral",
+ "before_date": "2024-11-19",
+ "after_date": "2025-03-14",
+ "before_label": "Before \u00b7 Sentinel-2 \u00b7 2024-11-19",
+ "after_label": "After \u00b7 Sentinel-2 \u00b7 2025-03-14",
+ "scenes": {
+  "before": "S2A_43QCA_20241119_0_L2A",
+  "after": "S2B_43QCA_20250314_1_L2A"
+ },
+ "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket",
+ "corners": [
+  [
+   73.999696,
+   18.380009
+  ],
+  [
+   74.05999,
+   18.380317
+  ],
+  [
+   74.060262,
+   18.32998
+  ],
+  [
+   73.999986,
+   18.329674
+  ]
+ ],
+ "bbox": [
+  74.0,
+  18.33,
+  74.06,
+  18.38
+ ],
+ "preset": "encroachment",
+ "story": "False-alarm control: green post-monsoon crops vs dry season, a few months apart",
+ "demo": true
+}

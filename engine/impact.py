@@ -59,8 +59,14 @@ def pixel_area_m2(transform, crs, shape):
     return np.repeat(a[:, None], shape[1], 1).astype(np.float32)
 
 
-def compute(gdf, lab, transform, crs, shape, worldcover=None):
-    """Adds cropland_ha per polygon (in place) and returns the scene impact block."""
+WC_YEAR = 2021
+
+
+def compute(gdf, lab, transform, crs, shape, worldcover=None, before_date=None):
+    """Adds cropland_ha per polygon (in place) and returns the scene impact block.
+    WorldCover describes the land in 2021. When the before image is older, land that was already
+    being cleared or built on may be mislabelled (the levelled Navi Mumbai airport site is mapped as
+    cropland), so cropland is then flagged as an upper bound."""
     impact = {"changed_ha": round(float(gdf["area_ha"].sum()), 2) if len(gdf) else 0.0,
               "cropland_ha": None, "built_up_ha": None, "buildings": None, "road_segments": None,
               "sources": [], "notes": []}
@@ -76,6 +82,12 @@ def compute(gdf, lab, transform, crs, shape, worldcover=None):
     impact["cropland_ha"] = round(float(px[changed & crop_px].sum() / 1e4), 2)
     impact["built_up_ha"] = round(float(px[changed & built_px].sum() / 1e4), 2)
     impact["sources"].append(SOURCE)
+    impact["cropland_reliability"] = "ok"
+    if before_date and int(str(before_date)[:4]) < WC_YEAR:
+        impact["cropland_reliability"] = "upper_bound"
+        impact["notes"].append(f"Land cover is ESA WorldCover {WC_YEAR}, newer than the before image "
+                               f"({str(before_date)[:4]}): land already cleared or under construction can be "
+                               "mislabelled as cropland, so treat cropland as an upper bound")
     impact["notes"].append("Buildings and road segments need OpenStreetMap, which was not reachable when this "
                            "result was built: shown as unknown, not zero")
     return impact

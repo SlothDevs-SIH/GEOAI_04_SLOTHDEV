@@ -1,0 +1,55 @@
+{
+ "created_utc": "2026-10-09T09:32:07+00:00",
+ "engine_commit": "b425088",
+ "inputs": {
+  "before.tif": "df8e51cd501dd9ce96c8ce2e777c11ddef7a3a2c7ad5a0dd68946fceabb9ba57",
+  "after.tif": "d1d0cebcb242d5c1ae6bbb0e679737ca3b92f42e9176de6802894d1adbb007b4"
+ },
+ "params": {
+  "mode": "auto",
+  "min_area_m2": 300.0,
+  "morph_kernel_px": 5,
+  "prob_threshold": 0.5,
+  "d_ndbi_built": 0.1,
+  "after_ndvi_max_built": 0.25,
+  "before_ndvi_max_built": 0.35,
+  "bare_ndvi_max": 0.25,
+  "sealed_swir_blue_max": 2.3,
+  "d_swir_blue_sealed": -0.1,
+  "d_ndvi_veg_loss": -0.2,
+  "before_ndvi_dense": 0.45,
+  "ndwi_water": 0.0,
+  "d_ndwi_water": 0.2,
+  "keep_types": [
+   "built_up_gain",
+   "water_loss"
+  ],
+  "review_band": [
+   0.5,
+   0.7
+  ],
+  "tiers": [
+   [
+    1000.0,
+    "critical"
+   ],
+   [
+    300.0,
+    "high"
+   ],
+   [
+    120.0,
+    "medium"
+   ],
+   [
+    0.0,
+    "low"
+   ]
+  ]
+ },
+ "mode": "spectral",
+ "counts": {
+  "raw_detections": 6830,
+  "after_filter": 475
+ }
+}

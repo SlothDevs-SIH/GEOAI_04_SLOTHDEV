@@ -41,7 +41,8 @@ def build(path, title, summary, gdf, snapshot_png=None, permalink=None, limits=N
              f"Area changed: {imp.get('changed_ha', 0)} ha"]
     for k, lab in (("cropland_ha", "Cropland affected"), ("built_up_ha", "Built-up land affected")):
         v = imp.get(k)
-        lines.append(f"{lab}: {'unknown' if v is None else str(v) + ' ha'}")
+        flag = " (upper bound)" if k == "cropland_ha" and imp.get("cropland_reliability") == "upper_bound" else ""
+        lines.append(f"{lab}: {'unknown' if v is None else str(v) + ' ha' + flag}")
     lines += [f"{t}: {n}" for t, n in summary.get("by_tier", {}).items()]
     for ln in lines:
         pdf.cell(55, 5, _txt(ln), new_x="LEFT", new_y="NEXT")
