@@ -156,3 +156,17 @@ Tool: `python scripts/qa_overlay.py` writes `docs/img/qa_<scene>.jpg` (left befo
 1. **Raise the minimum mapping unit** for the encroachment preset from 300 m² to **1,000 m²** (10 pixels, a normal choice for 10 m data), or keep 300 m² but **hide the `low` tier by default** in the web app. Either removes clutter, not real change.
 2. **Reword the season-control claim.** Say "a scene with no large new buildings; remaining detections may include real small changes such as road works", so the false-alarm number (0.62 per km²) is presented as an **upper bound**.
 3. **Do not compare against my local Pune stack.** My copy under `demos/` was fetched before Ayush's Sentinel-2 offset fix and gives 237 polygons instead of 475. The files under `web/public/demos/` are the correct ones.
+
+### Progress after S2 (9 Oct, evening)
+
+| Task | State | Evidence |
+|---|---|---|
+| **S9 any area in India** | **Done** (backend and web) | `engine/aoi.py`, `POST /fetch-s2` and `/fetch-s2/preview`, `GET /jobs/{id}/files`, area picker on the Analyse page, `/job/:id` swipe map. Real archive check: scene selection works for Delhi NCR, Jaipur, Chennai, Kochi, Guwahati and Bengaluru (clear scenes found for each; preview about 23 s after parallelising the lookups, down from about 100 s) |
+| **S5 radar upload** | **Done** | "Radar flood (Sentinel-1)" tab, one-file upload, honest note (single date, open water only) |
+| **S4 stack visibility** | **Done** | About page: tech stack table (Used now / In progress / Planned) and the architecture diagram; `docs/img/geoai04_architecture.png` in the README |
+| **S3 composites and persistence** | **Done, measured: keep OFF by default** | `eval/composites.py` -> `eval/composites.json`. Season control: single 11 polygons (0.31 per km2), median of 3: 16 (worse), persistence 2: **8 (-27%)**, both 14. Pune: single 475 polygons / 142 ha; persistence 435 / 121 ha; median of 3: 438 / 125 ha; both 401 / 111 ha. So persistence removes some false alarms **and about 15% of real changed area**; median composites did not help. One test area each, so this is a measurement, not a guarantee |
+| **S6 offline PWA** | **Done** | 216 files (about 9 MB) cached; offline badge; Playwright test opens the demo with the network off |
+| **S7 deployment** | **Prepared; needs your accounts** | `docs/DEPLOY.md`, `render.yaml`, Dockerfile health check follows `$PORT`; container build result below |
+| **S8 submission pack** | In progress | `scripts/clean_clone_check.py` written; README and video still to do |
+
+**Evidence for `eval/results.json` (Ayush owns that file):** please add `eval/composites.json` as a `composites` key in `build_results.py`.

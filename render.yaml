@@ -1,0 +1,17 @@
+# Render fallback (free plan). Use this only if a Hugging Face Docker Space cannot be created.
+# New > Blueprint > pick this repo. Render sets PORT itself; the Dockerfile reads it.
+# Free instances have about 512 MB RAM and sleep after 15 minutes idle (the site itself works without the API).
+services:
+  - type: web
+    name: geoai04
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: JOB_WORKERS
+        value: "1"
+      - key: MAX_UPLOAD_MB
+        value: "50"

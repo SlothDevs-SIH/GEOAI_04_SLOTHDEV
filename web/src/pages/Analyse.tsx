@@ -172,16 +172,16 @@ export default function Analyse() {
           {!datesOk && <p className="mt-1 text-xs text-red-700">The before date must be earlier than the after date.</p>}
           <div className="mt-3">{presetSelect}</div>
           <details className="mt-3 text-sm" data-testid="advanced">
-            <summary className="cursor-pointer font-medium">Fewer false alarms (optional)</summary>
+            <summary className="cursor-pointer font-medium">Extra filters (optional, off by default)</summary>
             <label className="mt-2 block">Images per date
               <select className="ml-2 rounded border border-slate-300 p-1" value={composite} onChange={(e) => { setComposite(Number(e.target.value)); setPick(undefined); }} data-testid="composite">
                 <option value={1}>The single clearest image</option>
-                <option value={3}>Median of 3 images (removes one-off clouds; slower)</option>
+                <option value={3}>Median of 3 images (smooths one-off clouds; slower; did not reduce false alarms in our test)</option>
               </select>
             </label>
             <label className="mt-2 flex items-start gap-2">
               <input type="checkbox" checked={persist && persistOk} disabled={!persistOk} onChange={(e) => setPersist(e.target.checked)} data-testid="persistence" />
-              <span>Keep a change only if it is also seen in a second, later image (removes one-day artefacts; for construction, not floods)</span>
+              <span>Keep a change only if it is also seen in a second, later image (for construction, not floods). In our test: 27% fewer detections on a no-construction area, and 15% less changed area on a real-construction area, so it trades some real change for fewer false alarms.</span>
             </label>
           </details>
           <div className="mt-3 flex flex-wrap gap-2">
