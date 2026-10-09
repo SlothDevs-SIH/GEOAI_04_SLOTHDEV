@@ -1,0 +1,126 @@
+{
+ "learned": {
+  "precision": {
+   "value": 0.4517,
+   "ci95": [
+    0.2293,
+    0.6103
+   ]
+  },
+  "recall": {
+   "value": 0.6664,
+   "ci95": [
+    0.5552,
+    0.7949
+   ]
+  },
+  "f1": {
+   "value": 0.5384,
+   "ci95": [
+    0.3364,
+    0.6626
+   ]
+  },
+  "iou": {
+   "value": 0.3684,
+   "ci95": [
+    0.2022,
+    0.4955
+   ]
+  },
+  "tiles": 10,
+  "ece": 0.0761,
+  "s_per_km2": 0.003,
+  "per_city": {
+   "brasilia": {
+    "precision": 0.3829,
+    "recall": 0.6715,
+    "f1": 0.4877,
+    "iou": 0.3225
+   },
+   "montpellier": {
+    "precision": 0.6867,
+    "recall": 0.8348,
+    "f1": 0.7536,
+    "iou": 0.6046
+   },
+   "norcia": {
+    "precision": 0.0577,
+    "recall": 0.7522,
+    "f1": 0.1071,
+    "iou": 0.0566
+   },
+   "rio": {
+    "precision": 0.4434,
+    "recall": 0.6714,
+    "f1": 0.5341,
+    "iou": 0.3643
+   },
+   "saclay_w": {
+    "precision": 0.1133,
+    "recall": 0.775,
+    "f1": 0.1976,
+    "iou": 0.1097
+   },
+   "valencia": {
+    "precision": 0.0149,
+    "recall": 0.3158,
+    "f1": 0.0285,
+    "iou": 0.0145
+   },
+   "dubai": {
+    "precision": 0.5723,
+    "recall": 0.5444,
+    "f1": 0.558,
+    "iou": 0.387
+   },
+   "lasvegas": {
+    "precision": 0.7054,
+    "recall": 0.8336,
+    "f1": 0.7642,
+    "iou": 0.6183
+   },
+   "milano": {
+    "precision": 0.7556,
+    "recall": 0.2377,
+    "f1": 0.3616,
+    "iou": 0.2207
+   },
+   "chongqing": {
+    "precision": 0.6298,
+    "recall": 0.5558,
+    "f1": 0.5905,
+    "iou": 0.4189
+   }
+  }
+ },
+ "threshold": 0.85,
+ "default_method": "learned",
+ "rule": "learned becomes the default only if its test F1 beats the spectral method's test F1",
+ "spectral_f1": 0.3809,
+ "test_cities": [
+  "brasilia",
+  "montpellier",
+  "norcia",
+  "rio",
+  "saclay_w",
+  "valencia",
+  "dubai",
+  "lasvegas",
+  "milano",
+  "chongqing"
+ ],
+ "forced_rerun": false,
+ "model": {
+  "params": 1085113,
+  "val_f1": 0.4525,
+  "best_epoch": 26,
+  "seed": 0,
+  "commit": "0678ad5",
+  "val_cities": [
+   "hongkong",
+   "mumbai",
+   "paris"
+  ]
+ }
+}

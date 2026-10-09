@@ -1,6 +1,6 @@
 {
- "generated_utc": "2026-10-09T11:42:39+00:00",
- "commit": "0437d3e",
+ "generated_utc": "2026-10-09T12:41:45+00:00",
+ "commit": "0678ad5",
  "seed": 0,
  "m8_experiments": {
   "dataset": "Sen1Floods11 v1.1 hand-labelled, official splits",
@@ -597,6 +597,115 @@
    }
   }
  },
+ "oscd": {
+  "split": {
+   "train_cities": 11,
+   "val_cities": [
+    "hongkong",
+    "mumbai",
+    "paris"
+   ],
+   "test_cities": 10
+  },
+  "methods": {
+   "naive": {
+    "precision": {
+     "value": 0.1515,
+     "ci95": [
+      0.0458,
+      0.3586
+     ]
+    },
+    "recall": {
+     "value": 0.5957,
+     "ci95": [
+      0.5169,
+      0.6374
+     ]
+    },
+    "f1": {
+     "value": 0.2415,
+     "ci95": [
+      0.0844,
+      0.4526
+     ]
+    },
+    "iou": {
+     "value": 0.1373,
+     "ci95": [
+      0.0441,
+      0.2925
+     ]
+    }
+   },
+   "spectral": {
+    "precision": {
+     "value": 0.574,
+     "ci95": [
+      0.1764,
+      0.7216
+     ]
+    },
+    "recall": {
+     "value": 0.285,
+     "ci95": [
+      0.0973,
+      0.4184
+     ]
+    },
+    "f1": {
+     "value": 0.3809,
+     "ci95": [
+      0.1282,
+      0.5206
+     ]
+    },
+    "iou": {
+     "value": 0.2353,
+     "ci95": [
+      0.0685,
+      0.3519
+     ]
+    }
+   },
+   "learned": {
+    "precision": {
+     "value": 0.4517,
+     "ci95": [
+      0.2293,
+      0.6103
+     ]
+    },
+    "recall": {
+     "value": 0.6664,
+     "ci95": [
+      0.5552,
+      0.7949
+     ]
+    },
+    "f1": {
+     "value": 0.5384,
+     "ci95": [
+      0.3364,
+      0.6626
+     ]
+    },
+    "iou": {
+     "value": 0.3684,
+     "ci95": [
+      0.2022,
+      0.4955
+     ]
+    }
+   }
+  },
+  "default_method": "learned",
+  "default_rule": "learned only if it beats spectral on the test cities (used once); spectral otherwise",
+  "threshold": 0.85,
+  "ece": 0.0761,
+  "bootstrap": "95% percentile interval over test cities, 2000 resamples",
+  "learned_trained": true
+ },
  "levir": {
   "bit": {
    "f1": {
@@ -655,10 +764,10 @@
  },
  "speed_s_per_km2": {
   "spectral": 0.019,
+  "learned": 0.003,
   "deep": 36.3
  },
  "not_measured": [
-  "Optical change accuracy on OSCD test cities (dataset host blocked in the build environment)",
   "BIT on the full LEVIR-CD test split (the published F1 89.31 is quoted, not reproduced; we measured 7 labelled sample tiles)",
   "M8 before/after change on NASA OPERA RTC-S1 2026 events (needs Earthdata access, V-M8-2)"
  ]

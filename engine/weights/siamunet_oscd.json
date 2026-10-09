@@ -1,0 +1,50 @@
+{
+ "bands": [
+  "B02",
+  "B03",
+  "B04",
+  "B08",
+  "B11"
+ ],
+ "mean": [
+  0.13839800655841827,
+  0.13232900202274323,
+  0.13671499490737915,
+  0.20586900413036346,
+  0.20719300210475922
+ ],
+ "std": [
+  0.04403200000524521,
+  0.056800998747348785,
+  0.08013399690389633,
+  0.08842399716377258,
+  0.10394799709320068
+ ],
+ "threshold": 0.85,
+ "base": 24,
+ "params": 1085113,
+ "trained_on": [
+  "abudhabi",
+  "aguasclaras",
+  "beihai",
+  "beirut",
+  "bercy",
+  "bordeaux",
+  "cupertino",
+  "nantes",
+  "pisa",
+  "rennes",
+  "saclay_e"
+ ],
+ "val_cities": [
+  "hongkong",
+  "mumbai",
+  "paris"
+ ],
+ "val_f1": 0.4525,
+ "val_ece": 0.0328,
+ "best_epoch": 26,
+ "seed": 0,
+ "commit": "0678ad5",
+ "note": "threshold chosen on validation cities only"
+}
