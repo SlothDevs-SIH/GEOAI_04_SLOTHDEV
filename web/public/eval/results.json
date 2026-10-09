@@ -1,6 +1,6 @@
 {
- "generated_utc": "2026-10-09T09:37:14+00:00",
- "commit": "974a3aa",
+ "generated_utc": "2026-10-09T10:03:06+00:00",
+ "commit": "ecf0089",
  "m8_experiments": {
   "dataset": "Sen1Floods11 v1.1 hand-labelled, official splits",
   "split_sizes": {
@@ -320,6 +320,281 @@
    }
   ],
   "method": "spectral, encroachment preset"
+ },
+ "ablation": {
+  "what": "Polygons reported as each false-alarm rule is added, and with each rule left out",
+  "scenes": {
+   "season-control": {
+    "preset": "encroachment",
+    "valid_km2": 35.48,
+    "cumulative": [
+     {
+      "rules": [],
+      "added": null,
+      "polygons": 3083,
+      "per_km2": 86.89
+     },
+     {
+      "rules": [
+       "cloud"
+      ],
+      "added": "cloud",
+      "polygons": 3083,
+      "per_km2": 86.89
+     },
+     {
+      "rules": [
+       "cloud",
+       "seasonal"
+      ],
+      "added": "seasonal",
+      "polygons": 2768,
+      "per_km2": 78.01
+     },
+     {
+      "rules": [
+       "cloud",
+       "seasonal",
+       "preset"
+      ],
+      "added": "preset",
+      "polygons": 510,
+      "per_km2": 14.37
+     },
+     {
+      "rules": [
+       "cloud",
+       "seasonal",
+       "preset",
+       "speckle"
+      ],
+      "added": "speckle",
+      "polygons": 22,
+      "per_km2": 0.62
+     },
+     {
+      "rules": [
+       "cloud",
+       "seasonal",
+       "preset",
+       "speckle",
+       "min_area"
+      ],
+      "added": "min_area",
+      "polygons": 22,
+      "per_km2": 0.62
+     }
+    ],
+    "leave_one_out": [
+     {
+      "without": "cloud",
+      "polygons": 22,
+      "extra_vs_full": 0
+     },
+     {
+      "without": "seasonal",
+      "polygons": 22,
+      "extra_vs_full": 0
+     },
+     {
+      "without": "preset",
+      "polygons": 495,
+      "extra_vs_full": 473
+     },
+     {
+      "without": "speckle",
+      "polygons": 142,
+      "extra_vs_full": 120
+     },
+     {
+      "without": "min_area",
+      "polygons": 22,
+      "extra_vs_full": 0
+     }
+    ],
+    "no_change_scene": true
+   },
+   "navi-mumbai-airport": {
+    "preset": "encroachment",
+    "valid_km2": 35.73,
+    "cumulative": [
+     {
+      "rules": [],
+      "added": null,
+      "polygons": 2185,
+      "per_km2": 61.16
+     },
+     {
+      "rules": [
+       "cloud"
+      ],
+      "added": "cloud",
+      "polygons": 2186,
+      "per_km2": 61.18
+     },
+     {
+      "rules": [
+       "cloud",
+       "seasonal"
+      ],
+      "added": "seasonal",
+      "polygons": 1840,
+      "per_km2": 51.5
+     },
+     {
+      "rules": [
+       "cloud",
+       "seasonal",
+       "preset"
+      ],
+      "added": "preset",
+      "polygons": 1951,
+      "per_km2": 54.61
+     },
+     {
+      "rules": [
+       "cloud",
+       "seasonal",
+       "preset",
+       "speckle"
+      ],
+      "added": "speckle",
+      "polygons": 265,
+      "per_km2": 7.42
+     },
+     {
+      "rules": [
+       "cloud",
+       "seasonal",
+       "preset",
+       "speckle",
+       "min_area"
+      ],
+      "added": "min_area",
+      "polygons": 265,
+      "per_km2": 7.42
+     }
+    ],
+    "leave_one_out": [
+     {
+      "without": "cloud",
+      "polygons": 265,
+      "extra_vs_full": 0
+     },
+     {
+      "without": "seasonal",
+      "polygons": 265,
+      "extra_vs_full": 0
+     },
+     {
+      "without": "preset",
+      "polygons": 334,
+      "extra_vs_full": 69
+     },
+     {
+      "without": "speckle",
+      "polygons": 856,
+      "extra_vs_full": 591
+     },
+     {
+      "without": "min_area",
+      "polygons": 265,
+      "extra_vs_full": 0
+     }
+    ],
+    "no_change_scene": false
+   },
+   "pune-hinjewadi": {
+    "preset": "encroachment",
+    "valid_km2": 56.88,
+    "cumulative": [
+     {
+      "rules": [],
+      "added": null,
+      "polygons": 6830,
+      "per_km2": 120.07
+     },
+     {
+      "rules": [
+       "cloud"
+      ],
+      "added": "cloud",
+      "polygons": 6830,
+      "per_km2": 120.07
+     },
+     {
+      "rules": [
+       "cloud",
+       "seasonal"
+      ],
+      "added": "seasonal",
+      "polygons": 6379,
+      "per_km2": 112.14
+     },
+     {
+      "rules": [
+       "cloud",
+       "seasonal",
+       "preset"
+      ],
+      "added": "preset",
+      "polygons": 5266,
+      "per_km2": 92.58
+     },
+     {
+      "rules": [
+       "cloud",
+       "seasonal",
+       "preset",
+       "speckle"
+      ],
+      "added": "speckle",
+      "polygons": 476,
+      "per_km2": 8.37
+     },
+     {
+      "rules": [
+       "cloud",
+       "seasonal",
+       "preset",
+       "speckle",
+       "min_area"
+      ],
+      "added": "min_area",
+      "polygons": 475,
+      "per_km2": 8.35
+     }
+    ],
+    "leave_one_out": [
+     {
+      "without": "cloud",
+      "polygons": 475,
+      "extra_vs_full": 0
+     },
+     {
+      "without": "seasonal",
+      "polygons": 475,
+      "extra_vs_full": 0
+     },
+     {
+      "without": "preset",
+      "polygons": 793,
+      "extra_vs_full": 318
+     },
+     {
+      "without": "speckle",
+      "polygons": 2435,
+      "extra_vs_full": 1960
+     },
+     {
+      "without": "min_area",
+      "polygons": 476,
+      "extra_vs_full": 1
+     }
+    ],
+    "no_change_scene": false
+   }
+  }
  },
  "not_measured": [
   "Optical change accuracy on OSCD test cities (dataset host blocked in the build environment)",

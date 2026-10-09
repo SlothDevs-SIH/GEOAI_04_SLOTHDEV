@@ -3,6 +3,8 @@ import { Card } from "../components/panel/Panels";
 import { loadMetrics, type Metrics } from "../lib/api";
 import { num } from "../lib/format";
 
+const RULE: Record<string, string> = { cloud: "cloud mask", seasonal: "seasonal", preset: "preset types", speckle: "speckle", min_area: "min area" };
+
 type Row = { iou: number; precision: number; recall: number };
 type Split = { flood_only: Row; chips: number };
 
@@ -17,6 +19,7 @@ export default function Accuracy() {
   const exp = m.m8_experiments as { results: Record<string, Record<string, Split>>; split_sizes: Record<string, number> } | undefined;
   const india = m.m8_india as { m8: { flood_only: Row }; naive_per_chip_otsu: { flood_only: Row }; raw_blobs_naive: number; polygons_m8: number; chips: number; runtime_s: number } | undefined;
   const fa = m.false_alarms as { scenes: { id: string; name: string; area_km2: number; raw: number; kept: number; raw_per_km2: number; kept_per_km2: number; note: string }[] } | undefined;
+  const ab = m.ablation as { scenes: Record<string, { cumulative: { added: string | null; polygons: number; per_km2: number }[]; leave_one_out: { without: string; extra_vs_full: number }[] }> } | undefined;
   const methods: [string, string][] = [["naive_per_chip_otsu", "Naive (per-chip Otsu, no filters)"], ["m8_threshold", "M8 event threshold + filters"],
     ["m8_hysteresis", "M8 + region growing (default)"], ["m8_learned_gbm", "M8 learned classifier (optional)"]];
   const sets: [string, string][] = [["test", "Test split"], ["bolivia_heldout", "Unseen country (Bolivia)"], ["india_test", "India test chips"]];
@@ -70,6 +73,24 @@ export default function Accuracy() {
             </tbody>
           </table>
           <p className="mt-1 text-xs text-slate-500">{fa.scenes.find((s) => s.note)?.note}</p>
+        </Card>
+      )}
+      {ab && (
+        <Card title="Ablation: polygons reported as each false-alarm rule is added (encroachment preset)" testid="acc-ablation">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="text-left text-xs text-slate-500"><th>Scene</th>{ab.scenes[Object.keys(ab.scenes)[0]].cumulative.map((c) => <th key={c.added ?? "none"}>{c.added ? `+ ${RULE[c.added] ?? c.added}` : "No rules"}</th>)}</tr></thead>
+              <tbody>
+                {Object.entries(ab.scenes).map(([id, sc]) => (
+                  <tr key={id} className="border-t border-slate-100"><td>{id}</td>{sc.cumulative.map((c) => <td key={c.added ?? "none"}>{num(c.polygons)}</td>)}</tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-xs text-slate-600">
+            Left out one at a time from the full chain, extra polygons: {Object.entries(ab.scenes).map(([id, sc]) => `${id}: ${sc.leave_one_out.map((l) => `${RULE[l.without] ?? l.without} +${l.extra_vs_full}`).join(", ")}`).join(" · ")}.
+            The preset-type and speckle rules do almost all the work. On these clear scenes the cloud, seasonal and minimum-area rules remove nothing extra once those two run; we keep them as cheap safeguards for cloudy or noisier inputs, and say so rather than claim credit.
+          </p>
         </Card>
       )}
       <Card title="Not measured yet (said plainly)">

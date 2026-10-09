@@ -1,174 +1,127 @@
 # GEOAI 04: Change Detection that Ignores False Alarms
 
-**FUSION 2026 · GeoAI track · Problem statement GEOAI 04 · Team Slothdev**
+**FUSION 2026 · GeoAI track · Problem statement GEOAI 04 · Team Slothdevs**
 
-A **web app** that shows what actually changed on the ground between two dates: flooding, new construction, encroachment, vegetation loss. It filters out the seasonal, lighting and cloud noise that makes naive comparisons useless. Every change comes back as a GIS-ready polygon with its area, a severity tier and a one-line reason, and each run ends with an **impact summary** (hectares changed, cropland affected, buildings and roads touched).
+A **web app** that shows what actually changed on the ground between two dates: flooding, new construction, encroachment, vegetation loss. It filters out the seasonal, lighting, cloud and radar-speckle noise that makes naive comparisons useless. Every change comes back as a GIS-ready polygon with its area, a severity tier and a one-line reason, plus an **impact summary** (hectares changed, cropland and built-up land affected).
 
-> **Status (9 Oct 2026, 12:30):** planning complete and re-planned for a **web app**; prototype pipeline works on LEVIR-CD; the engine, ML retraining, API and web app are being built to the schedule in [`docs/TASK_SPLIT.md`](docs/TASK_SPLIT.md). **Submission deadline: 10:00, 10 October 2026.**
+> **Status (9 Oct 2026):** engine, radar flood mode (M8), API and web app work end to end and are tested. **Submission deadline: 10:00, 10 October 2026.**
 >
 > Live site: _to be added_ · API: _to be added_ · Demo video: _to be added_
 
----
-
 ## The problem
 
-After a flood or a construction boom, agencies compare satellite images from two dates to find damage or illegal building. Most pixel-level change is not real: crops grow, seasons turn, the sun moves, clouds pass. Naive differencing floods analysts with false alarms, and a raw pixel mask isn't something a GIS team can act on.
+After a flood or a construction boom, agencies compare satellite images from two dates. Most pixel-level change is not real: crops grow, seasons turn, the sun moves, clouds pass, radar speckles. Naive differencing floods analysts with false alarms, and a raw pixel mask isn't something a GIS team can act on.
 
 ## What the site does
 
-1. **Pick a scene:** open a demo scene (flood, encroachment, season control), or upload two GeoTIFFs.
-2. **Detect:** the service aligns the images, finds change (a spectral engine and a retrained Siamese model for Sentinel-2; a pretrained Siamese model for high-resolution images) and **filters out false alarms**.
-3. **Explore:** a before/after **swipe map** with change polygons coloured by severity, a ranked list, and a detail card with area, magnitude, confidence, location, the **reason it was kept** and before/after crops.
-4. **See the impact:** hectares changed, **cropland affected** (ESA WorldCover), buildings and road segments touched (OpenStreetMap), each with its source.
-5. **Review and export:** confirm or dismiss changes; download GeoPackage / GeoJSON (opens in QGIS), a one-page PDF and a field pack.
+1. **Pick a scene:** four demo scenes (Assam flood on radar, Navi Mumbai airport build-out, Pune city edge, a farmland season control), or upload your own before/after GeoTIFFs.
+2. **Swipe map:** before/after compare with change polygons coloured by severity tier.
+3. **The demo moment:** toggle the false-alarm filter. Navi Mumbai: **2,185 raw detections → 265 real changes**; Assam flood (radar): **3,490 → 37**; the season control, where nothing was built: **3,083 → 22**.
+4. **Explore:** ranked list, detail card with area, confidence, location, the **reason it was kept** and before/after crops; confirm or dismiss each change.
+5. **Impact:** hectares changed, cropland and built-up land affected (ESA WorldCover), each with its source and caveats. Unknown is shown as "unknown", never as zero.
+6. **Export:** GeoPackage, GeoJSON (all or confirmed only), one-page PDF, CSV field pack with map links, KML, audit trail; permalink + QR code for phones.
+7. **Accuracy page:** every number comes from a results file in this repo.
 
-**The demo moment:** toggle the false-alarm filter off and the map fills with noise (for example "412 raw detections"). Toggle it on and only the real changes remain (for example "37"). _The numbers shown in the app come from real runs; the ones here are illustrative._
+**What it does not do:** 10 m imagery cannot see people or single small buildings. The site **prioritises where to look**.
 
-**What it does not do:** 10 m satellite imagery cannot detect people. The site **prioritises where to look**; it does not find victims.
+## Measured results
 
-## Why it's different
-
-The default stack for this problem (React + a map library + FastAPI + a pretrained Siamese model) is what most teams will submit, so we differentiate on the method, the architecture and the evidence. The options we compared and why are in [`docs/TECH_OPTIONS.md`](docs/TECH_OPTIONS.md).
-
-1. **False-alarm-first, and measured:** a raw → filtered toggle, plus false alarms per km² reported alongside F1.
-2. **Every change explains itself:** a plain-language reason, a confidence score and before/after crops.
-3. **Decisions, not masks:** ranked polygons with area, location, type, severity and impact numbers, ready for QGIS or ArcGIS.
-4. **Honest numbers:** held-out results on real labelled data (OSCD), naive vs spectral vs learned, with seed and commit recorded.
-5. **Static-first and free:** demo scenes are precomputed, so the deployed site works even if the API sleeps; free Sentinel-2 imagery, open models and maps, no API keys, CPU-only.
-6. **Right model for the right resolution:** automatic routing between the spectral / learned engine (Sentinel-2) and the Siamese transformer (high resolution).
-
-### Planned differentiators (in priority order)
-
-| # | Differentiator | What it means | Status |
-|---|---|---|---|
-| 1 | **Trust layer** | Before/after built from composites of several least-cloudy scenes, a persistence test for encroachment, calibrated confidence, and an **ablation table** of how many false alarms each rule removes | Planned |
-| 2 | **Browser-first compute** | The spectral engine and the small OSCD-trained model run in the page (ONNX Runtime Web, WebGPU with WebAssembly fallback) with a **live sensitivity slider**; no server needed, imagery never leaves the user's machine | Planned (scoped to small areas) |
-| 3 | **Standards and reproducibility** | STAC metadata, COG and GeoJSON outputs, `audit.json`, one command to reproduce the numbers | Planned |
-| Gated | **Sentinel-1 radar flood mode (M8)**: sees through monsoon cloud. Data sourcing is decided (train on Planetary Computer, test on NASA OPERA); five live checks remain. AlphaEarth embeddings for year-over-year encroachment | Only after the core demo works |
-
-Anything marked "unverified" in `docs/TECH_OPTIONS.md` is tested before it appears in the pitch.
-
-## Proof so far
-
-The prototype ran end to end on real before/after pairs (LEVIR-CD, 0.5 m/pixel, public BIT model, CPU):
-
-| Method | F1 | IoU |
+| Check | Naive | Ours |
 |---|---|---|
-| Naive pixel difference | 0.30 | 0.17 |
-| **Pretrained Siamese BIT + clean-up** | **0.93** | **0.86** |
+| Radar flood (M8), Sen1Floods11 **unseen country** (Bolivia), flood IoU | 0.337 | **0.697** |
+| Radar flood (M8), India test chips, flood IoU | 0.273 | **0.571** |
+| Radar flood (M8), Sen1Floods11 official test split, flood IoU | 0.141 | **0.287** (0.433 with the optional learned classifier) |
+| Optical false alarms on the season-control scene (no real construction), per km² | 86.9 | **0.62** |
 
-- On a scene where nothing was built (only lighting and season changed), naive differencing raised **188 alerts**; our pipeline raised **0**.
-- Speed: about 7 seconds for 11 tiles on a CPU.
-- **Limits:** these figures come from 7 hand-picked sample tiles, and the no-change scene was in the model's training split. The published full-test-set F1 is about 0.89 (published, not reproduced by us). Details in [`docs/PROJECT_PLAN.md` §13.4](docs/PROJECT_PLAN.md#134-what-this-run-does-not-prove-be-upfront-about-these-with-judges).
-- **Next:** held-out OSCD results for naive, spectral and a retrained model will be added here from `eval/results.json`.
+The thresholds were fitted without labels, and the held-out splits were never used for fitting. The ablation (`eval/ablation.py`) shows the change-type rules and the speckle filter do almost all the false-alarm removal. **Not measured yet:** optical accuracy against labels (the OSCD download host is blocked in our build environment), and before/after radar change on 2026 NASA OPERA data. Details: [`eval/README.md`](eval/README.md), [`docs/M8_RADAR_FLOOD_DATA.md`](docs/M8_RADAR_FLOOD_DATA.md).
+
+## Model status
+
+| Mode | Input | Method | Status |
+|---|---|---|---|
+| Spectral | Sentinel-2 (≥ 4 bands incl. NIR, ≥ 5 m) | NDVI / NDBI / NDWI / SWIR-blue change vector, Otsu, type rules, false-alarm filters | **Working**, used by 3 demo scenes and live uploads |
+| Radar flood (M8) | Sentinel-1 VV/VH dB | Event-level threshold + region growing, JRC permanent-water mask, morphology | **Working**, evaluated on Sen1Floods11 |
+| Learned (M8) | Sentinel-1 | Gradient-boosted pixel classifier (`engine/weights/m8_gbm.joblib`) | Optional; better on the test split, worse on Bolivia |
+| OSCD-trained / BIT deep model | Sentinel-2 / high-res RGB | Siamese networks | Not in this build (data host blocked) |
 
 ## Architecture
 
 ```
- Web app (React + Vite + MapLibre GL)  ── Vercel                Processing service (Python) ── Hugging Face Space
- ┌──────────────────────────────────┐     static demo files     ┌──────────────────────────────────────┐
- │ scenes · swipe map · filters     │ ◀── public/demos/<id> ──  │ FastAPI: demos, jobs, results, exports│
- │ ranked list · impact · review    │                           │ engine: ingest → detect → filter →    │
- │ export · accuracy page           │ ──── HTTP/JSON (live) ──▶ │   vectorise → attributes → impact     │
- └──────────────────────────────────┘                           │ models: spectral, OSCD-trained U-Net, │
-                                                                │   BIT (LEVIR-CD)                      │
-                                                                │ data: Sentinel-2, OSM, WorldCover     │
-                                                                └──────────────────────────────────────┘
+ Web app (React + Vite + MapLibre)           static demo files            FastAPI (api/main.py)
+ scenes · swipe map · filter toggle   ◀── web/public/demos/<id> ──    /demos  /analyze  /jobs  /metrics
+ ranked list · impact · review                                        engine/: ingest → detect → filter →
+ exports · accuracy page              ──── HTTP/JSON (optional) ──▶     vectorise → attributes → impact → export
 ```
+
+The site is **static-first**: the demo works with the API switched off. The API adds live uploads.
 
 ## Tech stack
 
 | Part | Stack |
 |---|---|
-| **Web app** | React 19, Vite, TypeScript, Tailwind CSS, **MapLibre GL JS** (+ compare plugin), TanStack Query, Zustand; Vitest, Testing Library, Playwright |
-| **Processing service** | Python 3.11, FastAPI, Rasterio (GDAL), GeoPandas, Shapely, pyproj, NumPy, OpenCV, scikit-image, PyTorch (CPU), pytest, ruff |
-| **Models** | NDVI / NDBI / NDWI + Otsu (spectral); lightweight Siamese U-Net trained on OSCD; BIT Siamese transformer (LEVIR-CD weights) |
-| **Data** | Sentinel-2 L2A (Copernicus, public COGs), OSCD and LEVIR-CD for training and evaluation, OpenStreetMap, ESA WorldCover |
-| **Outputs** | GeoPackage, GeoJSON, PDF, CSV/KML |
-| **Deployment** | Vercel (web), a hosted container for the API, GitHub Actions (CI). Hugging Face Docker Spaces may now need a paid plan, so the host is confirmed first; the site works with the API off |
-
-Why each piece was chosen over its alternatives is in [`docs/PROJECT_PLAN.md` §14](docs/PROJECT_PLAN.md#14-tech-stack-what-we-use-why-and-why-not-the-alternatives).
+| Web app | React 19, Vite 7, TypeScript, Tailwind CSS 4, MapLibre GL, Zustand, React Router; Vitest + Testing Library, Playwright |
+| Engine and API | Python 3.11, FastAPI, Rasterio (GDAL), GeoPandas, Shapely, pyproj, NumPy, SciPy, scikit-image, scikit-learn, fpdf2; pytest, ruff |
+| Data | Sentinel-2 L2A (public COGs), Sentinel-1 via Sen1Floods11, ESA WorldCover 2021, JRC Global Surface Water |
+| Deployment | Vercel (web, `web/vercel.json`), one Docker container for the API + site (`Dockerfile`, port 7860), GitHub Actions CI |
 
 ## Repository layout
 
 ```
-.
-├── README.md
-├── FRONTEND_PLAN.md       ← the web app: stack, pages, build phases, tests, done criteria
-├── BACKEND_PLAN.md        ← engine, ML retraining, API contract, tests, deployment
-├── docs/
-│   ├── PROJECT_PLAN.md    ← full plan: problem, solution, risks, demo script, judge Q&A
-│   ├── TASK_SPLIT.md      ← hour-by-hour 24-hour schedule, roles, checkpoints, submission checklist
-│   └── TECH_OPTIONS.md    ← backend, model and frontend options, and where we differentiate
-├── prototype/             ← working pipeline from the worked example
-├── engine/                ← config and Sentinel-2 search exist; the rest is being built
-├── scripts/               ← demo scene fetching (and, planned, demo asset export)
-└── (planned) api/  web/  ml/  eval/  tests/  demos/
+api/        FastAPI service (routes in BACKEND_PLAN.md §6)
+engine/     change engine: s2, ingest, change_spectral, filters, vectorise, attributes, impact, quality, export, report, radar, run
+web/        React app; web/public/demos = precomputed demo scenes; web/e2e = Playwright
+eval/       results.json, ablation.py, build_results.py, results/ (M8 experiments)
+ml/         M8 experiments on the official Sen1Floods11 splits
+scripts/    fetch demo scenes, build demo assets, fetch M8 chips
+tests/      pytest (engine, radar, API)
+prototype/  round-1 pipeline and static prototype
+docs/       plans, research, UI speaking guide
 ```
 
-## Getting started
-
-### Run the prototype pipeline (works today)
-
-Requires Python 3.11+.
+## Run it
 
 ```bash
-git clone --depth 1 https://github.com/justchenhao/BIT_CD.git     # sample pairs + pretrained checkpoint
-pip install -r prototype/requirements.txt
-python prototype/pipeline.py ./BIT_CD ./out    # → out/changes_all.gpkg, changes_all.geojson, summary.json
-python prototype/figures.py ./out              # → out/walkthrough.png, out/more_cases.png
-```
-
-Open `out/changes_all.gpkg` in QGIS to see the attributed polygons.
-
-### Fetch the demo Sentinel-2 scenes
-
-```bash
-python scripts/fetch_demo_scenes.py            # all scenes → demos/<name>/before.tif, after.tif, meta.json
-```
-
-### API and web app (once `api/` and `web/` exist)
-
-```bash
-# API
+# API + engine (Python 3.11+)
 pip install -r requirements.txt
 uvicorn api.main:app --port 8000
 
 # Web app
-cd web && npm install && npm run dev
+cd web && npm install && npm run dev          # set VITE_API_URL=http://localhost:8000 for live uploads
+
+# One container (API + built site), as on a Hugging Face Docker Space
+docker build -t geoai04 . && docker run -p 7860:7860 geoai04
+
+# Command line
+python -m engine.run demos/navi-mumbai-airport/before.tif demos/navi-mumbai-airport/after.tif \
+  --out out/airport --preset encroachment --before-date 2019-01-13 --after-date 2024-12-17
+python -m engine.run chip.tif --mode radar --out out/flood
 ```
 
-### Tests
+Rebuild the data: `python scripts/fetch_demo_scenes.py` → `python scripts/export_demo_assets.py` → `python eval/ablation.py` → `python eval/build_results.py`.
+
+## Tests
 
 ```bash
-ruff check . && pytest -m "not slow"       # backend
-cd web && npm run lint && npm test && npm run build   # frontend
+ruff check . && pytest -q                                            # 37 tests
+cd web && npm run lint && npm run typecheck && npm test && npm run build && npm run e2e
 ```
+
+CI runs all of these on every push (`.github/workflows/ci.yml`).
 
 ## Documents
 
 | Read this | For |
 |---|---|
-| [`docs/TASK_SPLIT.md`](docs/TASK_SPLIT.md) | **Start here for who does what, and when** |
-| [`docs/M8_RADAR_FLOOD_DATA.md`](docs/M8_RADAR_FLOOD_DATA.md) | Radar flood mode: data sources, access, evidence so far, test plan, open checks (from Ayush) |
-| [`docs/PRIOR_ART_TECH_STACKS.md`](docs/PRIOR_ART_TECH_STACKS.md) | What 9 past projects built, their stacks and datasets, and the gaps we close (from Ayush) |
-| [`docs/TECH_OPTIONS.md`](docs/TECH_OPTIONS.md) | Every stack option we compared, the scored differentiators, and what is still unverified |
-| [`BACKEND_PLAN.md`](BACKEND_PLAN.md) | Engine modules, the ML retraining plan, API, tests, deployment |
-| [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md) | The web app |
-| [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) | The whole picture, including the official statement (§2.1) |
-
-## Open items
-
-- [x] Official GEOAI 04 statement pasted into [`docs/PROJECT_PLAN.md` §2.1](docs/PROJECT_PLAN.md#21-official-statement).
-- [ ] Judging rubric and submission rules (format, repo visibility, required files): fill in [`docs/TASK_SPLIT.md` §5](docs/TASK_SPLIT.md).
-- [ ] Choose the flood scene (post-event cloud < 5 %) and the encroachment scene.
-- [ ] Assign names to the four roles in `docs/TASK_SPLIT.md` §1.
-- [ ] Confirm where the API will be hosted (check whether a free Hugging Face Docker Space can be created).
-- [ ] Review the teammates' `backend-2` and `research-notes` branches and merge what is useful.
+| [`BACKEND_PLAN.md`](BACKEND_PLAN.md) · [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md) | What was built and why, API contract, tests, deployment |
+| [`docs/UI_EXPLANATION.md`](docs/UI_EXPLANATION.md) | Walkthrough of the UI for presenting |
+| [`docs/M8_RADAR_FLOOD_DATA.md`](docs/M8_RADAR_FLOOD_DATA.md) | Radar flood mode: data, access, evidence |
+| [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) · [`docs/TASK_SPLIT.md`](docs/TASK_SPLIT.md) · [`docs/TECH_OPTIONS.md`](docs/TECH_OPTIONS.md) | Full plan, schedule, options compared |
+| [`docs/PRIOR_ART_TECH_STACKS.md`](docs/PRIOR_ART_TECH_STACKS.md) | What past projects built and the gaps we close |
 
 ## Credits
 
-- BIT change-detection model and weights: [justchenhao/BIT_CD](https://github.com/justchenhao/BIT_CD) (Chen et al., IEEE TGRS 2021)
-- LEVIR-CD dataset (Chen & Shi, Remote Sensing 2020); Onera Satellite Change Detection dataset (Daudt et al., 2018)
-- Sentinel-2 imagery: Copernicus programme, via Element84 Earth Search; ESA WorldCover
-- Map data © OpenStreetMap contributors; base map styles by OpenFreeMap
+- Sentinel-2 and Sentinel-1 imagery: Copernicus programme (ESA), Sentinel-2 COGs via Element84 Earth Search
+- Sen1Floods11 (Bonafilia et al., CVPR Workshops 2020), CC-BY 4.0; JRC Global Surface Water (Pekel et al., 2016)
+- ESA WorldCover 2021 v200, CC-BY 4.0
+- Map data © OpenStreetMap contributors
+- Round-1 prototype: BIT model ([justchenhao/BIT_CD](https://github.com/justchenhao/BIT_CD)), LEVIR-CD dataset

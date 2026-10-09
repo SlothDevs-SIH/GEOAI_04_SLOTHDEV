@@ -59,6 +59,7 @@ describe("Accuracy", () => {
     at("/accuracy", <Accuracy />);
     expect(await screen.findByTestId("acc-m8")).toBeInTheDocument();
     expect(screen.getAllByRole("table").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByTestId("acc-ablation")).toHaveTextContent("speckle");
   });
 });
 

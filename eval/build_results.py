@@ -6,6 +6,7 @@ Inputs (all produced by scripts in this repo):
   eval/results/m8_sen1floods11_experiments.json   ml/m8_experiments.py
   eval/results/m8_sen1floods11_india.json         scripts/build_m8_demo.py
   web/public/demos/<id>/summary.json               scripts/export_demo_assets.py (false alarms per km²)
+  eval/ablation.json                               eval/ablation.py
 """
 import json
 import os
@@ -43,6 +44,7 @@ def main():
            "m8_experiments": load("eval/results/m8_sen1floods11_experiments.json"),
            "m8_india": load("eval/results/m8_sen1floods11_india.json"),
            "false_alarms": false_alarms(),
+           "ablation": load("eval/ablation.json"),
            "not_measured": ["Optical change accuracy on OSCD test cities (dataset host blocked in the build "
                             "environment)", "M8 before/after change on NASA OPERA RTC-S1 2026 events"]}
     os.makedirs(os.path.join(ROOT, "eval"), exist_ok=True)

@@ -40,6 +40,7 @@ test("demo flow: scenes → result → toggle → select → confirm → permali
 test("accuracy, analyse and about pages load", async ({ page }) => {
   await page.goto("./#/accuracy");
   await expect(page.getByTestId("acc-m8")).toBeVisible();
+  await expect(page.getByTestId("acc-ablation")).toBeVisible();
   await page.goto("./#/analyse");
   await expect(page.getByTestId("analyse-offline")).toBeVisible();
   await page.goto("./#/about");

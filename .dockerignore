@@ -1,0 +1,9 @@
+.git
+**/node_modules
+web/dist
+data
+demos
+runs
+out
+**/__pycache__
+.venv
