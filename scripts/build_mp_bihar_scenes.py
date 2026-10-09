@@ -21,15 +21,14 @@ import os
 import shutil
 import sys
 
-import numpy as np
 import rasterio
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 
-from engine import detectors, impact, run, sensitivity
-from export_demo_assets import corners_lonlat, crops, snapshot_png, true_color, webp
+from engine import detectors, run, sensitivity  # noqa: E402
+from export_demo_assets import corners_lonlat, crops, snapshot_png, true_color, webp  # noqa: E402
 
 OUT = os.path.join(ROOT, "web", "public", "demos")
 
