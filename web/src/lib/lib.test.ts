@@ -56,6 +56,6 @@ describe("format", () => {
   it("labels and colours fall back safely", () => {
     expect(typeLabel("built_up_gain")).toBe("New construction");
     expect(typeLabel("some_new_type")).toBe("some new type");
-    expect(tierColor("nope")).toBe("#666");
+    expect(tierColor("nope")).toBe("#94A3B8");
   });
 });

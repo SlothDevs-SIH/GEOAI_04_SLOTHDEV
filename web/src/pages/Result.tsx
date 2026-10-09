@@ -1,103 +1,239 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import CompareMap from "../components/map/CompareMap";
 import SensitivityLab from "../components/panel/SensitivityLab";
-import { Card, ChangeCard, ChangeList, DropCounts, ExportMenu, FilterBar, ImpactPanel, Legend } from "../components/panel/Panels";
+import ChangeCard from "../components/result/ChangeCard";
+import ChangeList from "../components/result/ChangeList";
+import CounterText from "../components/result/CounterText";
+import DetectorSwitch, { DETECTOR_LABEL } from "../components/result/DetectorSwitch";
+import ExportMenu from "../components/result/ExportMenu";
+import FilterBar from "../components/result/FilterBar";
+import ImageViewer from "../components/result/ImageViewer";
+import ImpactPanel from "../components/result/ImpactPanel";
+import Legend from "../components/result/Legend";
+import LimitsCard from "../components/result/LimitsCard";
+import { centroidText, copyText } from "../components/result/clipboard";
+import { readPermalink, writePermalink } from "../components/result/permalink";
+import ResultHeader from "../components/result/ResultHeader";
+import { DropCounts, SceneEvalTable, WarningsBanner } from "../components/result/ResultInfo";
+import { FilterToggle, LabelsSwitch, PolygonsSwitch } from "../components/result/Switches";
+import { CardSection, EmptyState, ErrorState, InlineAlert, Skeleton, TabSegment } from "../components/ui/Primitives";
 import { useRaw, useScene } from "../hooks/useScene";
-import { DEFAULT_FILTERS, type FilterState, counterText, mapFilter, passes } from "../lib/filters";
-import { num } from "../lib/format";
-import { useReview } from "../store/review";
+import { type FilterState, mapFilter, passes, tabCounts } from "../lib/filters";
+import type { ChangeProps, Detector } from "../lib/types";
+import { isModified, useFilters } from "../store/filters";
+import { reviewKey, useReview } from "../store/review";
+import { useUi } from "../store/ui";
+
+const TABS: [FilterState["tab"], string][] = [["all", "All"], ["review", "Needs review"], ["confirmed", "Confirmed"], ["dismissed", "Dismissed"]];
+
+function ResultSkeleton() {
+  return (
+    <div data-testid="result-skeleton" role="status" aria-label="Loading scene" className="mx-auto max-w-[1500px] px-s12 py-s12 md:px-s18">
+      <span className="sr-only">Loading scene…</span>
+      <Skeleton width={280} height={28} />
+      <div className="mt-s12 grid gap-s12 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="flex flex-col gap-s12">
+          <Skeleton height={48} />
+          <Skeleton height={420} radius={13} />
+        </div>
+        <div className="flex flex-col gap-s12">
+          <Skeleton height={180} radius={13} />
+          <Skeleton height={220} radius={13} />
+          <Skeleton height={160} radius={13} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Result({ job = false }: { job?: boolean }) {
   const { id = "" } = useParams();
-  const { data, error, loading } = useScene(id, job);
   const [params, setParams] = useSearchParams();
-  const filterOn = params.get("filter") !== "off";
-  const selected = params.get("sel") ? Number(params.get("sel")) : undefined;
-  const swipe = params.get("swipe") ? Number(params.get("swipe")) : 50;
-  const [showLabels, setShowLabels] = useState(false);
-  const [showPolygons, setShowPolygons] = useState(true);
-  const [f, setF] = useState<FilterState>(DEFAULT_FILTERS);
-  const decisions = useReview((s) => s.decisions[id]);
-  const setReview = useReview((s) => s.set);
-  const status = (fid: number) => decisions?.[fid] ?? "pending";
-  const raw = useRaw(data?.base, !filterOn);
+  const requested: Detector = readPermalink(params).mode;
+  const scene = useScene(id, job, requested);
+  const { data } = scene;
+  const showToast = useUi((s) => s.showToast);
 
-  const setParam = (k: string, v: string | undefined) => {
-    const p = new URLSearchParams(params);
-    if (v == null) p.delete(k);
-    else p.set(k, v);
-    setParams(p, { replace: true });
+  // ---- view state (zustand) <-> URL permalink: sel, filter, swipe, mode ----
+  const tiers = useFilters((s) => s.tiers);
+  const types = useFilters((s) => s.types);
+  const minAreaM2 = useFilters((s) => s.minAreaM2);
+  const minConfidence = useFilters((s) => s.minConfidence);
+  const tab = useFilters((s) => s.tab);
+  const filterOn = useFilters((s) => s.filterOn);
+  const selectedId = useFilters((s) => s.selectedId);
+  const swipePct = useFilters((s) => s.swipePct);
+  const showLabels = useFilters((s) => s.showLabels);
+  const showPolygons = useFilters((s) => s.showPolygons);
+
+  const key = `${job ? "job" : "scene"}:${id}`;
+  const [hydrated, setHydrated] = useState("");
+  const lastWritten = useRef<string | null>(null);
+  const paramsRef = useRef(params);
+  paramsRef.current = params;
+  const setParamsRef = useRef(setParams);
+  setParamsRef.current = setParams;
+
+  // a new scene starts from a clean view...
+  useLayoutEffect(() => {
+    useFilters.getState().resetAll();
+    lastWritten.current = null;
+  }, [key]);
+  // ...then the permalink is applied (also when the address changes from outside, e.g. a pasted link): the same link, the same view
+  const paramsStr = params.toString();
+  useLayoutEffect(() => {
+    if (paramsStr === lastWritten.current) return; // our own write
+    const pl = readPermalink(new URLSearchParams(paramsStr));
+    const st = useFilters.getState();
+    st.setSelectedId(pl.sel);
+    st.setFilterOn(pl.filterOn);
+    st.setSwipePct(pl.swipe);
+    lastWritten.current = paramsStr;
+    setHydrated(key);
+  }, [paramsStr, key]);
+  const ready = hydrated === key;
+
+  const commitUrl = (mode?: Detector) => {
+    const st = useFilters.getState();
+    const next = writePermalink(paramsRef.current, {
+      sel: st.selectedId, filterOn: st.filterOn, swipe: st.swipePct, mode: mode ?? readPermalink(paramsRef.current).mode,
+    });
+    if (next.toString() === paramsRef.current.toString()) return;
+    lastWritten.current = next.toString();
+    setParamsRef.current(next, { replace: true });
+  };
+  const commitRef = useRef(commitUrl);
+  commitRef.current = commitUrl;
+  useEffect(() => {
+    if (!ready) return;
+    const t = setTimeout(() => commitRef.current(), 120); // the divider moves continuously; write the link once it settles
+    return () => clearTimeout(t);
+  }, [ready, selectedId, filterOn, swipePct]);
+
+  const setSelectedId = useFilters((s) => s.setSelectedId);
+  const onDetector = (d: Detector) => {
+    setSelectedId(null); // change ids differ between detectors
+    commitUrl(d);
   };
 
-  const props = useMemo(() => data?.filtered.features.map((x) => x.properties) ?? [], [data]);
-  const visible = useMemo(() => props.filter((p) => passes(p, f, status(p.id))), [props, f, decisions]); // eslint-disable-line react-hooks/exhaustive-deps
-  const hidden = useMemo(() => props.filter((p) => !visible.includes(p)).map((p) => p.id), [props, visible]);
-  const filterExpr = useMemo(() => mapFilter({ ...f, tab: "all" }, hidden), [f, hidden]);
-  const types = useMemo(() => [...new Set(props.map((p) => p.change_type))], [props]);
-  const confirmed = props.filter((p) => status(p.id) === "confirmed");
+  // ---- derived data ----
+  const rk = reviewKey(id, data?.detector);
+  const decisions = useReview((s) => s.decisions[rk]);
+  const setReview = useReview((s) => s.set);
+  const status = useCallback((fid: number) => decisions?.[fid] ?? "pending", [decisions]);
+  const raw = useRaw(data?.dataBase ?? data?.base, !filterOn);
 
-  if (loading) return <p className="p-6 text-slate-500">Loading scene…</p>;
-  if (error || !data) return (
-    <div className="p-6"><p className="text-red-700">Could not load this scene ({error}).</p><Link to="/" className="underline">Back to scenes</Link></div>
-  );
+  const props = useMemo(() => data?.filtered.features.map((x) => x.properties) ?? [], [data?.filtered]);
+  const f = useMemo<FilterState>(() => ({ tiers, types, minAreaM2, minConfidence, tab }), [tiers, types, minAreaM2, minConfidence, tab]);
+  const visible = useMemo(() => props.filter((p) => passes(p, f, status(p.id))), [props, f, status]);
+  const hidden = useMemo(() => {
+    const keep = new Set(visible.map((p) => p.id));
+    return props.filter((p) => !keep.has(p.id)).map((p) => p.id);
+  }, [props, visible]);
+  const filterExpr = useMemo(() => mapFilter({ ...f, tab: "all" }, hidden), [f, hidden]);
+  const counts = useMemo(() => tabCounts(props, f, status), [props, f, status]);
+  const changeTypes = useMemo(() => [...new Set(props.map((p) => p.change_type))], [props]);
+  const maxArea = useMemo(() => props.reduce((m, p) => Math.max(m, p.area_m2), 0), [props]);
+  const confirmed = useMemo(() => props.filter((p) => status(p.id) === "confirmed"), [props, status]);
+
+  const filterActions = useFilters.getState();
+  const onFilterChange = (patch: Partial<FilterState>) => {
+    if (patch.tiers) filterActions.setTiers(patch.tiers);
+    if ("types" in patch) filterActions.setTypes(patch.types ?? null);
+    if (patch.minAreaM2 != null) filterActions.setMinAreaM2(patch.minAreaM2);
+    if (patch.minConfidence != null) filterActions.setMinConfidence(patch.minConfidence);
+  };
+  const copyCentroid = async (p: ChangeProps) => showToast((await copyText(centroidText(p))) ? "Copied" : "Could not copy, select the numbers instead");
+
+  if (scene.loading || (!scene.error && !ready)) return <ResultSkeleton />;
+  if (scene.error || !data) {
+    return (
+      <div className="mx-auto max-w-xl p-s18">
+        <ErrorState message={`Could not load this scene (${scene.error ?? "no data"}).`} onRetry={scene.retry} />
+        <p className="text-center"><Link to={job ? "/analyse" : "/"} className="tap text-accent">{job ? "Back to Analyse" : "Back to scenes"}</Link></p>
+      </div>
+    );
+  }
+
   const s = data.summary;
-  const sel = props.find((p) => p.id === selected);
   const radar = data.meta.mode === "radar";
+  const sel = props.find((p) => p.id === selectedId);
+  const variants = data.meta.variants ?? [];
+  const spectralShown = (data.detector ?? "spectral") === "spectral";
+  const rawLoading = !filterOn && !raw;
+  const href = typeof window === "undefined" ? "" : window.location.href;
 
   return (
-    <div className="mx-auto grid max-w-[1500px] gap-3 p-3 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="flex min-w-0 flex-col gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">{data.meta.name}</h1>
-          <p className="text-sm text-slate-600">{s.subtitle ?? data.meta.place} · {data.meta.event}</p>
+    <div data-testid="result" data-detector={data.detector ?? "spectral"} className="mx-auto max-w-[1500px] px-s12 pb-s26 md:px-s18">
+      <ResultHeader name={data.meta.name} subtitle={s.subtitle ?? data.meta.place} event={data.meta.event} kind={job ? "live" : "demo"}
+        backTo={job ? "/analyse" : "/"} backLabel={job ? "Analyse" : "Scenes"} />
+
+      <div className="grid gap-s12 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+        {/* ---- left: the map and what the filter did ---- */}
+        <div className="flex min-w-0 flex-col gap-s12">
+          <div className="flex flex-wrap items-center gap-x-s18 gap-y-s4">
+            <FilterToggle value={filterOn} onChange={useFilters.getState().setFilterOn} />
+            {radar && <LabelsSwitch value={showLabels} onChange={useFilters.getState().setShowLabels} />}
+            <PolygonsSwitch value={showPolygons} onChange={useFilters.getState().setShowPolygons} />
+          </div>
+          <div className="sticky top-[65px] z-20 -mx-s12 bg-bg/95 px-s12 py-s4 backdrop-blur md:-mx-s18 md:px-s18 lg:static lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+            <CounterText rawCount={s.raw_detections} keptCount={s.after_filter} filterOn={filterOn} />
+          </div>
+
+          {variants.length > 0 && (
+            <DetectorSwitch value={requested === scene.mode ? requested : scene.mode} variants={variants} spectral={scene.spectral}
+              loading={scene.variantLoading ? scene.mode : undefined} error={scene.variantError} onChange={onDetector} onRetry={scene.retry} />
+          )}
+
+          <div className="relative h-[62vh] min-h-[360px] lg:h-[min(72vh,760px)] lg:min-h-[480px]">
+            <CompareMap scene={data} filterOn={filterOn} raw={raw} showLabels={showLabels} showPolygons={showPolygons}
+              filter={filterExpr} selected={selectedId ?? undefined} onSelect={setSelectedId}
+              swipe={swipePct} onSwipe={useFilters.getState().setSwipePct} />
+            {(scene.variantLoading || rawLoading) && (
+              <div role="status" className="pointer-events-none absolute bottom-s8 left-1/2 z-30 -translate-x-1/2 rounded-xs border border-line bg-surface-alt px-s12 py-s4 text-micro text-fg shadow-card">
+                {scene.variantLoading ? `Loading ${DETECTOR_LABEL[scene.mode]} results…` : "Loading raw detections…"}
+              </div>
+            )}
+          </div>
+          <Legend radar={radar} />
+          <DropCounts dropped={s.dropped} />
+          <WarningsBanner warnings={s.warnings} />
+          <SceneEvalTable evaluation={s.evaluation} />
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-accent bg-white px-3 py-1.5 font-semibold">
-            <input type="checkbox" checked={filterOn} onChange={(e) => setParam("filter", e.target.checked ? undefined : "off")} data-testid="filter-toggle" />
-            False-alarm filter
-          </label>
-          {radar && <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} />Show expert labels</label>}
-          <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" checked={showPolygons} onChange={(e) => setShowPolygons(e.target.checked)} />Polygons</label>
-          <span className="text-sm" data-testid="counter" aria-live="polite">{counterText(s.raw_detections, s.after_filter, filterOn)}</span>
-        </div>
-        <div className="h-[62vh] min-h-[360px]">
-          <CompareMap scene={data} filterOn={filterOn} raw={raw} showLabels={showLabels} showPolygons={showPolygons}
-            filter={filterExpr} selected={selected} onSelect={(fid) => setParam("sel", String(fid))}
-            swipe={swipe} onSwipe={(v) => setParam("swipe", String(Math.round(v)))} />
-        </div>
-        <Legend radar={radar} />
-        <DropCounts s={s} />
-        {s.warnings.length > 0 && (
-          <ul className="rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900" data-testid="warnings">
-            {s.warnings.map((w) => <li key={w}>⚠ {w}</li>)}
-          </ul>
-        )}
-        {s.evaluation && (
-          <Card title="Accuracy on this scene vs expert labels" testid="scene-eval">
-            <table className="w-full text-sm">
-              <thead><tr className="text-left text-xs text-slate-500"><th>Method</th><th>IoU</th><th>Precision</th><th>Recall</th><th>False-alarm pixels</th></tr></thead>
-              <tbody>
-                <tr><td>Naive (per-scene threshold, no filters)</td><td>{s.evaluation.naive.iou}</td><td>{s.evaluation.naive.precision}</td><td>{s.evaluation.naive.recall}</td><td>{num(s.evaluation.naive.fp)}</td></tr>
-                <tr className="font-semibold"><td>M8 (event threshold + region growing + filters)</td><td>{s.evaluation.m8.iou}</td><td>{s.evaluation.m8.precision}</td><td>{s.evaluation.m8.recall}</td><td>{num(s.evaluation.m8.fp)}</td></tr>
-              </tbody>
-            </table>
-            <p className="mt-1 text-[11px] text-slate-500">{s.evaluation.against}. Thresholds were fitted without labels.</p>
-          </Card>
-        )}
+
+        {/* ---- right: impact, the selected change, the ranked list and exports ---- */}
+        <aside aria-label="Changes and exports" className="thin-scroll flex flex-col gap-s12 lg:sticky lg:top-[77px] lg:max-h-[calc(100vh-89px)] lg:overflow-y-auto lg:pr-1">
+          <ImpactPanel summary={s} />
+          <ChangeCard feature={sel} base={data.dataBase ?? data.base} status={sel ? status(sel.id) : "pending"}
+            onReview={(st) => sel && setReview(rk, sel.id, st)} />
+
+          <CardSection title={`Changes, ranked (${visible.length.toLocaleString("en-IN")})`} testid="changes">
+            {props.length === 0 ? (
+              <EmptyState title="No changes found - that is a result too." body="Nothing survived the false-alarm filter between these two dates." />
+            ) : (
+              <>
+                <TabSegment tabs={TABS} active={tab} onChange={useFilters.getState().setTab} counts={counts} />
+                <FilterBar embedded filters={f} types={changeTypes} maxAreaM2={maxArea} modified={isModified(f)}
+                  onChange={onFilterChange} onReset={useFilters.getState().resetFilters} />
+                <div role="tabpanel" aria-label={TABS.find(([k]) => k === tab)?.[1]} className="mt-s12">
+                  <ChangeList items={visible} status={status} selectedId={selectedId} onSelect={setSelectedId}
+                    onLongPress={copyCentroid} filtersActive={isModified(f) || tab !== "all"}
+                    onResetFilters={() => { useFilters.getState().resetFilters(); }} />
+                </div>
+              </>
+            )}
+          </CardSection>
+
+          {!radar && spectralShown && <SensitivityLab base={data.base} />}
+          {!radar && !spectralShown && (
+            <InlineAlert variant="info" message="The sensitivity lab models the rule-based (spectral) engine only. Switch the detector to Spectral rules to use it." />
+          )}
+          <ExportMenu scene={data} confirmed={confirmed} url={href} />
+          <LimitsCard limits={s.limits} sources={s.sources} />
+        </aside>
       </div>
-      <aside className="flex flex-col gap-3">
-        <ImpactPanel s={s} />
-        <ChangeCard p={sel} base={data.base} status={sel ? status(sel.id) : "pending"} onReview={(st) => sel && setReview(id, sel.id, st)} />
-        <ChangeList items={visible} status={status} selected={selected} onSelect={(fid) => setParam("sel", String(fid))} f={f} setF={setF} />
-        <FilterBar f={f} setF={setF} types={types} />
-        {!radar && <SensitivityLab base={data.base} />}
-        <ExportMenu scene={data} confirmed={confirmed} />
-        <Card title="Limits">
-          <ul className="list-disc pl-4 text-xs text-slate-600">{s.limits.map((l) => <li key={l}>{l}</li>)}</ul>
-          <p className="mt-1 text-[11px] text-slate-500">Sources: {s.sources.join(" · ")}</p>
-        </Card>
-      </aside>
+      <ImageViewer />
     </div>
   );
 }

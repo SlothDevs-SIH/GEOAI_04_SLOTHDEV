@@ -28,7 +28,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from engine import aoi, detectors, preview, radar
+from engine import aoi, detectors, preview, quality, radar
 from engine.config import params_for
 
 VERSION = "1.0.0"
@@ -124,8 +124,15 @@ def results():
 
 # ---------- demo scenes (same files the static site reads) ----------
 
+def _real(*parts):
+    """os.path.realpath of the joined parts; a NUL byte in a URL would make it raise (a 500 on Linux), so it is a 404."""
+    if any("\x00" in x for x in parts):
+        raise HTTPException(404, "file not found")
+    return os.path.realpath(os.path.join(*parts))
+
+
 def _demo_dir(demo_id):
-    d = os.path.realpath(os.path.join(DEMOS, demo_id))
+    d = _real(DEMOS, demo_id)
     if not d.startswith(os.path.realpath(DEMOS) + os.sep) or not os.path.isdir(d):
         raise HTTPException(404, f"no demo scene '{demo_id}'")
     return d
@@ -162,7 +169,7 @@ def demo_preview(demo_id: str, side: str):
 @api.get("/demos/{demo_id}/files/{path:path}")
 def demo_file(demo_id: str, path: str):
     d = _demo_dir(demo_id)
-    p = os.path.realpath(os.path.join(d, path))
+    p = _real(d, path)
     if not p.startswith(d + os.sep) or not os.path.isfile(p):
         raise HTTPException(404, "file not found")
     return FileResponse(p)
@@ -171,7 +178,7 @@ def demo_file(demo_id: str, path: str):
 # ---------- live analysis jobs ----------
 
 def _job_dir(job_id):
-    if not job_id.isalnum():
+    if not job_id.isascii() or not job_id.isalnum():
         raise HTTPException(404, "no such job")
     d = os.path.join(RUNS, job_id)
     if not os.path.exists(os.path.join(d, "job.json")):
@@ -241,6 +248,13 @@ async def _save(upload: UploadFile, path):
             f.write(chunk)
 
 
+def _check_dates(before_date, after_date):
+    try:
+        quality.check_dates(before_date, after_date)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+
+
 @api.post("/analyze")
 async def analyze(before: UploadFile | None = File(None), after: UploadFile | None = File(None),
                   demo_id: str | None = Form(None), mode: str = Form("spectral"), preset: str = Form("general"),
@@ -249,6 +263,7 @@ async def analyze(before: UploadFile | None = File(None), after: UploadFile | No
     if preset not in PRESETS:
         raise HTTPException(400, f"preset must be one of {', '.join(PRESETS)}")
     _need_mode(mode)
+    _check_dates(before_date, after_date)       # what the caller typed, before any file is saved
     job_id = uuid.uuid4().hex[:16]
     d = os.path.join(RUNS, job_id)
     os.makedirs(d)
@@ -262,6 +277,7 @@ async def analyze(before: UploadFile | None = File(None), after: UploadFile | No
                                          f"use /demos/{demo_id}/result for the precomputed result")
             meta = _json(os.path.join(_demo_dir(demo_id), "meta.json"))
             before_date, after_date = before_date or meta.get("before_date"), after_date or meta.get("after_date")
+            _check_dates(before_date, after_date)
         else:
             if after is None or (mode != "radar" and before is None):
                 raise HTTPException(400, "upload 'before' and 'after' GeoTIFFs, or give a demo_id")
@@ -310,8 +326,10 @@ def _check_fetch(body: FetchBody):
         raise HTTPException(400, "persistence is not used for floods: flood water recedes, so it would remove real change")
     try:
         aoi.validate_bbox(body.bbox)
-        aoi.parse_date(body.before_date, "before date")
-        aoi.parse_date(body.after_date, "after date")
+        bd = aoi.parse_date(body.before_date, "before date")
+        ad = aoi.parse_date(body.after_date, "after date")
+        if bd >= ad:
+            raise aoi.AoiError("the before date must be earlier than the after date")
     except aoi.AoiError as e:
         raise HTTPException(400, str(e)) from e
 
@@ -363,7 +381,8 @@ def fetch_s2(body: FetchBody):
 
 FILE_TYPES = {".json": "application/json", ".geojson": "application/geo+json", ".webp": "image/webp",
               ".gpkg": "application/geopackage+sqlite3", ".csv": "text/csv",
-              ".kml": "application/vnd.google-earth.kml+xml", ".pdf": "application/pdf"}
+              ".kml": "application/vnd.google-earth.kml+xml", ".pdf": "application/pdf",
+              ".bin": "application/octet-stream"}   # sens.bin: the sensitivity slider's per-pixel data
 
 
 @api.get("/jobs/{job_id}/files/{path:path}")
@@ -371,7 +390,7 @@ def job_file(job_id: str, path: str):
     """The swipe-map files of a finished job, in the same layout as a demo scene (exports/ maps to the job folder)."""
     d = os.path.realpath(_done(job_id))
     rel = path[len("exports/"):] if path.startswith("exports/") else path
-    p = os.path.realpath(os.path.join(d, rel))
+    p = _real(d, rel)
     ext = os.path.splitext(p)[1].lower()
     if (not p.startswith(d + os.sep) or not os.path.isfile(p) or ext not in FILE_TYPES
             or os.path.basename(p) in ("job.json", "review.json")):

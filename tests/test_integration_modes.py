@@ -154,6 +154,9 @@ def test_a_learned_job_runs_and_opens_on_the_swipe_map_without_slider_data(offli
     spectral = client.post("/analyze", files=files, data={"mode": "spectral", "preset": "encroachment"}).json()["job_id"]
     assert wait(spectral)["status"] == "done"
     assert client.get(f"/jobs/{spectral}/files/sens.json").status_code == 200
+    sens = client.get(f"/jobs/{spectral}/files/sens.json").json()
+    bin_ = client.get(f"/jobs/{spectral}/files/sens.bin")                    # regression: the slider's data file was a 404
+    assert bin_.status_code == 200 and len(bin_.content) == sens["width"] * sens["height"] * 3
 
 
 def s1_tiff(flooded):
@@ -187,3 +190,40 @@ def test_radar_single_date_still_works_as_before(offline):
     jid = r.json()["job_id"]
     assert wait(jid)["status"] == "done"
     assert client.get(f"/jobs/{jid}/summary").json()["after_filter"] == 1
+
+
+def test_deep_mode_keeps_house_sized_changes_under_the_encroachment_preset(tmp_path, monkeypatch):
+    """Regression (found by running real BIT sample tiles): the preset minimum area of 300 m2 is for 10 m pixels and
+    removed every house at 0.5 m. Deep mode must keep changes of about 50 m2."""
+    monkeypatch.setattr(change_deep, "status", lambda: UP)
+    monkeypatch.setattr(change_deep, "probability",
+                        lambda pair, fn=None: (np.abs(pair.before - pair.after).mean(0) > 0.2).astype(np.float32))
+    rng = np.random.default_rng(3)
+    base = rng.integers(90, 110, (3, 200, 200)).astype(np.uint8)
+    changed = base.copy()
+    changed[:, 60:74, 60:74] = 250                         # 14 x 14 pixels at 0.5 m = 49 m2: one house
+    paths = []
+    for name, data in (("hb", base), ("ha", changed)):
+        path = str(tmp_path / f"{name}.tif")
+        with rasterio.open(path, "w", driver="GTiff", height=200, width=200, count=3, dtype="uint8",
+                           crs="EPSG:32643", transform=from_origin(500000, 2000000, 0.5, 0.5)) as dst:
+            dst.write(data)
+        paths.append(path)
+    res = run.analyze(paths[0], paths[1], "encroachment", mode="deep")
+    assert res.summary["after_filter"] == 1 and 40 < res.gdf.iloc[0]["area_m2"] < 60
+    assert res.summary["params"]["min_area_m2"] == run.DEEP_MIN_AREA_M2
+
+
+def test_fetch_rejects_reversed_dates_before_starting_a_job():
+    """Regression (found by the black-box system test): /fetch-s2 accepted before >= after and failed later inside the job."""
+    body = {"bbox": [77.1, 28.5, 77.17, 28.56], "before_date": "2025-02-01", "after_date": "2025-01-01"}
+    r = client.post("/fetch-s2", json=body)
+    assert r.status_code == 400 and "earlier" in r.json()["detail"]
+    assert client.post("/fetch-s2", json={**body, "after_date": "2025-02-01"}).status_code == 400
+
+
+def test_a_nul_byte_in_a_file_url_is_a_404_not_a_server_error():
+    """Regression (found by the system test against the Linux container): realpath raised ValueError, a 500 and a dropped connection."""
+    for url in ("/demos/navi-mumbai-airport/files/meta.json%00.png", "/demos/navi%00x/summary", "/jobs/abc%00/summary",
+                "/jobs/abc%00/files/meta.json"):
+        assert client.get(url).status_code == 404, url

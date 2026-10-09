@@ -13,6 +13,25 @@ def _season(d: date) -> str:
     return "monsoon" if 6 <= m <= 9 else "post-monsoon" if m in (10, 11) else "winter" if m in (12, 1, 2) else "summer"
 
 
+def check_dates(before_date=None, after_date=None):
+    """Raise ValueError (plain language) for an unreadable date or a before date that is not earlier than the after date.
+
+    Dates are optional: with one or none given there is nothing to compare. Unlike the area fetch, no earliest-date
+    limit applies, because an uploaded image can be from any year.
+    """
+    parsed = []
+    for name, text in (("before date", before_date), ("after date", after_date)):
+        if not text:
+            parsed.append(None)
+            continue
+        try:
+            parsed.append(date.fromisoformat(str(text)[:10]))
+        except ValueError as exc:
+            raise ValueError(f"the {name} must be a date like 2025-01-31") from exc
+    if parsed[0] and parsed[1] and parsed[0] >= parsed[1]:
+        raise ValueError("the before date must be earlier than the after date")
+
+
 def flags(pair, before_date=None, after_date=None):
     q, warn = {}, list(pair.warnings)
     if pair.scl_before is not None:

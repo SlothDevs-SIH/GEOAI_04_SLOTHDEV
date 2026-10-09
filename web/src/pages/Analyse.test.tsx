@@ -4,6 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockStaticFetch } from "../test/staticFetch";
 
 // The live API and the map are replaced: this file tests the page logic of the "any area" flow.
+const HEALTH = vi.hoisted(() => ({
+  ok: true,
+  modes: ["spectral", "learned", "hybrid", "radar"],
+  models: { learned: true, deep: false },
+  model_status: { learned: { available: true, backend: "onnxruntime" }, deep: { available: false, reason: "not installed" } },
+}));
 const api = vi.hoisted(() => ({
   fetchPreview: vi.fn(),
   startFetch: vi.fn(),
@@ -14,6 +20,7 @@ vi.mock("../lib/api", async (orig) => ({
   ...(await orig<typeof import("../lib/api")>()),
   API_URL: "http://api.test",
   apiHealth: async () => true,
+  fetchHealth: async () => HEALTH,
   loadJobScene: async () => (await orig<typeof import("../lib/api")>()).loadScene("navi-mumbai-airport"),
   ...api,
 }));

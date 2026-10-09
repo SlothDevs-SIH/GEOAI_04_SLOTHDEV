@@ -19,3 +19,7 @@ eval/cache/
 
 # source image stacks and their metadata are fetched locally by scripts/fetch_demo_scenes.py
 /demos/
+
+# test coverage output
+.coverage
+web/coverage/

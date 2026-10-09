@@ -2,6 +2,14 @@
 
 export type Tier = "critical" | "high" | "medium" | "low";
 export type ReviewStatus = "pending" | "confirmed" | "dismissed";
+/** Which detector produced the polygons: the rule-based engine (default), the learned ONNX model, or both combined. */
+export type Detector = "spectral" | "learned" | "hybrid";
+
+export interface VariantInfo {
+  mode: Exclude<Detector, "spectral">;
+  raw_detections: number;
+  after_filter: number;
+}
 
 export interface SceneMeta {
   id: string;
@@ -21,6 +29,8 @@ export interface SceneMeta {
   demo: boolean;
   after_filter?: number;
   raw_detections?: number;
+  /** Alternative detector results precomputed under <scene>/variants/<mode>/ (optical demo scenes only). */
+  variants?: VariantInfo[];
 }
 
 export interface ChangeProps {
@@ -91,5 +101,9 @@ export interface SceneData {
   meta: SceneMeta;
   summary: Summary;
   filtered: FeatureCollection<ChangeProps>;
-  base: string; // URL prefix for this scene's static files
+  base: string; // URL prefix for this scene's static files (images, exports, sensitivity data)
+  /** Which detector the polygons, summary and crops belong to (absent = the default spectral result). */
+  detector?: Detector;
+  /** URL prefix of the polygons, raw layer and crops: `base`, or `base/variants/<mode>` for a non-default detector. */
+  dataBase?: string;
 }

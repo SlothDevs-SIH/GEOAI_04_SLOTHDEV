@@ -2,7 +2,7 @@
  "id": "season-control",
  "name": "Saswad farmland (season control)",
  "place": "Farmland near Saswad, Pune district, Maharashtra",
- "event": "False-alarm test: only crops changed",
+ "event": "False-alarm test: farmland with no large new buildings",
  "kind": "control",
  "mode": "spectral",
  "before_date": "2024-11-19",
@@ -40,5 +40,17 @@
  ],
  "preset": "encroachment",
  "story": "False-alarm control: green post-monsoon crops vs dry season, a few months apart",
- "demo": true
+ "demo": true,
+ "variants": [
+  {
+   "mode": "learned",
+   "raw_detections": 693,
+   "after_filter": 263
+  },
+  {
+   "mode": "hybrid",
+   "raw_detections": 899,
+   "after_filter": 12
+  }
+ ]
 }

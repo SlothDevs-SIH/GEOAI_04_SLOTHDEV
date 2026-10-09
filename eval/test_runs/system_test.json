@@ -1,0 +1,1491 @@
+{
+ "url": "http://127.0.0.1:8010",
+ "seconds": 340,
+ "checks": 247,
+ "passed": 247,
+ "failed": 0,
+ "results": [
+  {
+   "group": "health",
+   "name": "GET /health returns 200 with ok=true",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "health",
+   "name": "GET /api/health returns 200 with ok=true",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "health",
+   "name": "reports spectral and radar modes",
+   "ok": true,
+   "detail": "['spectral', 'learned', 'hybrid', 'deep', 'radar']"
+  },
+  {
+   "group": "health",
+   "name": "reports learned/deep availability as booleans",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "health",
+   "name": "any-area fetch is advertised",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "health",
+   "name": "API default mode is spectral",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "health",
+   "name": "GET /metrics returns the measured results",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "health",
+   "name": "GET /results returns the radar results",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "health",
+   "name": "GET / serves the web app",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "health",
+   "name": "PWA/asset /sw.js is served",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "health",
+   "name": "PWA/asset /manifest.webmanifest is served",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "health",
+   "name": "PWA/asset /architecture.png is served",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "health",
+   "name": "PWA/asset /icon-192.png is served",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "GET /demos lists 7 scenes",
+   "ok": true,
+   "detail": "['assam-flood-2016', 'navi-mumbai-airport', 'pune-hinjewadi', 'season-control', 'delhi-ncr', 'bengaluru', 'guwahati']"
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: meta.json",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: summary.json has counts",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: result polygons == summary after_filter",
+   "ok": true,
+   "detail": "37 vs 37"
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: every polygon has all required properties",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: tiers and ids are valid, ids unique",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: areas and confidence are in range",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: raw layer loads",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: raw detections >= real changes",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: before image is webp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: after image is webp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: map corners are 4 valid lon/lat points",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: export changes.gpkg",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: export changes.geojson",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: export report.pdf",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: export changes.csv",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: export changes.kml",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "assam-flood-2016: export audit.json",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: meta.json",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: summary.json has counts",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: result polygons == summary after_filter",
+   "ok": true,
+   "detail": "265 vs 265"
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: every polygon has all required properties",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: tiers and ids are valid, ids unique",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: areas and confidence are in range",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: raw layer loads",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: raw detections >= real changes",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: before image is webp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: after image is webp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: map corners are 4 valid lon/lat points",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: export changes.gpkg",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: export changes.geojson",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: export report.pdf",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: export changes.csv",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: export changes.kml",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: export audit.json",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "navi-mumbai-airport: slider data present and sized right",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: meta.json",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: summary.json has counts",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: result polygons == summary after_filter",
+   "ok": true,
+   "detail": "475 vs 475"
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: every polygon has all required properties",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: tiers and ids are valid, ids unique",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: areas and confidence are in range",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: raw layer loads",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: raw detections >= real changes",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: before image is webp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: after image is webp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: map corners are 4 valid lon/lat points",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: export changes.gpkg",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: export changes.geojson",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: export report.pdf",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: export changes.csv",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: export changes.kml",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: export audit.json",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "pune-hinjewadi: slider data present and sized right",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: meta.json",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: summary.json has counts",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: result polygons == summary after_filter",
+   "ok": true,
+   "detail": "22 vs 22"
+  },
+  {
+   "group": "demos",
+   "name": "season-control: every polygon has all required properties",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: tiers and ids are valid, ids unique",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: areas and confidence are in range",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: raw layer loads",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: raw detections >= real changes",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: before image is webp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: after image is webp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: map corners are 4 valid lon/lat points",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: export changes.gpkg",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: export changes.geojson",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: export report.pdf",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: export changes.csv",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: export changes.kml",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: export audit.json",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "season-control: slider data present and sized right",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: meta.json",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: summary.json has counts",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: result polygons == summary after_filter",
+   "ok": true,
+   "detail": "290 vs 290"
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: every polygon has all required properties",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: tiers and ids are valid, ids unique",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: areas and confidence are in range",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: raw layer loads",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: raw detections >= real changes",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: before image is webp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: after image is webp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: map corners are 4 valid lon/lat points",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: export changes.gpkg",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: export changes.geojson",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: export report.pdf",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: export changes.csv",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: export changes.kml",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: export audit.json",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "delhi-ncr: slider data present and sized right",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: meta.json",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: summary.json has counts",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: result polygons == summary after_filter",
+   "ok": true,
+   "detail": "272 vs 272"
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: every polygon has all required properties",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: tiers and ids are valid, ids unique",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: areas and confidence are in range",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: raw layer loads",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: raw detections >= real changes",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: before image is webp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: after image is webp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: map corners are 4 valid lon/lat points",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: export changes.gpkg",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: export changes.geojson",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: export report.pdf",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: export changes.csv",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: export changes.kml",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: export audit.json",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "bengaluru: slider data present and sized right",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: meta.json",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: summary.json has counts",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: result polygons == summary after_filter",
+   "ok": true,
+   "detail": "51 vs 51"
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: every polygon has all required properties",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: tiers and ids are valid, ids unique",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: areas and confidence are in range",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: raw layer loads",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: raw detections >= real changes",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: before image is webp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: after image is webp",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: map corners are 4 valid lon/lat points",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: export changes.gpkg",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: export changes.geojson",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: export report.pdf",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: export changes.csv",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: export changes.kml",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: export audit.json",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "demos",
+   "name": "guwahati: slider data present and sized right",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "errors",
+   "name": "GET /demos/nowhere/summary is refused (404)",
+   "ok": true,
+   "detail": "404"
+  },
+  {
+   "group": "errors",
+   "name": "GET /jobs/doesnotexist is refused (404)",
+   "ok": true,
+   "detail": "404"
+  },
+  {
+   "group": "errors",
+   "name": "GET /jobs/..%2F..%2Fetc is refused (404)",
+   "ok": true,
+   "detail": "404"
+  },
+  {
+   "group": "errors",
+   "name": "GET /demos/navi-mumbai-airport/files/../../../../api/main.py is refused (404)",
+   "ok": true,
+   "detail": "404"
+  },
+  {
+   "group": "errors",
+   "name": "GET /demos/navi-mumbai-airport/files/..%2F..%2Findex.json is refused (404)",
+   "ok": true,
+   "detail": "404"
+  },
+  {
+   "group": "errors",
+   "name": "GET /jobs/x/files/job.json is refused (404)",
+   "ok": true,
+   "detail": "404"
+  },
+  {
+   "group": "errors",
+   "name": "GET /nope is refused (404)",
+   "ok": true,
+   "detail": "404"
+  },
+  {
+   "group": "errors",
+   "name": "GET /api/nope is refused (404)",
+   "ok": true,
+   "detail": "404"
+  },
+  {
+   "group": "errors",
+   "name": "preview side must be before/after",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: huge box -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: huge box -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: reversed box -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: reversed box -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: tiny box -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: tiny box -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: NaN-ish box -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: NaN-ish box -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: box outside the world -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: box outside the world -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: bad date -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: bad date -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: future date -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: future date -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: dates reversed -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: dates reversed -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: date before Sentinel-2 L2A -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: date before Sentinel-2 L2A -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: bad preset -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: bad preset -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: bad mode -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: bad mode -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: deep mode for an area -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: deep mode for an area -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: window too big -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: window too big -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: composite 9 -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: composite 9 -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: persistence 1 -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: persistence 1 -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2: persistence with flood -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "/fetch-s2/preview: persistence with flood -> 400",
+   "ok": true,
+   "detail": "400"
+  },
+  {
+   "group": "errors",
+   "name": "invalid JSON body is rejected (422)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "errors",
+   "name": "missing body is rejected (422)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "errors",
+   "name": "GET on a POST-only route is refused (404/405)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "errors",
+   "name": "DELETE on a read-only route is refused (404/405)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "errors",
+   "name": "analyze with no files is 400",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "errors",
+   "name": "analyze with a bad preset is 400",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "errors",
+   "name": "junk upload ends as a clear job error, not a crash",
+   "ok": true,
+   "detail": "RasterioIOError: 'C:\\Soham\\college work\\fusion_hack\\GEOAI_04_SLOTHDEV\\runs\\3ddcde48596f40ad\\before.tif' not recognized as being in a supported file format."
+  },
+  {
+   "group": "errors",
+   "name": "the error does not leak server paths or a stack trace",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "errors",
+   "name": "review of an unfinished job is refused",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "errors",
+   "name": "a 5,000 character job id is refused cleanly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "errors",
+   "name": "a null byte in a path is refused",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "cors",
+   "name": "preflight from another origin succeeds",
+   "ok": true,
+   "detail": "200"
+  },
+  {
+   "group": "cors",
+   "name": "preflight allows the origin",
+   "ok": true,
+   "detail": "*"
+  },
+  {
+   "group": "cors",
+   "name": "normal responses carry the CORS header",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "cors",
+   "name": "responses are compressed when asked",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "radar",
+   "name": "single-date radar upload finds the flood",
+   "ok": true,
+   "detail": "1"
+  },
+  {
+   "group": "radar",
+   "name": "flood area is about 36 ha",
+   "ok": true,
+   "detail": "35.88"
+  },
+  {
+   "group": "radar",
+   "name": "before/after radar uses the reference",
+   "ok": true,
+   "detail": "before_after"
+  },
+  {
+   "group": "radar",
+   "name": "radar export geojson downloads",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "radar",
+   "name": "a dry before/after pair reports no flood",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "group": "uploads",
+   "name": "spectral upload job finishes",
+   "ok": true,
+   "detail": "None"
+  },
+  {
+   "group": "uploads",
+   "name": "two real changes found, raw >= real",
+   "ok": true,
+   "detail": "2"
+  },
+  {
+   "group": "uploads",
+   "name": "summary carries impact, quality, limits and sources",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "uploads",
+   "name": "result polygons have all properties",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "uploads",
+   "name": "review PATCH #1 (idempotent)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "uploads",
+   "name": "review PATCH #2 (idempotent)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "uploads",
+   "name": "bad review status is 400",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "uploads",
+   "name": "unknown feature is 404",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "uploads",
+   "name": "confirmed-only export has just the confirmed change",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "uploads",
+   "name": "export geojson has the right file signature",
+   "ok": true,
+   "detail": "b'{\\n\"type\": \"F'"
+  },
+  {
+   "group": "uploads",
+   "name": "export gpkg has the right file signature",
+   "ok": true,
+   "detail": "b'SQLite forma'"
+  },
+  {
+   "group": "uploads",
+   "name": "export pdf has the right file signature",
+   "ok": true,
+   "detail": "b'%PDF-1.3\\n%\\xe9\\xeb'"
+  },
+  {
+   "group": "uploads",
+   "name": "export csv has the right file signature",
+   "ok": true,
+   "detail": "b'id,tier,chan'"
+  },
+  {
+   "group": "uploads",
+   "name": "export kml has the right file signature",
+   "ok": true,
+   "detail": "b'<?xml versio'"
+  },
+  {
+   "group": "uploads",
+   "name": "export audit has the right file signature",
+   "ok": true,
+   "detail": "b'{\\r\\n \"created'"
+  },
+  {
+   "group": "uploads",
+   "name": "bad export format is 400",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "uploads",
+   "name": "swipe-map files exist for the job",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "uploads",
+   "name": "job inputs and state are not downloadable",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "uploads",
+   "name": "a huge minimum area removes all changes",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "uploads",
+   "name": "learned mode: runs if available, else 501 with a reason",
+   "ok": true,
+   "detail": "200"
+  },
+  {
+   "group": "uploads",
+   "name": "learned mode job finishes with mode=learned",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "uploads",
+   "name": "learned jobs write no slider data",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "uploads",
+   "name": "deep mode on Sentinel-2 images is refused or fails clearly",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "uploads",
+   "name": "6 simultaneous upload jobs all finish",
+   "ok": true,
+   "detail": "[True, True, True, True, True, True]"
+  },
+  {
+   "group": "load",
+   "name": "240 requests, 24 at a time: no failures",
+   "ok": true,
+   "detail": "0 failed"
+  },
+  {
+   "group": "load",
+   "name": "median latency under 500 ms (measured 143 ms)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "load",
+   "name": "95th percentile under 2 s (measured 484 ms)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "load",
+   "name": "latency",
+   "ok": true,
+   "detail": "p50 143 ms, p95 484 ms, max 546 ms"
+  },
+  {
+   "group": "live",
+   "name": "Delhi NCR: real archive lookup finds two usable scenes (30 s)",
+   "ok": true,
+   "detail": "{\"bbox\":[77.31,28.5,77.39,28.57],\"size_km\":[7.82,7.74],\"before\":{\"scene\":\"S2B_43RGM_20190105_1_L2A\",\"date\":\"2019-01-05\","
+  },
+  {
+   "group": "live",
+   "name": "Chennai: real archive lookup finds two usable scenes (21 s)",
+   "ok": true,
+   "detail": "{\"bbox\":[80.2,12.88,80.27,12.95],\"size_km\":[7.6,7.74],\"before\":{\"scene\":\"S2A_44PMV_20190131_0_L2A\",\"date\":\"2019-01-31\",\""
+  },
+  {
+   "group": "live",
+   "name": "Guwahati: real archive lookup finds two usable scenes (19 s)",
+   "ok": true,
+   "detail": "{\"bbox\":[91.7,26.12,91.78,26.19],\"size_km\":[7.99,7.74],\"before\":{\"scene\":\"S2A_46RCP_20190112_0_L2A\",\"date\":\"2019-01-12\","
+  },
+  {
+   "group": "live",
+   "name": "Bengaluru: real archive lookup finds two usable scenes (21 s)",
+   "ok": true,
+   "detail": "{\"bbox\":[77.72,12.95,77.8,13.02],\"size_km\":[8.68,7.74],\"before\":{\"scene\":\"S2B_43PGQ_20190218_0_L2A\",\"date\":\"2019-02-18\","
+  },
+  {
+   "group": "live",
+   "name": "Jaipur: real archive lookup finds two usable scenes (26 s)",
+   "ok": true,
+   "detail": "{\"bbox\":[75.72,26.78,75.8,26.85],\"size_km\":[7.95,7.74],\"before\":{\"scene\":\"S2B_43REK_20190105_1_L2A\",\"date\":\"2019-01-05\","
+  },
+  {
+   "group": "live",
+   "name": "Kochi: real archive lookup finds two usable scenes (20 s)",
+   "ok": true,
+   "detail": "{\"bbox\":[76.3,9.97,76.37,10.03],\"size_km\":[7.67,6.63],\"before\":{\"scene\":\"S2A_43PFM_20190203_0_L2A\",\"date\":\"2019-02-03\",\""
+  },
+  {
+   "group": "live",
+   "name": "Delhi 4 km box, spectral: job accepted",
+   "ok": true,
+   "detail": "{\"job_id\":\"d151f4085e574ec9\"}"
+  },
+  {
+   "group": "live",
+   "name": "Delhi 4 km box, spectral: analysis completes",
+   "ok": true,
+   "detail": "None"
+  },
+  {
+   "group": "live",
+   "name": "Delhi spectral: raw detections exceed real changes",
+   "ok": true,
+   "detail": "1831 -> 59"
+  },
+  {
+   "group": "live",
+   "name": "Delhi spectral: result opens (meta, images, polygons, pdf)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "live",
+   "name": "Delhi 4 km box, learned: job accepted",
+   "ok": true,
+   "detail": "{\"job_id\":\"4e001bb12b854c8c\"}"
+  },
+  {
+   "group": "live",
+   "name": "Delhi 4 km box, learned: analysis completes",
+   "ok": true,
+   "detail": "None"
+  },
+  {
+   "group": "live",
+   "name": "Delhi learned: raw detections exceed real changes",
+   "ok": true,
+   "detail": "113 -> 52"
+  },
+  {
+   "group": "live",
+   "name": "Delhi learned: result opens (meta, images, polygons, pdf)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "live",
+   "name": "Delhi 4 km box, hybrid: job accepted",
+   "ok": true,
+   "detail": "{\"job_id\":\"6b7b89318f4f4f29\"}"
+  },
+  {
+   "group": "live",
+   "name": "Delhi 4 km box, hybrid: analysis completes",
+   "ok": true,
+   "detail": "None"
+  },
+  {
+   "group": "live",
+   "name": "Delhi hybrid: raw detections exceed real changes",
+   "ok": true,
+   "detail": "193 -> 16"
+  },
+  {
+   "group": "live",
+   "name": "Delhi hybrid: result opens (meta, images, polygons, pdf)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "group": "live",
+   "name": "Delhi counts by mode",
+   "ok": true,
+   "detail": "{\"spectral\": 59, \"learned\": 52, \"hybrid\": 16}"
+  }
+ ]
+}
