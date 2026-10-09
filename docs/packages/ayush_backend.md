@@ -21,10 +21,12 @@
 
 **Still open:** only the radar before/after test on real 2026 events (V-M8-1 and V-M8-2 below).
 
-**V-M8-1 (Planetary Computer):** tried from this build environment on 9 Oct: the egress proxy answered 403 for
-`planetarycomputer.microsoft.com`, so it is **not verified** (an environment limit, not a finding about the service).
-**V-M8-2 (Earthdata / OPERA):** not tried (no account or token). Both can be run on your laptop:
-`python -m engine.s1 --check mpc` and `EARTHDATA_TOKEN=... python -m engine.s1 --check opera`. The wording rule from
+**V-M8-1 (Planetary Computer): PASSED** on the laptop, 9 Oct (`python -m engine.s1 --check mpc`): 34 `sentinel-1-rtc` scenes found over the
+Assam box (Nov 2024 to Mar 2025) and a 224 x 203 px window read from the first one. (From the build environment it had returned 403: that was
+an egress limit, not a problem with the service.) Planetary Computer stopped ingesting on 17 Apr 2026, so it cannot supply 2026 events: it
+gives us before/after tests on earlier events such as the July 2024 Assam flood.
+**V-M8-2 (Earthdata / OPERA):** not tried (no account or token). It can be run on the laptop:
+`EARTHDATA_TOKEN=... python -m engine.s1 --check opera`. The wording rule from
 `DECISIONS.md` applies: pass means "tested on 2026 OPERA data", fail means "evaluated on Sen1Floods11; live 2026 fetch not verified".
 
 **A bug found and fixed on the way:** `radar.polygons` returned geometry in the raster's own CRS (metres for UTM inputs)

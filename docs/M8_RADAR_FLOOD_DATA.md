@@ -165,7 +165,7 @@ MPC (`sentinel-1-rtc`, processed by Catalyst) and OPERA RTC-S1 (processed by NAS
 
 | # | Check | Owner | Status |
 |---|---|---|---|
-| V-M8-1 | Run the MPC anonymous-token script (below) on a laptop: it must list `sentinel-1-rtc` scenes for an Assam bounding box and read a small window | backend-2 (Ayush) | ⏳ Open. Re-tried 9 Oct from the build environment with `python -m engine.s1 --check mpc`: the egress proxy answered 403 for `planetarycomputer.microsoft.com`, so it is not verified (an environment limit). Run the same command on a laptop |
+| V-M8-1 | Run the MPC anonymous-token script (below) on a laptop: it must list `sentinel-1-rtc` scenes for an Assam bounding box and read a small window | backend-2 (Ayush) | ✅ Passed 9 Oct on a laptop with `python -m engine.s1 --check mpc`: 34 scenes over Assam, a window read OK (the build environment's 403 was an egress limit) |
 | V-M8-2 | Create the team's Earthdata Login and download one OPERA RTC-S1 scene over the same area for 2026 | backend-2 | ⏳ Open |
 | V-M8-3 | Check whether MPC ingestion resumed after 17 April 2026 (latest `sentinel-1-rtc` item date). If it did, MPC can also supply extra 2026 *training* events, but test events stay on OPERA | backend-2 | ⏳ Open |
 | V-M8-4 | Register for Copernicus GFM and fetch the flood extent for one 2026 test event | backend-2 | ⏳ Open |
