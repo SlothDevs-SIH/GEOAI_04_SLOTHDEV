@@ -58,11 +58,35 @@ def naive_mask(chip):
     return (chip["vv"] < threshold_otsu(chip["vv"][v])) & v
 
 
-def flood_mask(chip, thr, min_area_m2=MIN_AREA_M2, px_area_m2=100.0):
-    """Returns (mask, drop_counts). drop_counts says what each filter removed (pixels)."""
+def hysteresis_water(vvs, valid, thr, strict_db=1.5, loose_db=1.0):
+    """Region growing: seeds darker than thr - strict_db, grown through connected pixels darker
+    than thr + loose_db. Recovers flood edges a single threshold cuts off, without adding
+    isolated dark speckle."""
+    from skimage.filters import apply_hysteresis_threshold
+    return apply_hysteresis_threshold(-vvs, -(thr + loose_db), -(thr - strict_db)) & valid
+
+
+def features(chip, thr):
+    """Per-pixel features for the learned classifier. Backscatter is expressed relative to the
+    event threshold so the model transfers between events and processors."""
+    from scipy.ndimage import uniform_filter
     v = chip["valid"]
-    vvs = smooth(chip["vv"], v)
-    water = (vvs < thr) & v
+    fill = lambda a: np.where(v, a, np.nanmedian(a[v]))  # noqa: E731
+    vv, vh = fill(chip["vv"]), fill(chip["vh"])
+    vvm, vhm = median_filter(vv, 5), median_filter(vh, 5)
+    mean11 = uniform_filter(vv, 11)
+    std5 = np.sqrt(np.maximum(uniform_filter(vv ** 2, 5) - uniform_filter(vv, 5) ** 2, 0))
+    f = np.stack([vv - thr, vh - thr, vv - vh, vvm - thr, vhm - thr, mean11 - thr, std5], -1)
+    return f.astype(np.float32)
+
+
+FEATURE_NAMES = ["vv_rel", "vh_rel", "vv_minus_vh", "vv_med5_rel", "vh_med5_rel", "vv_mean11_rel", "vv_std5"]
+
+
+def postprocess(water, chip, min_area_m2=MIN_AREA_M2, px_area_m2=100.0):
+    """Shared false-alarm filters for every detector. Returns (mask, drop_counts)."""
+    v = chip["valid"]
+    water = water & v
     drops = {}
     if chip["perm"] is not None:
         drops["permanent_water"] = int((water & chip["perm"]).sum())
@@ -75,7 +99,26 @@ def flood_mask(chip, thr, min_area_m2=MIN_AREA_M2, px_area_m2=100.0):
         small = np.isin(lab, np.where(sizes * px_area_m2 < min_area_m2)[0]) & (lab > 0)
         drops["below_min_area"] = int(small.sum())
         cleaned &= ~small
-    return cleaned, drops, vvs
+    return cleaned, drops
+
+
+def flood_mask(chip, thr, method="threshold", model=None, prob=0.5, **kw):
+    """Detect open-water flood and apply the false-alarm filters.
+    method: "threshold" (event Otsu), "hysteresis" (region growing) or "learned" (needs model).
+    Returns (mask, drop_counts, speckle-filtered VV)."""
+    v = chip["valid"]
+    vvs = smooth(chip["vv"], v)
+    if method == "threshold":
+        water = vvs < thr
+    elif method == "hysteresis":
+        water = hysteresis_water(vvs, v, thr, kw.pop("strict_db", 1.5), kw.pop("loose_db", 1.0))
+    elif method == "learned":
+        f = features(chip, thr)
+        water = model.predict_proba(f.reshape(-1, f.shape[-1]))[:, 1].reshape(v.shape) >= prob
+    else:
+        raise ValueError(method)
+    mask, drops = postprocess(water, chip, **kw)
+    return mask, drops, vvs
 
 
 def _utm_epsg(lon, lat):
@@ -89,10 +132,14 @@ def polygons(mask, vvs, thr, transform, crs):
     if not feats:
         return []
     gdf = gpd.GeoDataFrame(geometry=feats, crs=crs)
-    c = gdf.unary_union.centroid
-    utm = gdf.to_crs(_utm_epsg(c.x, c.y))
+    wgs = gdf.to_crs(4326)
+    if gdf.crs.is_projected:              # already in metres (e.g. OPERA RTC-S1 in UTM)
+        utm = gdf
+    else:                                 # degrees (e.g. Sen1Floods11): measure in the local UTM zone
+        c = wgs.union_all().centroid
+        utm = gdf.to_crs(_utm_epsg(c.x, c.y))
     out = []
-    for i, (g, gu) in enumerate(zip(gdf.geometry, utm.geometry)):
+    for g, gu, gw in zip(gdf.geometry, utm.geometry, wgs.geometry):
         m = rasterio.features.geometry_mask([g], mask.shape, transform, invert=True)
         mean_db = float(vvs[m].mean())
         depth = thr - mean_db                      # dB below the water threshold
@@ -104,7 +151,7 @@ def polygons(mask, vvs, thr, transform, crs):
             properties=dict(
                 area_m2=round(gu.area, 1), area_ha=round(area_ha, 2), mean_vv_db=round(mean_db, 2),
                 depth_db=round(depth, 2), confidence=round(conf, 2), needs_review=bool(conf < 0.7),
-                centroid_lat=round(g.centroid.y, 6), centroid_lon=round(g.centroid.x, 6),
+                centroid_lat=round(gw.centroid.y, 6), centroid_lon=round(gw.centroid.x, 6),
                 change_type="water_gain", tier=tier,
                 reason=f"radar backscatter {mean_db:.1f} dB, {depth:.1f} dB below the event water "
                        f"threshold ({thr:.1f} dB); not permanent water (JRC)")))
