@@ -1,0 +1,11 @@
+numpy
+opencv-python-headless
+scikit-image
+rasterio
+geopandas
+shapely>=2
+pandas
+matplotlib
+torch
+torchvision
+einops

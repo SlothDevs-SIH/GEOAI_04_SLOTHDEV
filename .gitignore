@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+out/
+runs/
+models/
+*.pt
+*.tif
+node_modules/
+dist/
+.env
