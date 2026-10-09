@@ -143,3 +143,14 @@ def test_a_token_in_dotenv_reaches_the_opera_check(tmp_path, monkeypatch):
     r = s1.check_opera()
     assert r == {"ok": False, "scenes": 0, "first": None}
     monkeypatch.delenv("EARTHDATA_TOKEN", raising=False)
+
+
+def test_inspect_opera_lists_only_known_fields_urls_and_property_names():
+    fake = [SimpleNamespace(properties={"fileID": "OPERA_L2_RTC-S1_X", "url": "https://asf/x.h5", "bytes": 123, "secret_internal": "x",
+                                        "additionalUrls": ["https://asf/x_VV.tif", "https://asf/x_VH.tif"], "pathNumber": 150,
+                                        "flightDirection": "ASCENDING", "empty": ""},
+                            geometry={"coordinates": [[[93.0, 26.0], [94.0, 26.0]]]})] * 5
+    out = s1.inspect_opera(results=fake, n=2)
+    assert len(out) == 2 and out[0]["additionalUrls"] == ["https://asf/x_VV.tif", "https://asf/x_VH.tif"]
+    assert "secret_internal" not in out[0] and "secret_internal" in out[0]["_all_property_names"]   # names visible, values not
+    assert out[0]["_geometry_bbox"] == [93.0, 26.0]

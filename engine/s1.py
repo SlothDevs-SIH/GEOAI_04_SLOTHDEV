@@ -179,6 +179,33 @@ def download_opera(results, dest_dir, token=None):
     return dest_dir
 
 
+def inspect_opera(bbox=ASSAM_BOX, start="2026-06-01", end="2026-08-31", n=3, results=None) -> list:
+    """What the first `n` OPERA results look like: the listing fields and every file URL (no secrets in them).
+
+    Used once to see the real product layout (OPERA scenes are small bursts with separate VV and VH files) before
+    writing the download step. Needs EARTHDATA_TOKEN only for the search, not for this listing.
+    """
+    if results is None:
+        load_dotenv()
+        import asf_search as asf
+        w, s_, e, n_ = bbox
+        wkt = f"POLYGON(({w} {s_},{e} {s_},{e} {n_},{w} {n_},{w} {s_}))"
+        results = asf.search(dataset="OPERA-S1", processingLevel="RTC", intersectsWith=wkt, start=str(start), end=str(end),
+                             maxResults=max(n, 1))
+    keep = ("fileID", "fileName", "startTime", "stopTime", "processingDate", "pathNumber", "flightDirection", "polarization",
+            "bytes", "url", "additionalUrls", "burstID", "platform", "sceneName", "processingLevel")
+    out = []
+    for r in list(results)[:n]:
+        p = r.properties
+        out.append({k: p[k] for k in keep if k in p and p[k] not in (None, "")})
+        out[-1]["_all_property_names"] = sorted(p)
+        try:
+            out[-1]["_geometry_bbox"] = [round(x, 3) for x in r.geometry["coordinates"][0][0]] if r.geometry else None
+        except Exception:  # noqa: BLE001
+            pass
+    return out
+
+
 def check_mpc(bbox=ASSAM_BOX, start="2024-11-01", end="2025-03-31", workdir=None) -> dict:
     """V-M8-1: list scenes for an Assam box and read a small window. Returns {ok, scenes, error?}."""
     import tempfile
@@ -213,7 +240,13 @@ if __name__ == "__main__":
     import argparse
     import json
     ap = argparse.ArgumentParser(description="Live access checks V-M8-1 (mpc) and V-M8-2 (opera)")
-    ap.add_argument("--check", choices=["mpc", "opera"], required=True)
-    r = check_mpc() if ap.parse_args().check == "mpc" else check_opera()
+    g = ap.add_mutually_exclusive_group(required=True)
+    g.add_argument("--check", choices=["mpc", "opera"])
+    g.add_argument("--inspect", choices=["opera"], help="print what the first OPERA results contain (layout, file URLs)")
+    a = ap.parse_args()
+    if a.inspect:
+        print(json.dumps(inspect_opera(), indent=1, default=str))
+        raise SystemExit(0)
+    r = check_mpc() if a.check == "mpc" else check_opera()
     print(json.dumps(r, indent=1))
     raise SystemExit(0 if r["ok"] else 1)
