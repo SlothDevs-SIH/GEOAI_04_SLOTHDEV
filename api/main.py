@@ -28,7 +28,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from engine import aoi, preview, radar
+from engine import aoi, detectors, preview, radar
 from engine.config import params_for
 
 VERSION = "1.0.0"
@@ -73,11 +73,36 @@ def _json(path):
 
 # ---------- health and measured results ----------
 
+ANALYZE_MODES = detectors.MODES + ("radar",)
+
+
+def _measured_default():
+    """Which method the held-out OSCD evaluation chose (eval/results.json), for information; the API default stays spectral."""
+    try:
+        return _json(os.path.join(ROOT, "eval", "results.json")).get("oscd", {}).get("default_method")
+    except (OSError, ValueError):
+        return None
+
+
+def _need_mode(mode):
+    """400 for an unknown mode, 501 (with the reason) for a known one that cannot run on this server."""
+    if mode not in ANALYZE_MODES:
+        raise HTTPException(400, f"mode must be one of {', '.join(ANALYZE_MODES)}")
+    if mode in detectors.MODES:
+        try:
+            detectors.require(mode)
+        except detectors.ModeUnavailable as e:
+            raise HTTPException(501, str(e)) from e
+
+
 @api.get("/health")
 def health():
-    learned = os.path.exists(os.path.join(ROOT, "engine", "weights", "m8_gbm.joblib"))
-    return {"ok": True, "version": VERSION, "modes": ["spectral", "radar"], "fetch_s2": True,
-            "models": {"learned": learned, "deep": False}}
+    st = detectors.status()
+    return {"ok": True, "version": VERSION, "fetch_s2": True,
+            "modes": [m for m, s in st.items() if s.get("available")] + ["radar"],
+            "models": {"learned": bool(st["learned"].get("available")), "deep": bool(st["deep"].get("available"))},
+            "model_status": {k: st[k] for k in ("learned", "deep")},
+            "default_mode": "spectral", "measured_default_method": _measured_default()}
 
 
 @api.get("/metrics")
@@ -173,14 +198,22 @@ def _run(job_id, before, after, preset, mode, before_date, after_date, min_area_
     try:
         if mode == "radar":
             _set(job_id, status="running", stage="detecting", progress=0.3)
-            run.run_radar(after, out, None)
-            _set(job_id, status="done", stage="done", progress=1.0, warnings=[])
+            if before:      # before/after change against a dry-season reference (Seam 2)
+                from engine import radar_run
+                summary = radar_run.run(before, after, out, preset="flood")
+                summary.setdefault("flooded_ha", summary.get("impact", {}).get("changed_ha", 0.0))
+                with open(os.path.join(out, "summary.json"), "w") as f:
+                    json.dump(summary, f, indent=1, default=str)
+                _set(job_id, status="done", stage="done", progress=1.0, warnings=summary.get("warnings", []))
+            else:
+                run.run_radar(after, out, None)
+                _set(job_id, status="done", stage="done", progress=1.0, warnings=[])
             return
         _set(job_id, status="running", stage="detecting", progress=0.2)
         p = params_for(preset)
         if min_area_m2 is not None:
             p = replace(p, min_area_m2=float(min_area_m2))
-        res = run.analyze(before, after, preset=preset, before_date=before_date, after_date=after_date,
+        res = run.analyze(before, after, preset=preset, mode=mode, before_date=before_date, after_date=after_date,
                           worldcover_cache=os.path.join(out, "worldcover.tif"), params=p,
                           extra_after_paths=list(extra_after), persistence=persistence)
         _set(job_id, stage="vectorising", progress=0.8)
@@ -215,8 +248,7 @@ async def analyze(before: UploadFile | None = File(None), after: UploadFile | No
                   after_date: str | None = Form(None)):
     if preset not in PRESETS:
         raise HTTPException(400, f"preset must be one of {', '.join(PRESETS)}")
-    if mode not in ("spectral", "radar"):
-        raise HTTPException(400, "mode must be spectral or radar")
+    _need_mode(mode)
     job_id = uuid.uuid4().hex[:16]
     d = os.path.join(RUNS, job_id)
     os.makedirs(d)
@@ -231,7 +263,7 @@ async def analyze(before: UploadFile | None = File(None), after: UploadFile | No
             meta = _json(os.path.join(_demo_dir(demo_id), "meta.json"))
             before_date, after_date = before_date or meta.get("before_date"), after_date or meta.get("after_date")
         else:
-            if after is None or (mode == "spectral" and before is None):
+            if after is None or (mode != "radar" and before is None):
                 raise HTTPException(400, "upload 'before' and 'after' GeoTIFFs, or give a demo_id")
             a = os.path.join(d, "after.tif")
             await _save(after, a)
@@ -257,6 +289,7 @@ class FetchBody(BaseModel):
     preset: str = "encroachment"
     window_days: int = 20
     min_area_m2: float | None = None
+    mode: str = "spectral"  # spectral (default) | learned | hybrid
     composite: int = 1      # build each image as the median of this many clear scenes (1 = single scene)
     persistence: int = 0    # 0 = off; 2 to 4 = a change must appear in this many later images
 
@@ -266,6 +299,9 @@ def _check_fetch(body: FetchBody):
         raise HTTPException(400, f"preset must be one of {', '.join(PRESETS)}")
     if not 1 <= body.window_days <= 45:
         raise HTTPException(400, "window_days must be between 1 and 45")
+    if body.mode not in detectors.SENTINEL2_MODES:
+        raise HTTPException(400, f"mode must be one of {', '.join(detectors.SENTINEL2_MODES)} for a Sentinel-2 area")
+    _need_mode(body.mode)
     if not 1 <= body.composite <= 5:
         raise HTTPException(400, "composite must be between 1 and 5 scenes")
     if body.persistence not in (0, 2, 3, 4):
@@ -303,7 +339,7 @@ def _run_fetch(job_id: str, body: dict):
                     (body["bbox"][1] + body["bbox"][3]) / 2, (body["bbox"][0] + body["bbox"][2]) / 2),
                 "event": f"{body['preset']} between {meta['before']['date']} and {meta['after']['date']}",
                 "kind": body["preset"], "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket"}
-        _run(job_id, os.path.join(out, "before.tif"), os.path.join(out, "after.tif"), body["preset"], "spectral",
+        _run(job_id, os.path.join(out, "before.tif"), os.path.join(out, "after.tif"), body["preset"], body["mode"],
              meta["before"]["date"], meta["after"]["date"], body.get("min_area_m2"), info, meta["warnings"],
              meta.get("extra_after", []), body["persistence"])
     except aoi.AoiError as e:

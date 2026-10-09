@@ -178,3 +178,25 @@ New keys may be **added** by either side. Existing keys are never renamed or rem
 | 6 | Deploy; live URL answers `/health` and the site works with the API off | CI green |
 
 **Target times:** both merge-ready by **00:00**, integration **00:00 to 02:00**, freeze **03:00**.
+
+
+---
+
+## Integration status (9 Oct, evening): DONE
+
+Both packages are merged on branch `integration` (Ayush's branch already contained `main`, so no conflicts). Steps from the plan above:
+
+| Step | Result |
+|---|---|
+| 1 Merge | Fast-forward. 192 backend tests pass, 4 skipped (the torch-only ones); ruff clean |
+| 2 Register detectors | `engine/detectors.py` (spectral, learned, hybrid, deep); `run.analyze(mode=...)` dispatches; a missing model raises `ModeUnavailable` with the reason |
+| 3 API | `/analyze` and `/fetch-s2` accept `mode`; unknown = 400, unavailable = 501 with the reason; `/health` reports the real state (`models`, `model_status`, `default_mode`, `measured_default_method`); radar before/after goes through `engine.radar_run.run`, single-date is unchanged |
+| 4 Results | `eval/results.json` (Ayush) is served by `/metrics`; the Accuracy page already renders his OSCD and LEVIR blocks |
+| 5 Check with the real model | ONNX Runtime + Ayush's trained network, run through the engine: polygon counts **equal his published numbers exactly** on all three scenes (season control 22 / 263 / 12, Navi Mumbai 265 / 119 / 69, Pune 475 / 599 / 305 for spectral / learned / hybrid), 1 to 3.5 s per scene |
+| 6 Web | 51 unit tests, lint, typecheck, build and the 4 browser tests (including offline) pass on the merged code |
+
+Decisions this raises for the team:
+- **The API default stays `spectral`.** `eval/results.json` says `default_method: learned` (best held-out F1: 0.54 against 0.38), but on our no-construction control the learned model alone raises about 12 times more polygons than spectral. Switching the default is a team decision; the UI should offer the mode with that caveat.
+- **`deep` (BIT) is unavailable on a default server** (needs PyTorch and `scripts/fetch_bit.py`). `/health` says so honestly.
+- `onnxruntime` is now in `requirements.txt` so the container can serve the learned model (weights are committed in `engine/weights/`).
+- The slider (sensitivity lab) mirrors the spectral rules only, so it is not written for learned, hybrid or deep jobs.

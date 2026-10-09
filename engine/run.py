@@ -18,7 +18,7 @@ import geopandas as gpd
 import numpy as np
 from scipy.ndimage import label
 
-from . import attributes, change_spectral, export, filters, impact, ingest, quality, vectorise
+from . import attributes, detectors, export, filters, impact, ingest, quality, vectorise
 from .config import params_for
 
 LIMITS_OPTICAL = ["Optical imagery cannot see through cloud; flagged areas with cloud are removed, not analysed.",
@@ -39,8 +39,20 @@ class Result:
     summary: dict
 
 
+MODE_LIMITS = {
+    "learned": ["The learned model was trained on OSCD urban change (Sentinel-2, 2015 to 2018). On farmland with no real "
+                "construction it can raise many more false alarms than the spectral rules; check results on the ground."],
+    "hybrid": ["Hybrid: the learned model proposes changes and the spectral rules must also name a real change type. This "
+               "removes most farmland false alarms but also removes some real change."],
+    "deep": ["Deep mode (BIT) detects building change in very-high-resolution RGB (about 0.5 m) only; it gives no "
+             "land-cover types, and impact layers are not computed."],
+}
+
+
 def choose_mode(pair, mode="auto"):
     if mode != "auto":
+        if mode not in detectors.MODES:
+            raise ValueError(f"unknown mode '{mode}'; choose one of {', '.join(detectors.MODES)}")
         return mode
     if "nir" in pair.bands and pair.pixel_m >= 5:
         return "spectral"
@@ -76,16 +88,14 @@ def analyze(before_path, after_path, preset="general", mode="auto", before_date=
     p = params or params_for(preset)
     pair = ingest.read_pair(before_path, after_path)
     mode = choose_mode(pair, mode)
-    if mode != "spectral":
-        raise NotImplementedError(f"mode '{mode}' is not available in this build; use spectral or radar")
-    det = change_spectral.detect(pair, p)
+    det = detectors.detect(mode, pair, p)          # raises ModeUnavailable, with the reason, when a model cannot run
     raw_candidate = det["candidate"]          # the raw layer always shows the single-scene detections
     persist_note = None
     if persistence and extra_after_paths:
         from . import persistence as pers
         masks = [det["candidate"]]
         for extra in extra_after_paths:
-            masks.append(change_spectral.detect(ingest.read_pair(before_path, extra), p)["candidate"])
+            masks.append(detectors.detect(mode, ingest.read_pair(before_path, extra), p)["candidate"])
         k = min(int(persistence), len(masks))
         single = det["candidate"]
         det = {**det, "candidate": pers.persistent(masks, k) & single}
@@ -97,7 +107,7 @@ def analyze(before_path, after_path, preset="general", mode="auto", before_date=
         raw_blobs = persist_note["raw_blobs_single_scene"]    # the raw count stays the single-scene detections
     polys, lab = vectorise.polygons(mask, pair.transform)
     gdf = attributes.build(polys, lab, det, tmap, pair, det["magnitude"][det["valid"]])
-    wc = impact.worldcover_on_grid(mask.shape, pair.transform, pair.crs, worldcover_cache)
+    wc = impact.worldcover_on_grid(mask.shape, pair.transform, pair.crs, worldcover_cache) if pair.pixel_m >= 5 else None
     imp = impact.compute(gdf, lab, pair.transform, pair.crs, mask.shape, wc, before_date)
     q, warnings = quality.flags(pair, before_date, after_date)
     h, w = mask.shape
@@ -111,8 +121,9 @@ def analyze(before_path, after_path, preset="general", mode="auto", before_date=
         runtime_s=round(runtime, 2), area_km2=round(area_km2, 2), s_per_km2=round(runtime / area_km2, 3),
         change_threshold=round(det["threshold"], 4), impact=imp, quality=q, warnings=warnings,
         persistence=persist_note,
-        sources=["Copernicus Sentinel-2 L2A (ESA), via the Element84 Earth Search COG bucket"],
-        limits=LIMITS_OPTICAL, params=asdict(p))
+        sources=["Copernicus Sentinel-2 L2A (ESA), via the Element84 Earth Search COG bucket"] if mode != "deep"
+        else ["Very-high-resolution RGB imagery supplied by the user"],
+        limits=LIMITS_OPTICAL + MODE_LIMITS.get(mode, []), params=asdict(p))
     raw = raw_layer(raw_candidate, pair.transform, pair.crs)
     return Result(pair, det, mask, lab, gdf, raw, summary)
 

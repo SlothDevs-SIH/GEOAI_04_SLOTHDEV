@@ -83,14 +83,14 @@ def write_scene_files(res, out_dir: str, info: dict) -> dict:
         shutil.copy(src, f"{out_dir}/result_filtered.geojson")
     write_crops(rgb_b, rgb_a, res.gdf, pair.transform, pair.crs, out_dir)
     params = res.summary.get("params") or {}
-    if params:   # data for the live sensitivity slider (a failure here must not lose the rest)
+    if params and res.summary.get("mode") == "spectral":   # slider data mirrors the spectral rules only
         from . import sensitivity
         sensitivity.write(res, out_dir, params["keep_types"], params["min_area_m2"])
     bd, ad = info.get("before_date") or "before", info.get("after_date") or "after"
     meta = {
         "id": info.get("id", "analysis"), "name": info.get("name", "Your analysis"),
         "place": info.get("place", "Custom area"), "event": info.get("event", "Change between two dates"),
-        "kind": info.get("kind", "custom"), "mode": "spectral",
+        "kind": info.get("kind", "custom"), "mode": res.summary.get("mode", "spectral"),
         "before_date": bd, "after_date": ad,
         "before_label": f"Before · Sentinel-2 · {bd}", "after_label": f"After · Sentinel-2 · {ad}",
         "source": info.get("source", "Sentinel-2 L2A (Copernicus)"),
