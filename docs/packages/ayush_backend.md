@@ -8,7 +8,7 @@
 
 ## What is in this branch (`ayush_backend`, 9 Oct 2026): read this first
 
-**Built and tested here** (103 tests pass; 89 pass and 3 skip without torch, which is what CI sees):
+**Built and tested here** (116 tests pass with torch; 102 pass and 3 skip without it, which is what CI sees):
 
 | Task | Built | Measured on real data? |
 |---|---|---|
