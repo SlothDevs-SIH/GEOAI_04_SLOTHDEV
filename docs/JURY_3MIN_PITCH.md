@@ -42,21 +42,23 @@
 **On Screen:** *Slide 3 — Technology Stack & Modules*
 
 ### 🗣️ What to Say:
-> *"Here is our complete architecture from front to back:
+> *"Here is our complete architecture from front to back, showing what each module does:
 > 
 > - **Frontend Modules (`F3`, `X3`, `X5`, `X1`):**
->   - **`F3` Core:** React 19 + TypeScript + Tailwind CSS with a hardware-accelerated **MapLibre GL JS** interactive split swipe map.
->   - **`X3` Zero-Crash PWA:** Service worker (`vite-plugin-pwa`) precaches the app shell and demo datasets. Even if the venue Wi-Fi dies or our server sleeps, **the entire demo runs 100% offline**.
->   - **`X5` Evidence Panel:** Live rule-by-rule ablation table and 95% statistical confidence intervals.
->   - **`X1` Sensitivity Lab:** In-browser canvas raster processor allowing officers to tune sensitivity thresholds in real-time.
+>   - **`F3` [Interactive Split-View Swipe Map]:** Hardware-accelerated **MapLibre GL JS** synced double-canvas with a draggable divider comparing 'Before' and 'After' satellite feeds side-by-side in real time.
+>   - **`X3` [Zero-Crash Offline PWA]:** Service worker caching (`vite-plugin-pwa`) that stores the app shell and demo data locally in CacheStorage. Even if the venue Wi-Fi dies or our backend sleeps, **the entire demo runs 100% offline with zero crash risk**.
+>   - **`X5` [Evidence & Audit Panel]:** The live verification engine on the Accuracy page—displays the rule-by-rule ablation table showing exactly which false-alarm rule removed how many pixels, paired with 95% statistical confidence intervals.
+>   - **`X1` [Sensitivity Lab Slider]:** An in-browser HTML5 canvas raster processor where officers can drag threshold and minimum-area sliders to instantly recompute change masks without waiting for a server round-trip.
 > 
 > - **Backend & Compute Pipeline (`B1`, `B4`):**
->   - **`B4` Static-First Edge Architecture:** Instant precomputed payloads for zero-latency presentation.
->   - **`B1` Processing Engine:** Python 3.11 with **FastAPI, Rasterio/GDAL, GeoPandas, and Shapely** for vector polygonisation.
+>   - **`B4` [Static-First Edge Storage]:** Precomputes GeoJSON polygon geometries, WebP image crops, and impact metadata so the demo loads in under 200 milliseconds.
+>   - **`B1` [Core Geospatial Processing Engine]:** High-performance **FastAPI** backend orchestrating **Rasterio / GDAL** for multi-band satellite raster math, and **GeoPandas + Shapely** for vector polygonisation, spatial indexing, and GeoPackage generation.
 > 
-> - **AI, ML & The PyTorch $\rightarrow$ ONNX Workflow:**
->   - We trained a deep **Siamese U-Net** in **PyTorch** on the global **OSCD** benchmark.
->   - We then converted the trained model to **ONNX Runtime**. This allows deep neural network inference to run in **milliseconds on a regular CPU**, completely removing the need for expensive GPU servers."*
+> - **AI, ML & Change Detection Engines (`M1`, `M3`, `M8`, `M7`):**
+>   - **`M1` [Physics Spectral Baseline]:** Calculates normalized difference indices (NDVI for trees, NDBI for concrete, NDWI for water) with automated Otsu thresholding for 100% transparent, explainable change detection.
+>   - **`M3` [Deep Siamese Neural Network (PyTorch $\rightarrow$ ONNX)]:** A twin-branch convolutional neural net trained on the global **OSCD** benchmark. We exported it from **PyTorch to ONNX Runtime**, allowing deep learning inference to run in **milliseconds on low-cost CPUs** with zero expensive GPU servers.
+>   - **`M8` [Sentinel-1 Radar Flood Engine]:** Dual-polarisation (VV/VH) microwave radar processing with adaptive hysteresis region-growing to penetrate monsoon clouds and map open water.
+>   - **`M7` [Temporal Persistence & Compositing]:** Multi-temporal scene stacking that checks if a change persists across multiple dates to eliminate transient vehicle shadows and cloud fringe artifacts."*
 
 ---
 
