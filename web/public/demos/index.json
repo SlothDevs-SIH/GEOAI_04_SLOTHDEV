@@ -1,5 +1,45 @@
 [
  {
+  "id": "madhya-pradesh-encroachment",
+  "name": "Madhya Pradesh (Bhopal lake & fringe)",
+  "place": "Bhopal (Bhojtal catchment & Kolar corridor), Madhya Pradesh",
+  "event": "Eco-sensitive lake catchment & urban fringe encroachment",
+  "kind": "encroachment",
+  "mode": "spectral",
+  "before_date": "2019-01-22",
+  "after_date": "2025-01-25",
+  "before_label": "Before \u00b7 Sentinel-2 \u00b7 2019-01-22",
+  "after_label": "After \u00b7 Sentinel-2 \u00b7 2025-01-25",
+  "scenes": {
+   "before": "S2B_43QGF_20190122_0_L2A",
+   "after": "S2C_43QGF_20250125_0_L2A"
+  },
+  "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket",
+  "bbox": [
+   77.35,
+   23.17,
+   77.45,
+   23.25
+  ],
+  "preset": "encroachment",
+  "story": "Urban and catchment encroachment into eco-sensitive waterbody buffer and forest fringe. High real-estate sprawl flagged by the National Green Tribunal.",
+  "demo": true,
+  "after_filter": 47,
+  "raw_detections": 3649,
+  "variants": [
+   {
+    "mode": "learned",
+    "raw_detections": 1616,
+    "after_filter": 740
+   },
+   {
+    "mode": "hybrid",
+    "raw_detections": 1587,
+    "after_filter": 41
+   }
+  ]
+ },
+ {
   "id": "assam-flood-2016",
   "name": "Assam flood 2016 (radar, M8)",
   "place": "Brahmaputra floodplain, Assam, India",
@@ -20,6 +60,46 @@
   "demo": true,
   "after_filter": 37,
   "raw_detections": 3490
+ },
+ {
+  "id": "bihar-encroachment",
+  "name": "Bihar (Patna Ganga floodplain)",
+  "place": "Patna (Danapur & Ganga riverfront fringe), Bihar",
+  "event": "Floodplain & peri-urban encroachment",
+  "kind": "encroachment",
+  "mode": "spectral",
+  "before_date": "2019-02-10",
+  "after_date": "2025-01-19",
+  "before_label": "Before \u00b7 Sentinel-2 \u00b7 2019-02-10",
+  "after_label": "After \u00b7 Sentinel-2 \u00b7 2025-01-19",
+  "scenes": {
+   "before": "S2A_45RUJ_20190210_0_L2A",
+   "after": "S2A_45RUJ_20250119_0_L2A"
+  },
+  "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket",
+  "bbox": [
+   85.05,
+   25.58,
+   85.15,
+   25.65
+  ],
+  "preset": "encroachment",
+  "story": "Peri-urban sprawl and construction across river floodplain and sensitive agricultural wetlands along the Ganges corridor.",
+  "demo": true,
+  "after_filter": 79,
+  "raw_detections": 2049,
+  "variants": [
+   {
+    "mode": "learned",
+    "raw_detections": 1026,
+    "after_filter": 439
+   },
+   {
+    "mode": "hybrid",
+    "raw_detections": 1125,
+    "after_filter": 75
+   }
+  ]
  },
  {
   "id": "navi-mumbai-airport",

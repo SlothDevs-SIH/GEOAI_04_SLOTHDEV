@@ -95,11 +95,11 @@ describe("Scenes: populated", () => {
     expect(cards[13].className).not.toContain("anim-in");
   });
 
-  it("works with the real bundled demo index: seven scenes, the hybrid ones marked", async () => {
+  it("works with the real bundled demo index: nine scenes, the hybrid ones marked", async () => {
     mockStaticFetch();
     renderScenes();
-    await waitFor(() => expect(screen.getAllByTestId("scene-card")).toHaveLength(7));
-    expect(screen.getAllByTestId("detectors-chip")).toHaveLength(3);        // navi-mumbai, pune, season-control
+    await waitFor(() => expect(screen.getAllByTestId("scene-card")).toHaveLength(9));
+    expect(screen.getAllByTestId("detectors-chip")).toHaveLength(5);
     expect(screen.getByTestId("analyse-card")).toBeInTheDocument();
   });
 });

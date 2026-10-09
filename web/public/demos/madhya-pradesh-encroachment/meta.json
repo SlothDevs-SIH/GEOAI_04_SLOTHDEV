@@ -1,0 +1,58 @@
+{
+ "id": "madhya-pradesh-encroachment",
+ "name": "Madhya Pradesh (Bhopal lake & fringe)",
+ "place": "Bhopal (Bhojtal catchment & Kolar corridor), Madhya Pradesh",
+ "event": "Eco-sensitive lake catchment & urban fringe encroachment",
+ "kind": "encroachment",
+ "mode": "spectral",
+ "before_date": "2019-01-22",
+ "after_date": "2025-01-25",
+ "before_label": "Before \u00b7 Sentinel-2 \u00b7 2019-01-22",
+ "after_label": "After \u00b7 Sentinel-2 \u00b7 2025-01-25",
+ "scenes": {
+  "before": "S2B_43QGF_20190122_0_L2A",
+  "after": "S2C_43QGF_20250125_0_L2A"
+ },
+ "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket",
+ "corners": [
+  [
+   77.350004,
+   23.251605
+  ],
+  [
+   77.451389,
+   23.250054
+  ],
+  [
+   77.449902,
+   23.168559
+  ],
+  [
+   77.348578,
+   23.170104
+  ]
+ ],
+ "bbox": [
+  77.35,
+  23.17,
+  77.45,
+  23.25
+ ],
+ "preset": "encroachment",
+ "story": "Urban and catchment encroachment into eco-sensitive waterbody buffer and forest fringe. High real-estate sprawl flagged by the National Green Tribunal.",
+ "demo": true,
+ "after_filter": 47,
+ "raw_detections": 3649,
+ "variants": [
+  {
+   "mode": "learned",
+   "raw_detections": 1616,
+   "after_filter": 740
+  },
+  {
+   "mode": "hybrid",
+   "raw_detections": 1587,
+   "after_filter": 41
+  }
+ ]
+}

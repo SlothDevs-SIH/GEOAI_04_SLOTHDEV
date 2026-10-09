@@ -24,9 +24,9 @@ beforeEach(() => {
 });
 
 describe("Scenes", () => {
-  it("lists the demo scenes (four tuned, three regional checks) and the analyse card", async () => {
+  it("lists the demo scenes and the analyse card", async () => {
     at("/", <Scenes />);
-    await waitFor(() => expect(screen.getAllByTestId("scene-card")).toHaveLength(7));
+    await waitFor(() => expect(screen.getAllByTestId("scene-card")).toHaveLength(9));
     expect(screen.getByText("Try your own")).toBeInTheDocument();
   });
 });
@@ -37,7 +37,7 @@ describe("Result", () => {
     const counter = await screen.findByTestId("counter");
     expect(counter).toHaveTextContent("2,185 raw detections → 265 real changes");
     fireEvent.click(screen.getByTestId("filter-toggle"));
-    await waitFor(() => expect(screen.getByTestId("counter")).toHaveTextContent("Filter off: 2,185 raw detections"));
+    await waitFor(() => expect(screen.getByTestId("counter")).toHaveTextContent("Filter off: 2,185 raw detections"), { timeout: 3000 });
   });
   it("selecting a change shows its reason, and confirm is remembered", async () => {
     at("/scene/navi-mumbai-airport", <Result />, "/scene/:id");

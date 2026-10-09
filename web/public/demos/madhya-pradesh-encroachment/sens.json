@@ -1,0 +1,24 @@
+{
+ "width": 1038,
+ "height": 903,
+ "pixel_m": 10.0,
+ "default_threshold": 0.4368,
+ "default_min_area_px": 3,
+ "min_area_m2": 300.0,
+ "keep_codes": [
+  2,
+  3
+ ],
+ "type_names": {
+  "0": "none",
+  "1": "water_gain",
+  "2": "water_loss",
+  "3": "built_up_gain",
+  "4": "vegetation_loss",
+  "5": "vegetation_gain",
+  "6": "other"
+ },
+ "format": "3 bytes per pixel: magnitude (uint16, little endian), type|128 if usable",
+ "server_after_filter": 47,
+ "mirror_after_filter": 47
+}

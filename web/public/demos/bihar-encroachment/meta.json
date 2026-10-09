@@ -1,0 +1,58 @@
+{
+ "id": "bihar-encroachment",
+ "name": "Bihar (Patna Ganga floodplain)",
+ "place": "Patna (Danapur & Ganga riverfront fringe), Bihar",
+ "event": "Floodplain & peri-urban encroachment",
+ "kind": "encroachment",
+ "mode": "spectral",
+ "before_date": "2019-02-10",
+ "after_date": "2025-01-19",
+ "before_label": "Before \u00b7 Sentinel-2 \u00b7 2019-02-10",
+ "after_label": "After \u00b7 Sentinel-2 \u00b7 2025-01-19",
+ "scenes": {
+  "before": "S2A_45RUJ_20190210_0_L2A",
+  "after": "S2A_45RUJ_20250119_0_L2A"
+ },
+ "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket",
+ "corners": [
+  [
+   85.048804,
+   25.650013
+  ],
+  [
+   85.149872,
+   25.651329
+  ],
+  [
+   85.15097,
+   25.580027
+  ],
+  [
+   85.049961,
+   25.578715
+  ]
+ ],
+ "bbox": [
+  85.05,
+  25.58,
+  85.15,
+  25.65
+ ],
+ "preset": "encroachment",
+ "story": "Peri-urban sprawl and construction across river floodplain and sensitive agricultural wetlands along the Ganges corridor.",
+ "demo": true,
+ "after_filter": 79,
+ "raw_detections": 2049,
+ "variants": [
+  {
+   "mode": "learned",
+   "raw_detections": 1026,
+   "after_filter": 439
+  },
+  {
+   "mode": "hybrid",
+   "raw_detections": 1125,
+   "after_filter": 75
+  }
+ ]
+}

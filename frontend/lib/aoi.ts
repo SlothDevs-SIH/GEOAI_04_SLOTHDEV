@@ -43,6 +43,8 @@ export interface Place {
 /** Places to jump to; the whole of India works, these are only shortcuts across different regions and climates. */
 export const PLACES: Place[] = [
   { name: "All of India", lng: 79, lat: 22.5, zoom: 4 },
+  { name: "Bhopal (Madhya Pradesh)", lng: 77.41, lat: 23.25, zoom: 10.5 },
+  { name: "Patna (Bihar)", lng: 85.14, lat: 25.6, zoom: 10.5 },
   { name: "Delhi NCR", lng: 77.2, lat: 28.55, zoom: 10.5 },
   { name: "Mumbai / Navi Mumbai", lng: 73.0, lat: 19.05, zoom: 10.5 },
   { name: "Pune", lng: 73.8, lat: 18.55, zoom: 10.5 },
@@ -55,5 +57,4 @@ export const PLACES: Place[] = [
   { name: "Guwahati (Assam)", lng: 91.74, lat: 26.15, zoom: 10.5 },
   { name: "Kochi (Kerala)", lng: 76.3, lat: 9.97, zoom: 10.5 },
   { name: "Bhubaneswar (Odisha)", lng: 85.82, lat: 20.3, zoom: 10.5 },
-  { name: "Patna (Bihar)", lng: 85.14, lat: 25.6, zoom: 10.5 },
 ];

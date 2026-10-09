@@ -24,6 +24,15 @@ export default function SceneCard({ scene: s, index }: { scene: SceneWithVariant
       <div className="flex flex-1 flex-col gap-s4 p-s12">
         <div className="flex flex-wrap items-center gap-s4">
           <span data-testid="kind-chip" className="rounded-xs border border-line-strong px-1.5 py-0.5 text-micro uppercase tracking-wide text-accent">{kindLabel(s.kind)}</span>
+          {s.id === "madhya-pradesh-encroachment" && (
+            <span className="rounded-xs border border-amber-500/50 bg-amber-500/15 text-amber-300 font-semibold px-1.5 py-0.5 text-micro uppercase tracking-wide">★ Priority 1</span>
+          )}
+          {s.id === "assam-flood-2016" && (
+            <span className="rounded-xs border border-cyan-500/50 bg-cyan-500/15 text-cyan-300 font-semibold px-1.5 py-0.5 text-micro uppercase tracking-wide">★ Priority 2</span>
+          )}
+          {s.id === "bihar-encroachment" && (
+            <span className="rounded-xs border border-amber-500/30 bg-amber-500/10 text-amber-300/90 px-1.5 py-0.5 text-micro uppercase tracking-wide">Hotspot</span>
+          )}
           {detectors > 0 && (
             <span data-testid="detectors-chip" title="Spectral, learned and hybrid results are precomputed for this scene"
               className="rounded-xs border border-line px-1.5 py-0.5 text-micro text-secondary">{detectors} detectors</span>

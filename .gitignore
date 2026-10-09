@@ -23,3 +23,5 @@ eval/cache/
 # test coverage output
 .coverage
 web/coverage/
+.vite/
+web/.vite/
