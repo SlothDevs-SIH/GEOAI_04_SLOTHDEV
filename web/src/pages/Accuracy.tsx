@@ -46,7 +46,7 @@ export default function Accuracy() {
       <p className="text-slate-600">Every number here comes from a results file in the repository (<code>eval/results/</code>), produced by a script anyone can rerun. Nothing is estimated.</p>
       {exp && (
         <Card title="Radar flood mode (M8): Sen1Floods11 official held-out splits, flood-only IoU / precision / recall" testid="acc-m8">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways)">
             <table className="w-full text-sm">
               <thead><tr className="text-left text-xs text-slate-500"><th>Method</th>{sets.map(([k, l]) => <th key={k}>{l} ({exp.results.naive_per_chip_otsu[k]?.chips} chips)</th>)}</tr></thead>
               <tbody>
@@ -67,7 +67,7 @@ export default function Accuracy() {
       )}
       {india && (
         <Card title={`Assam flood 2016, all ${india.chips} chips (what the demo shows)`} testid="acc-india">
-          <div className="overflow-x-auto"><table className="w-full text-sm">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways)"><table className="w-full text-sm">
             <thead><tr className="text-left text-xs text-slate-500"><th></th><th>Naive</th><th>M8</th></tr></thead>
             <tbody>
               <tr><td>Flood IoU</td><td>{india.naive_per_chip_otsu.flood_only.iou}</td><td className="font-semibold">{india.m8.flood_only.iou}</td></tr>
@@ -81,7 +81,7 @@ export default function Accuracy() {
       )}
       {fa && (
         <Card title="Optical change: false alarms per km², filter off vs on" testid="acc-false-alarms">
-          <div className="overflow-x-auto"><table className="w-full text-sm">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways)"><table className="w-full text-sm">
             <thead><tr className="text-left text-xs text-slate-500"><th>Scene</th><th>Area</th><th>Raw detections</th><th>After filter</th><th>Raw / km²</th><th>After / km²</th></tr></thead>
             <tbody>
               {fa.scenes.map((s) => (
@@ -94,7 +94,7 @@ export default function Accuracy() {
       )}
       {ab && (
         <Card title="Ablation: polygons reported as each false-alarm rule is added (encroachment preset)" testid="acc-ablation">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways)">
             <table className="w-full text-sm">
               <thead><tr className="text-left text-xs text-slate-500"><th>Scene</th>{ab.scenes[Object.keys(ab.scenes)[0]].cumulative.map((c) => <th key={c.added ?? "none"}>{c.added ? `+ ${RULE[c.added] ?? c.added}` : "No rules"}</th>)}</tr></thead>
               <tbody>
@@ -112,7 +112,7 @@ export default function Accuracy() {
       )}
       {oscd && (
         <Card title={`Optical change (Sentinel-2): OSCD, ${oscd.split.test_cities} held-out test locations, 95% intervals over locations`} testid="acc-oscd">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways)">
             <table className="w-full text-sm">
               <thead><tr className="text-left text-xs text-slate-500"><th>Method</th><th>F1</th><th>IoU</th><th>Precision</th><th>Recall</th></tr></thead>
               <tbody>
@@ -133,7 +133,7 @@ export default function Accuracy() {
       )}
       {oscd?.per_location && (
         <Card title="OSCD per location: where it works and where it does not" testid="acc-oscd-locations">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways)">
             <table className="w-full text-sm">
               <thead><tr className="text-left text-xs text-slate-500"><th>Location</th><th>Region</th><th>Naive F1</th><th>Spectral F1</th><th>Learned F1</th><th>Learned P / R</th></tr></thead>
               <tbody>
@@ -158,7 +158,7 @@ export default function Accuracy() {
       )}
       {oscd?.false_alarms_by_variant && (
         <Card title="False alarms per km² on our demo scenes: spectral vs learned" testid="acc-learned-fa">
-          <div className="overflow-x-auto"><table className="w-full text-sm">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways)"><table className="w-full text-sm">
             <thead><tr className="text-left text-xs text-slate-500"><th>Scene</th><th>Area</th><th>Spectral</th><th>Learned</th><th>Hybrid</th></tr></thead>
             <tbody>
               {Object.entries(oscd.false_alarms_by_variant.scenes).map(([id, sc]) => (
@@ -172,7 +172,7 @@ export default function Accuracy() {
       )}
       {oscd?.variant_study && (
         <Card title={`Seed and loss-weight study (validation locations only, ${oscd.variant_study.seeds.length} seeds)`} testid="acc-variant-study">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways)">
             <table className="w-full text-sm">
               <thead><tr className="text-left text-xs text-slate-500"><th>Variant (weight cap)</th><th>Validation F1</th><th>Precision</th><th>Recall</th><th>Farmland polygons / km²</th></tr></thead>
               <tbody>
@@ -188,7 +188,7 @@ export default function Accuracy() {
       )}
       {levir && (
         <Card title={`High-resolution mode (BIT): LEVIR-CD, ${levir.scope}`} testid="acc-levir">
-          <div className="overflow-x-auto"><table className="w-full text-sm">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways)"><table className="w-full text-sm">
             <thead><tr className="text-left text-xs text-slate-500"><th>Method</th><th>F1</th><th>IoU</th></tr></thead>
             <tbody>
               <tr className="border-t border-slate-100 font-semibold"><td>BIT (authors' weights)</td><td>{ci(levir.bit.f1)}</td><td>{ci(levir.bit.iou)}</td></tr>
@@ -201,7 +201,7 @@ export default function Accuracy() {
       )}
       {events && events.length > 0 && (
         <Card title="Radar before/after on real events (no hand labels, so no IoU)" testid="acc-radar-events">
-          <div className="overflow-x-auto"><table className="w-full text-sm">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Table (scrolls sideways)"><table className="w-full text-sm">
             <thead><tr className="text-left text-xs text-slate-500"><th>Event</th><th>Source</th><th>New water (before/after)</th><th>Single-date</th><th>Dry-season false alarms: before/after</th><th>Single-date</th></tr></thead>
             <tbody>
               {events.map((e) => (

@@ -12,7 +12,7 @@ import argparse
 import json
 import os
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 
 import geopandas as gpd
 import numpy as np
@@ -38,6 +38,8 @@ class Result:
     raw: gpd.GeoDataFrame
     summary: dict
 
+
+DEEP_MIN_AREA_M2 = 20.0      # smallest change kept in deep mode (very-high-resolution imagery)
 
 MODE_LIMITS = {
     "learned": ["The learned model was trained on OSCD urban change (Sentinel-2, 2015 to 2018). On farmland with no real "
@@ -88,6 +90,9 @@ def analyze(before_path, after_path, preset="general", mode="auto", before_date=
     p = params or params_for(preset)
     pair = ingest.read_pair(before_path, after_path)
     mode = choose_mode(pair, mode)
+    if mode == "deep" and p.min_area_m2 > DEEP_MIN_AREA_M2:
+        # the presets' minimum areas are meant for 10 m pixels (300 m2 = 3 pixels); at 0.5 m that removes whole houses
+        p = replace(p, min_area_m2=DEEP_MIN_AREA_M2)
     det = detectors.detect(mode, pair, p)          # raises ModeUnavailable, with the reason, when a model cannot run
     raw_candidate = det["candidate"]          # the raw layer always shows the single-scene detections
     persist_note = None

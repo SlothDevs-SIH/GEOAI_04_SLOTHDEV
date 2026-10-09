@@ -310,8 +310,10 @@ def _check_fetch(body: FetchBody):
         raise HTTPException(400, "persistence is not used for floods: flood water recedes, so it would remove real change")
     try:
         aoi.validate_bbox(body.bbox)
-        aoi.parse_date(body.before_date, "before date")
-        aoi.parse_date(body.after_date, "after date")
+        bd = aoi.parse_date(body.before_date, "before date")
+        ad = aoi.parse_date(body.after_date, "after date")
+        if bd >= ad:
+            raise aoi.AoiError("the before date must be earlier than the after date")
     except aoi.AoiError as e:
         raise HTTPException(400, str(e)) from e
 
@@ -363,7 +365,8 @@ def fetch_s2(body: FetchBody):
 
 FILE_TYPES = {".json": "application/json", ".geojson": "application/geo+json", ".webp": "image/webp",
               ".gpkg": "application/geopackage+sqlite3", ".csv": "text/csv",
-              ".kml": "application/vnd.google-earth.kml+xml", ".pdf": "application/pdf"}
+              ".kml": "application/vnd.google-earth.kml+xml", ".pdf": "application/pdf",
+              ".bin": "application/octet-stream"}   # sens.bin: the sensitivity slider's per-pixel data
 
 
 @api.get("/jobs/{job_id}/files/{path:path}")

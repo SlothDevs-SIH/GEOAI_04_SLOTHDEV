@@ -202,6 +202,9 @@ def export_radar(data_dir):
                 "be missed.", "Single date shown; the full M8 compares before/after radar scenes."],
         subtitle="Brahmaputra flood, Assam, India | Sentinel-1 radar 2016-08-12 | expert labels: Sen1Floods11")
     json.dump(summary, open(f"{d}/summary.json", "w"), indent=1, default=str)
+    ex.audit(f"{d}/exports/audit.json", [f"{data_dir}/S1Hand/{cid}_S1Hand.tif", f"{data_dir}/LabelHand/{cid}_LabelHand.tif",
+                                         f"{data_dir}/JRCWaterHand/{cid}_JRCWaterHand.tif"],
+             {"preset": "flood", "threshold_db": thr, "method": "hysteresis"}, summary)
     report.build(f"{d}/exports/report.pdf", "GEOAI 04 flood report: Assam 2016 (radar)", summary, gdf,
                  snapshot_png(rgb_rad, gdf, chip["transform"], chip["crs"], f"{d}/exports/snapshot.png"),
                  f"/scene/{sid}", summary["limits"])

@@ -7,7 +7,9 @@ import type { ChangeProps, ReviewStatus, SceneData, Summary, Tier } from "../../
 
 export function TierChip({ tier }: { tier: string }) {
   return (
-    <span className="rounded px-1.5 py-0.5 text-[11px] font-bold uppercase text-white" style={{ background: tierColor(tier) }}>
+    <span className="rounded px-1.5 py-0.5 text-[11px] font-bold uppercase"
+      // the orange and gold backgrounds need dark text to reach a 4.5:1 contrast ratio (white on them is 2.5:1)
+      style={{ background: tierColor(tier), color: tier === "medium" || tier === "low" ? "#14181f" : "#ffffff" }}>
       {tierLabel(tier)}
     </span>
   );
