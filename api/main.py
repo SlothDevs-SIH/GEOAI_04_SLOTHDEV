@@ -320,11 +320,14 @@ async def analyze_radar(s1: UploadFile = File(...), threshold_db: float = EVENT_
     """Upload a Sentinel-1 GeoTIFF (band 1 = VV dB, band 2 = VH dB). Returns flood polygons as GeoJSON."""
     if method not in ("hysteresis", "threshold"):
         raise HTTPException(400, "method must be 'hysteresis' or 'threshold'")
-    with tempfile.NamedTemporaryFile(suffix=".tif") as f:
-        f.write(await s1.read())
-        f.flush()
+    data = await s1.read()
+    # write and close first: Windows cannot reopen a NamedTemporaryFile that is still open
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "scene.tif")
+        with open(path, "wb") as f:
+            f.write(data)
         try:
-            chip = radar.load_chip(f.name)
+            chip = radar.load_chip(path)
         except Exception as e:
             raise HTTPException(400, f"could not read GeoTIFF: {e}") from e
     mask, drops, vvs = radar.flood_mask(chip, threshold_db, method=method)

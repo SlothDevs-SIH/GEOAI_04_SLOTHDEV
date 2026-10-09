@@ -1,5 +1,7 @@
 # M8 — Sentinel-1 Radar Flood Mode: Data Sourcing Decision
 
+> **Correction (9 Oct, evening).** The IoU values 0.52 and 0.43 to 0.44 in section 6 came from a first, simpler run (threshold + median filter only). **The authoritative numbers are in `eval/README.md` and `eval/results.json`** (held-out: Bolivia 0.697 vs 0.337, India test 0.571 vs 0.273, official test 0.287 vs 0.141; demo scene 0.410 vs 0.175). Also, the rule "if V-M8-1 or V-M8-2 fail, drop M8" is replaced: **M8 stays either way**; the checks only decide whether we may say "tested on 2026 OPERA data". See `docs/DECISIONS.md` section 4.
+
 **Team:** Slothdevs · **Problem statement:** FUSION 2026 GEOAI 04
 **Branch:** `backend-2` (owner: Ayush; `backend-1` is Soham's)
 **Document date:** 2026-10-09

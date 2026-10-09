@@ -1,5 +1,7 @@
 # GEOAI 04: Frontend Plan, the Web App
 
+> **Status banner (9 Oct 2026, evening).** `main` already contains the integrated engine, API and React app. What remains, who does it and the decisions made are in [`docs/DECISIONS.md`](docs/DECISIONS.md) and [`docs/packages/`](docs/packages/CONTRACTS.md). Where this plan disagrees with those, they win.
+
 **Product:** a website where an officer or analyst opens a disaster or encroachment scene (or uploads a before/after pair) and sees a **before/after swipe map** of what really changed, ranked by severity, with the false alarms filtered out, an **impact summary** (hectares, cropland, buildings, roads) and one-click exports.
 **Module:** `web/` (Vite + React + TypeScript)
 **Talks to:** the FastAPI service in [`BACKEND_PLAN.md`](BACKEND_PLAN.md) §6, **but works without it** for the demo scenes (static files in `web/public/demos/`).

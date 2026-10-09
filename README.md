@@ -113,6 +113,8 @@ CI runs all of these on every push (`.github/workflows/ci.yml`).
 | Read this | For |
 |---|---|
 | [`BACKEND_PLAN.md`](BACKEND_PLAN.md) · [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md) | What was built and why, API contract, tests, deployment |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) · [`docs/packages/`](docs/packages/CONTRACTS.md) | **Decisions made and the two work packages (models vs product) with their interfaces** |
+| [`docs/PITCH_BRIEF.md`](docs/PITCH_BRIEF.md) | Speaker brief: built, next, stack and why |
 | [`docs/UI_EXPLANATION.md`](docs/UI_EXPLANATION.md) | Walkthrough of the UI for presenting |
 | [`docs/M8_RADAR_FLOOD_DATA.md`](docs/M8_RADAR_FLOOD_DATA.md) | Radar flood mode: data, access, evidence |
 | [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) · [`docs/TASK_SPLIT.md`](docs/TASK_SPLIT.md) · [`docs/TECH_OPTIONS.md`](docs/TECH_OPTIONS.md) | Full plan, schedule, options compared |

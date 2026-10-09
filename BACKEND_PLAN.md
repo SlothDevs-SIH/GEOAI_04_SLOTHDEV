@@ -1,5 +1,7 @@
 # GEOAI 04: Backend, ML and Deployment Plan
 
+> **Status banner (9 Oct 2026, evening).** `main` already contains the integrated engine, API and React app. What remains, who does it and the decisions made are in [`docs/DECISIONS.md`](docs/DECISIONS.md) and [`docs/packages/`](docs/packages/CONTRACTS.md). Where this plan disagrees with those, they win.
+
 **What it is:** the change-detection engine (ingest → detect → filter → vectorise → attribute → impact) plus a FastAPI service around it, an ML track that **retrains a model on real Sentinel-2 change data**, an evaluation harness that produces the numbers we show judges, and the deployment recipe.
 **Folders:** `engine/` (pure Python pipeline, no web code) · `api/` (FastAPI) · `ml/` (data loaders, models, training, evaluation) · `eval/` (metric scripts + `results.json`) · `demos/` (preloaded scenes) · `tests/` · `scripts/`
 **Stack:** Python 3.11 · Rasterio · NumPy · OpenCV · scikit-image · Shapely 2 · GeoPandas · pyproj · PyTorch (CPU at serve time; GPU on Kaggle/Colab for training) · FastAPI + Uvicorn · pytest + ruff · Docker

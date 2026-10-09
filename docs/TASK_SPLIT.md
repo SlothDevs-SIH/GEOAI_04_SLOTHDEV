@@ -1,5 +1,7 @@
 # GEOAI 04: 24-Hour Task Split (to deployment and submission)
 
+> **Status banner (9 Oct 2026, evening).** `main` already contains the integrated engine, API and React app. What remains, who does it and the decisions made are in [`DECISIONS.md`](DECISIONS.md) and [`packages/`](packages/CONTRACTS.md). Where this plan disagrees with those, they win.
+
 **Clock:** IST. Plan starts **Fri 9 Oct, 12:30**. **Submission deadline: Sat 10 Oct, 10:00.** That leaves **about 21.5 hours**.
 **Target:** a deployed website (Vercel) plus a live API (Hugging Face Space), a retrained model with held-out numbers, tests in CI, and a submitted GitHub repo, all **by 09:00**, with an hour of buffer.
 **Read with:** [`BACKEND_PLAN.md`](../BACKEND_PLAN.md) · [`FRONTEND_PLAN.md`](../FRONTEND_PLAN.md) · [`PROJECT_PLAN.md`](PROJECT_PLAN.md)
