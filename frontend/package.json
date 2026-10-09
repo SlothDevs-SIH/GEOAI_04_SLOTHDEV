@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "jest",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "serve": "node scripts/serve.mjs"
   },
   "dependencies": {
     "@maplibre/maplibre-react-native": "^11.5.0",

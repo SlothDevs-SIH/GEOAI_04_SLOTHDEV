@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "../components/global/ErrorBoundary";
 import { OfflineBadge, Toast } from "../components/global/Globals";
+import { ImageViewer } from "../components/result/ImageViewer";
 import { AppHeader, TabBar } from "../components/nav/Nav";
 import { registerServiceWorker } from "../lib/sw";
 import { useReview } from "../store/review";
@@ -22,6 +23,7 @@ function Shell() {
       </View>
       <TabBar />
       <Toast />
+      <ImageViewer />
     </View>
   );
 }

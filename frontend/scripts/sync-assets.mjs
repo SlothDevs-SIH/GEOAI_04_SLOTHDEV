@@ -16,4 +16,7 @@ for (const name of ["demos", "eval", "architecture.png", "icon-192.png", "icon-5
   rmSync(resolve(dst, name), { recursive: true, force: true });
   cpSync(resolve(src, name), resolve(dst, name), { recursive: true });
 }
+// MapLibre 6 loads its worker (and shared chunk) as separate ES modules and needs its stylesheet; serve them from the web root.
+const ml = resolve(here, "../node_modules/maplibre-gl/dist");
+for (const f of ["maplibre-gl-worker.mjs", "maplibre-gl-shared.mjs", "maplibre-gl.css"]) cpSync(resolve(ml, f), resolve(dst, f));
 console.log("sync-assets: copied demos, eval, icons to public/");

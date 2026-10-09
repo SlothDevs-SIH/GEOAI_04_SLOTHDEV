@@ -127,3 +127,10 @@ export async function apiHealth(): Promise<boolean> {
     return false;
   }
 }
+
+/** Live jobs persist reviews on the server (idempotent); demo scenes keep them locally only. */
+export async function patchReview(jobId: string, fid: number, status: string): Promise<void> {
+  try {
+    await fetch(`${API_URL}/jobs/${jobId}/features/${fid}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ review_status: status }) });
+  } catch { /* the local decision stands; the server copy is best-effort */ }
+}
