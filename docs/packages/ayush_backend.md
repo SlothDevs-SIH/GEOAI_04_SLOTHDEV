@@ -19,7 +19,7 @@
 | A5 | `engine/s1.py`, radar before/after in `engine/radar.py`, `engine/radar_run.py` (Seam 2), `ml/m8_calibrate.py`, `engine/params_m8.json`, `eval/m8_opera.py` | **No.** Synthetic scenes only: no pre-event radar exists in Sen1Floods11, and Planetary Computer / Earthdata are not reachable here |
 | A6 | `eval/build_results.py` Seam 3 keys (written only when their result file exists), `requirements-ml.txt` | n/a |
 
-**Still open:** only the radar before/after test on real 2026 events (V-M8-1 and V-M8-2 below).
+**Still open:** only the NASA OPERA 2026 test (V-M8-2 below). The radar before/after mode has been run on a real 2024 event.
 
 **V-M8-1 (Planetary Computer): PASSED** on the laptop, 9 Oct (`python -m engine.s1 --check mpc`): 34 `sentinel-1-rtc` scenes found over the
 Assam box (Nov 2024 to Mar 2025) and a 224 x 203 px window read from the first one. (From the build environment it had returned 403: that was
@@ -156,11 +156,12 @@ Data decisions are in `M8_RADAR_FLOOD_DATA.md`. **M8 stays either way** (see `DE
 - [x] `radar_run.run` follows Seams 2, 4 and 5; single-date stays as the fallback. The live access checks are written down (V-M8-1: 403 from the build environment; V-M8-2: not tried).
 - [x] `ruff` and `pytest` are green without torch installed (102 pass, 3 skip; 116 with torch); every engine, eval and ml module imports without torch except the three PyTorch tools, which say how to install it (`tests/test_imports_without_torch.py`). No edits to the partner's files. A clean checkout rebuilds the committed `results.json` exactly.
 
-**Not done, and why:** the radar before/after mode has not been scored on a real event. Sen1Floods11 has no pre-event radar, Planetary
-Computer is blocked from the build environment, and there is no Earthdata token. The tooling is built and tested end to end on synthetic
-scenes and fake STAC data; run it on the laptop (commands in `eval/README.md`, "Reproduce every number", and below).
+**Radar before/after on a real event: done on Planetary Computer, label-free** (laptop, 9 Oct; `eval/results/m8_mpc_assam_2024.json`): July 2024 Assam flood,
+447 km2. New water 56.4 km2 (single-date: 82.5 km2). On a flood-free dry-season scene single-date mapping flags 11.3 km2 and before/after 0.13 km2.
+No labels exist for the event, so there is no IoU, and the 3 dB criterion is still a literature default. **Still not done:** the NASA OPERA 2026
+test (needs your Earthdata token, V-M8-2), so the stage wording stays "evaluated on Sen1Floods11 and a Planetary Computer 2024 event; live 2026 fetch not verified".
 
-**Run the real before/after test (laptop, no account needed):**
+**How the real before/after test was run (laptop, no account needed):**
 ```
 python -m engine.s1 --check mpc                                        # V-M8-1: must print "ok": true
 python ml/fetch_s1_event.py --bbox 93.7 26.5 93.9 26.7 --event-date 2024-07-05 --out data/s1_events/assam_2024

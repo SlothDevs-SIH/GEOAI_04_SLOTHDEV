@@ -64,7 +64,8 @@ Every file below is written by code in this repo; a missing file means that eval
 | `results/oscd_val_variants.json` | `ml/eval_variants_val.py ROOT` | **Run** on the 3 validation cities: spectral F1 0.06, learned 0.36, hybrid 0.05 (recall 0.03): the hybrid is rejected |
 | `results/learned_false_alarms.json` | `eval/learned_false_alarms.py` | **Run**: polygons per km2 on the no-change farmland scene: spectral 0.62, learned 7.41, hybrid 0.34 |
 | `results/levir_bit.json` | `eval/levir_eval.py data/levir_test --full-split` | **Run on the full official LEVIR-CD test split (128 images), labelled "reproduced"**: BIT F1 0.9025 [0.890, 0.912], IoU 0.822, vs naive 0.137. Published BIT: F1 0.8931, IoU 0.8068 (ours is about a point higher; the published value is inside our interval). Metrics are pooled over images; inference tiles 256 px with blended overlaps |
-| `results/m8_opera_2026_<event>.json` | `eval/m8_opera.py` | Not run: needs OPERA scenes (Earthdata). Frozen parameters, labels / check points / dry-season false alarms |
+| `results/m8_mpc_assam_2024.json` | `ml/fetch_s1_event.py` then `eval/m8_opera.py --source mpc` | **Run** on the real July 2024 Assam flood (Planetary Computer, 10 m, 447 km2; flood scene 6 Jul 2024, three dry-season references on the same orbit). No hand labels, so no IoU. New water found: **56.4 km2**; single-date mapping of the same scene gives 82.5 km2 (it also counts water that was already there). On a flood-free dry-season scene single-date mapping flags **11.3 km2 (230 polygons)**, before/after flags **0.13 km2 (29 polygons)**: the reference removes about 99% of single-date's false-alarm area. The result file records that it was rerun with `--force` to add the single-date comparison |
+| `results/m8_opera_2026_<event>.json` | `eval/m8_opera.py` | Not run: needs an Earthdata token. Same scoring as the Planetary Computer row above |
 
 Limits to say out loud: seven tiles is a smoke test, not a benchmark (the interval is wide); the radar before/after mode is
 tested on synthetic scenes only, because Sen1Floods11 has no pre-event radar, so its 3 dB change criterion is a literature
@@ -104,3 +105,10 @@ split from `satellite-image-deep-learning/LEVIR-CD` (`test.zip`). The test citie
 run unless `--force`, and `m8_opera.py` refuses to rescore an event.
 
 The Python tests need no data: `python -m pytest -q` (102 pass and 3 skip without torch, 116 with it).
+
+**Reading the Assam 2024 result.** The reference clearly helps on false alarms (0.13 km2 against 11.3 km2 on a flood-free scene). Two honest
+limits: (1) there is no ground truth for the flood itself, so 56 km2 is plausible but unverified, and the 3 dB change criterion remains a
+literature default; (2) before/after reports more, smaller polygons than single-date on the flood scene (977 against 606), because removing
+the water that was already there splits big connected water bodies into fragments. "Flood extent" here means new water beyond the normal
+river, not total water. Both runs share the same event threshold (Otsu on the flood scene, -11.3 dB) and the same frozen parameters. The dry
+scene shares months with the references (Jan to Mar), so it does not test monsoon-season look-alikes.
