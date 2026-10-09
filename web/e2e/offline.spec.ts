@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("the demo opens with no network after the first visit", async ({ page, context }) => {
   await page.goto("./");
-  await expect(page.getByTestId("scene-card")).toHaveCount(4);
+  await expect(page.getByTestId("scene-card")).toHaveCount(7);
   // wait until the service worker is active and has cached the site and the demo scenes
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
@@ -19,7 +19,7 @@ test("the demo opens with no network after the first visit", async ({ page, cont
 
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByTestId("scene-card")).toHaveCount(4);
+  await expect(page.getByTestId("scene-card")).toHaveCount(7);
   await expect(page.getByTestId("offline-badge")).toBeVisible();
 
   await page.getByText("Navi Mumbai airport build-out").click();

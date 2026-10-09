@@ -14,7 +14,7 @@ After a flood or a construction boom, agencies compare satellite images from two
 
 ## What the site does
 
-1. **Pick a scene, or analyse any area:** four demo scenes (Assam flood on radar, Navi Mumbai airport build-out, Pune city edge, a farmland season control); or **draw a box anywhere in India** on the map, choose two dates, and the server fetches the two clearest Sentinel-2 images and runs the engine; or upload your own GeoTIFFs; or upload one Sentinel-1 radar image for a flood.
+1. **Pick a scene, or analyse any area:** seven demo scenes (four tuned: Assam flood on radar, Navi Mumbai airport build-out, Pune city edge, a farmland season control; three **regional checks**: Delhi NCR, Bengaluru, Guwahati); or **draw a box anywhere in India** on the map, choose two dates, and the server fetches the two clearest Sentinel-2 images and runs the engine; or upload your own GeoTIFFs; or upload one Sentinel-1 radar image for a flood.
 2. **Swipe map:** before/after compare with change polygons coloured by severity tier.
 3. **The demo moment:** toggle the false-alarm filter. Navi Mumbai: **2,185 raw detections → 265 real changes**; Assam flood (radar): **3,490 → 37**; the season control, where nothing was built: **3,083 → 22**.
 4. **Explore:** ranked list, detail card with area, confidence, location, the **reason it was kept** and before/after crops; confirm or dismiss each change.
@@ -22,7 +22,9 @@ After a flood or a construction boom, agencies compare satellite images from two
 6. **Export:** GeoPackage, GeoJSON (all or confirmed only), one-page PDF, CSV field pack with map links, KML, audit trail; permalink + QR code for phones. A live analysis opens on the same swipe map as the demo scenes.
 7. **Accuracy page:** every number comes from a results file in this repo.
 
-**Works offline:** after one visit the site and the demo scenes are cached (PWA), so the demo opens with no network. Live analysis needs the API.
+**Works offline:** after one visit the site and the demo scenes are cached (PWA, about 14 MB), so the demo opens with no network. Live analysis needs the API.
+
+**Sensitivity lab:** on the optical scenes, drag the change threshold and the smallest-change slider and watch the detections change live in the browser (the same filters as the server, proven equal by a test).
 
 **What it does not do:** 10 m imagery cannot see people or single small buildings. The site **prioritises where to look**.
 
@@ -30,7 +32,8 @@ After a flood or a construction boom, agencies compare satellite images from two
 
 The engine is region-agnostic (Sentinel-2 covers the whole country) and any box up to about 15 × 15 km can be analysed. **What we have checked so far:**
 - Scene selection against the live archive for Delhi NCR, Jaipur, Chennai, Kochi, Guwahati and Bengaluru: a clear scene was found for each.
-- Visual checks of the change polygons on four scenes (Navi Mumbai, Pune, a farmland control in Maharashtra, Assam radar), see `docs/img/qa_*.jpg`.
+- **Full pipeline on six regions, each reviewed by eye** (`eval/regions.py`, pictures in `docs/img/qa_region_*.jpg`): Delhi NCR, Jaipur, Chennai, Kochi, Guwahati, Bengaluru. Fast-growing urban areas look plausible. **Known confusers:** rivers and sandbars move between dates and are flagged (the Yamuna in Delhi, the Brahmaputra at Guwahati); bare soil in dry regions (Jaipur) produces scattered small detections. Three of these are published as demo scenes, labelled "Regional check".
+- Visual checks of the change polygons on four tuned scenes (Navi Mumbai, Pune, a farmland control in Maharashtra, Assam radar), see `docs/img/qa_*.jpg`.
 
 The detection thresholds were tuned on the Maharashtra scenes. **We have not yet validated the results in other regions, so we do not claim it works everywhere.** Bigger areas need tiling, which is not built.
 

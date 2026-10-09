@@ -170,3 +170,18 @@ Tool: `python scripts/qa_overlay.py` writes `docs/img/qa_<scene>.jpg` (left befo
 | **S8 submission pack** | In progress | `scripts/clean_clone_check.py` written; README and video still to do |
 
 **Evidence for `eval/results.json` (Ayush owns that file):** please add `eval/composites.json` as a `composites` key in `build_results.py`.
+
+### Progress, later on 9 Oct (evening)
+
+| Task | State | Evidence |
+|---|---|---|
+| **X1 live sensitivity lab** (optional) | **Done** | `engine/sensitivity.py` (data + Python mirror), `web/src/lib/sensitivity.ts` (the same algorithm in the browser), `SensitivityLab` card on the Result page. A fixture made by the Python engine proves the browser gives **identical counts and pixel totals at 9 slider settings**; at the default settings it reproduces the server's own count. It is an interactive preview, the server result stays the source of truth |
+| **S9 regional validation** | **Done, with an honest verdict** | `eval/regions.py` ran the full pipeline on Delhi NCR, Jaipur, Chennai, Kochi, Guwahati and Bengaluru, all reviewed by eye (`docs/img/qa_region_*.jpg`, notes in `eval/regions.json`). Plausible in fast-growing urban areas. **Known confusers: river channels and sandbars (Yamuna, Brahmaputra) and bare soil in arid regions.** Three regions are published as "Regional check" demo scenes, with their limits in the story; the engine's limits text now mentions rivers and bare soil |
+| **Robustness fix** | **Done** | Windows file race in the job state made about half of the API fetch tests flaky (job state replaced while polled). Fixed with a short retry; 6 of 6 repeated runs pass |
+| **S7 deployment** | **Container verified** | See `docs/DEPLOY.md` section 3: image builds, runs healthy, and completed a live Delhi analysis (1,831 raw to 59 real changes); about 480 MiB memory for a 4 km box |
+| **S8 submission pack** | In progress | README, `docs/DEMO_SCRIPT.md`, `scripts/clean_clone_check.py` are done; still to do: record the video, put the live URLs in the README, run the clean-clone check on the final commit |
+
+**Open decisions for the team (nothing changed without them):**
+1. Pune clutter: minimum area 300 m2 to 1,000 m2, or hide the `low` tier by default (the Sensitivity lab already lets a user see the effect).
+2. Reword the season-control false-alarm number as an upper bound.
+3. Do the regional checks stay on the home page, or only in the docs?

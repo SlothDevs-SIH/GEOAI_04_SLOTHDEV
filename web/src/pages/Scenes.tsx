@@ -4,7 +4,7 @@ import { listScenes, staticBase } from "../lib/api";
 import { num } from "../lib/format";
 import type { SceneMeta } from "../lib/types";
 
-const KIND: Record<string, string> = { flood: "Flood · radar", encroachment: "Encroachment", control: "False-alarm control" };
+const KIND: Record<string, string> = { flood: "Flood · radar", encroachment: "Encroachment", control: "False-alarm control", regional: "Regional check" };
 
 export default function Scenes() {
   const [scenes, setScenes] = useState<SceneMeta[]>();
@@ -41,7 +41,7 @@ export default function Scenes() {
         <Link to="/analyse" className="flex flex-col justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white p-4 text-center hover:border-accent">
           <span className="text-3xl">⬆</span>
           <span className="font-semibold">Try your own</span>
-          <span className="text-xs text-slate-500">Upload a before/after GeoTIFF pair</span>
+          <span className="text-xs text-slate-500">Draw an area anywhere in India, or upload images</span>
         </Link>
       </div>
     </div>
