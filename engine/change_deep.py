@@ -52,7 +52,8 @@ def load():
     with torch.serialization.safe_globals(safe):
         ck = torch.load(config_ml.BIT_CKPT, map_location="cpu", weights_only=True)
     net.load_state_dict(ck["model_G_state_dict"])
-    _cache["net"] = (net.eval(), torch)
+    device = "cuda" if torch.cuda.is_available() else "cpu"       # a full LEVIR-CD run is far faster on a GPU
+    _cache["net"] = (net.eval().to(device), torch)
     return _cache["net"]
 
 
@@ -82,11 +83,12 @@ def probability(pair, fn=None):
     check_input(pair)
     if fn is None:
         net, torch = load()
+        device = next(net.parameters()).device
 
         def fn(b):
             with torch.no_grad():
-                out = net(torch.from_numpy(b[:, :3]), torch.from_numpy(b[:, 3:]))
-                return torch.softmax(out, 1)[0, 1].numpy()
+                x = torch.from_numpy(b).to(device)
+                return torch.softmax(net(x[:, :3], x[:, 3:]), 1)[0, 1].cpu().numpy()
     scale = lambda x: ((np.nan_to_num(x) - 0.5) / 0.5).astype(np.float32)   # noqa: E731 (BIT trains on [-1, 1])
     x = np.concatenate([scale(pair.before), scale(pair.after)])
     return predict_tiled(fn, x)
