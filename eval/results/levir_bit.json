@@ -1,0 +1,76 @@
+{
+ "dataset": "LEVIR-CD",
+ "images": 7,
+ "scope": "7 sample tiles from the BIT repository (NOT the full test split)",
+ "bit": {
+  "precision": {
+   "value": 0.9062,
+   "ci95": [
+    0.8765,
+    0.9376
+   ]
+  },
+  "recall": {
+   "value": 0.9499,
+   "ci95": [
+    0.9174,
+    0.9755
+   ]
+  },
+  "f1": {
+   "value": 0.9276,
+   "ci95": [
+    0.9084,
+    0.951
+   ]
+  },
+  "iou": {
+   "value": 0.8649,
+   "ci95": [
+    0.8323,
+    0.9065
+   ]
+  },
+  "tiles": 7
+ },
+ "naive": {
+  "precision": {
+   "value": 0.2418,
+   "ci95": [
+    0.1682,
+    0.3346
+   ]
+  },
+  "recall": {
+   "value": 0.4043,
+   "ci95": [
+    0.2962,
+    0.5153
+   ]
+  },
+  "f1": {
+   "value": 0.3026,
+   "ci95": [
+    0.2174,
+    0.3998
+   ]
+  },
+  "iou": {
+   "value": 0.1783,
+   "ci95": [
+    0.122,
+    0.2498
+   ]
+  },
+  "tiles": 7
+ },
+ "published_bit": {
+  "f1": 0.8931,
+  "iou": 0.8068,
+  "source": "Chen, Qi, Shi (2021), IEEE TGRS, BIT on the LEVIR-CD test split"
+ },
+ "note": "published, not reproduced",
+ "bootstrap": "95% percentile interval over images, 2000 resamples, seed 0",
+ "s_per_km2": 36.3,
+ "commit": "4622dce"
+}

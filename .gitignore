@@ -10,3 +10,6 @@ node_modules/
 dist/
 .env
 data/
+# BIT checkpoint and code are fetched by scripts/fetch_bit.py, never committed
+engine/weights/bit_levir.pt
+engine/weights/BIT_CD/
