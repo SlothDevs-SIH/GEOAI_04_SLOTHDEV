@@ -1,0 +1,46 @@
+{
+ "id": "bengaluru",
+ "name": "Bengaluru (Whitefield): regional check",
+ "place": "Bengaluru (Whitefield)",
+ "event": "Fast-growing urban fringe",
+ "kind": "regional",
+ "mode": "spectral",
+ "before_date": "2019-02-18",
+ "after_date": "2025-02-06",
+ "before_label": "Before \u00b7 Sentinel-2 \u00b7 2019-02-18",
+ "after_label": "After \u00b7 Sentinel-2 \u00b7 2025-02-06",
+ "source": "Sentinel-2 L2A (Copernicus)",
+ "corners": [
+  [
+   77.719944,
+   13.020849
+  ],
+  [
+   77.800729,
+   13.019989
+  ],
+  [
+   77.799935,
+   12.949179
+  ],
+  [
+   77.719173,
+   12.950034
+  ]
+ ],
+ "demo": true,
+ "after_filter": 272,
+ "raw_detections": 6117,
+ "scenes": {
+  "before": "S2B_43PGQ_20190218_0_L2A",
+  "after": "S2B_43PGQ_20250206_0_L2A"
+ },
+ "bbox": [
+  77.72,
+  12.95,
+  77.8,
+  13.02
+ ],
+ "preset": "encroachment",
+ "story": "Regional check (tropical plateau, urban growth). Plausible for a fast-growing urban fringe: clusters on new buildings and earthworks, plus many small detections that are partly noise."
+}

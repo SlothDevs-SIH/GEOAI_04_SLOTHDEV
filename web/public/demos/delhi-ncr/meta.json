@@ -1,0 +1,46 @@
+{
+ "id": "delhi-ncr",
+ "name": "Delhi NCR (Noida): regional check",
+ "place": "Delhi NCR (Noida)",
+ "event": "Urban growth, with a known river false alarm",
+ "kind": "regional",
+ "mode": "spectral",
+ "before_date": "2019-01-05",
+ "after_date": "2025-01-23",
+ "before_label": "Before \u00b7 Sentinel-2 \u00b7 2019-01-05",
+ "after_label": "After \u00b7 Sentinel-2 \u00b7 2025-01-23",
+ "source": "Sentinel-2 L2A (Copernicus)",
+ "corners": [
+  [
+   77.310009,
+   28.571391
+  ],
+  [
+   77.391535,
+   28.569978
+  ],
+  [
+   77.389924,
+   28.49864
+  ],
+  [
+   77.308452,
+   28.500048
+  ]
+ ],
+ "demo": true,
+ "after_filter": 290,
+ "raw_detections": 5082,
+ "scenes": {
+  "before": "S2B_43RGM_20190105_1_L2A",
+  "after": "S2B_43RGM_20250123_0_L2A"
+ },
+ "bbox": [
+  77.31,
+  28.5,
+  77.39,
+  28.57
+ ],
+ "preset": "encroachment",
+ "story": "Regional check (semi-arid, dense urban growth). Mixed. New development and the landfill edge look real, but a long strip along the Yamuna riverbed is flagged as built-up gain (a moving river channel and sandbars, not construction)."
+}
