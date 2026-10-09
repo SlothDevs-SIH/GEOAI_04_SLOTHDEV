@@ -22,6 +22,19 @@ Agencies compare satellite or aerial images from two dates to find illegal const
 
 **The demo moment:** toggle the false-alarm filter off and the map fills with noise ("412 raw detections"). Toggle it on and only the real changes remain ("37").
 
+## Why it's different (USPs)
+
+1. **False-alarm-first, and we prove it:** a "412 raw → 37 real" toggle, plus false alarms per km² reported alongside F1.
+2. **Every change explains itself:** a plain-language reason, a confidence score and before/after crops.
+3. **Decisions, not masks:** ranked polygons with area, location, type and severity, ready for QGIS, ArcGIS or QField.
+4. **Knows where change matters:** no-build zones escalate a change, approved permits de-escalate it, every change gets a ward tag.
+5. **Office to field on a phone:** offline review, navigate to the site, share a field pack.
+6. **Free and works anywhere:** free Sentinel-2 imagery, open models and maps, CPU-only, no API keys.
+7. **Right model for the right resolution:** automatic routing between a spectral engine and a Siamese deep model.
+8. **Evidence-grade:** an audit trail makes every result reproducible.
+
+How this compares with manual comparison, desktop GIS, Earth Engine, research models and commercial platforms, and the research gaps it targets, is in [`docs/PROJECT_PLAN.md` §5–§7](docs/PROJECT_PLAN.md#5-existing-solutions-and-where-they-fall-short).
+
 ## Features
 
 | Core (from the problem statement) | Extras that make it stand out |
@@ -34,6 +47,7 @@ Agencies compare satellite or aerial images from two dates to find illegal const
 | Severity tiers | Field pack with Google Maps directions |
 | Before/after split-view map | Needs-review queue, use-case presets |
 | GeoPackage / GeoJSON export | Audit trail per run, in-app accuracy screen, bilingual PDF |
+| | Radar flood mode that sees through monsoon clouds (stretch) |
 
 ## Proof so far
 
@@ -46,7 +60,7 @@ The prototype ran end to end on real before/after pairs (LEVIR-CD, 0.5 m/pixel, 
 
 - On a scene where nothing was built (only lighting and season changed), naive differencing raised **188 alerts**. Our pipeline raised **0**.
 - Speed: about 7 seconds for 11 tiles on a CPU.
-- These figures come from 7 sample tiles. The published full-test-set F1 is about 0.89. The limits are listed in [`docs/PROJECT_PLAN.md` §10.4](docs/PROJECT_PLAN.md#104-what-this-run-does-not-prove-be-upfront-about-these-with-judges).
+- These figures come from 7 sample tiles. The published full-test-set F1 is about 0.89. The limits are listed in [`docs/PROJECT_PLAN.md` §13.4](docs/PROJECT_PLAN.md#134-what-this-run-does-not-prove-be-upfront-about-these-with-judges).
 
 ## Architecture
 
@@ -71,7 +85,7 @@ The prototype ran end to end on real before/after pairs (LEVIR-CD, 0.5 m/pixel, 
 | **Data** | Sentinel-2 L2A via Earth Search STAC (pystac-client), OpenStreetMap context layers, LEVIR-CD / OSCD for evaluation |
 | **Outputs** | GeoPackage, GeoJSON, PDF (WeasyPrint), CSV/KML field pack |
 
-Why Kotlin rather than React Native or Flutter: see [`FRONTEND_PLAN.md` §1](FRONTEND_PLAN.md#1-tech-stack-choice-kotlin--jetpack-compose--maplibre-android).
+Why each piece was chosen over its alternatives (24 decisions, from Kotlin vs React Native vs Flutter to BIT vs ChangeFormer and Sentinel-2 vs Landsat) is in [`docs/PROJECT_PLAN.md` §14](docs/PROJECT_PLAN.md#14-tech-stack-what-we-use-why-and-why-not-the-alternatives).
 
 ## Repository layout
 
@@ -128,14 +142,14 @@ In the app, go to **Settings** and set the backend URL to `http://<laptop-ip>:80
 
 | Read this | For |
 |---|---|
-| [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) | The whole picture: problem, stakeholders, pipeline, results, evaluation, risks, the 11 proposed additions, demo script, judge Q&A |
+| [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) | The whole picture: problem, stakeholders, existing solutions, research gaps, USPs, pipeline, results, every tech-stack decision, evaluation, risks, the 12 proposed additions, demo script, judge Q&A |
 | [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md) | Building the Android app |
 | [`BACKEND_PLAN.md`](BACKEND_PLAN.md) | Building the processing pipeline and API |
 
 ## Open items
 
 - [ ] Paste the official GEOAI 04 statement and judging rubric into [`docs/PROJECT_PLAN.md` §2.1](docs/PROJECT_PLAN.md#21-official-statement), then re-check the requirement tables in both plans.
-- [ ] Confirm the hackathon duration and assign owners in [`docs/PROJECT_PLAN.md` §16](docs/PROJECT_PLAN.md#16-team-split).
+- [ ] Confirm the hackathon duration and assign owners in [`docs/PROJECT_PLAN.md` §19](docs/PROJECT_PLAN.md#19-team-split).
 - [ ] Choose the two demo locations and dates (one encroachment, one flood).
 
 ## Credits

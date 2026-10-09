@@ -166,7 +166,7 @@ _Numbers are illustrative._
 - **Implementation:** `PATCH` review, `confirmed_only` export, PDF report (map snapshot, totals, top 10), field pack CSV/KML with Maps links (A4), `audit.json` (A10).
 
 ### Phase 6: Additions (pick by priority)
-- **A6** S2 fetch (the main phone input; move it earlier if the app depends on it) → **A2** no-build zones → **A1** permits → **A3** wards → **A7** watershed split → **A9** presets → **A11** bilingual PDF (stretch).
+- **A6** S2 fetch (the main phone input; move it earlier if the app depends on it) → **A2** no-build zones → **A1** permits → **A3** wards → **A7** watershed split → **A9** presets → **A11** bilingual PDF (stretch) → **A12** Sentinel-1 radar flood mode (stretch; verify data access first).
 
 ---
 

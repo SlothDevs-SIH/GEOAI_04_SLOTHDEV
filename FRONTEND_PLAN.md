@@ -57,7 +57,7 @@ The flow is **choose input → progress → map → review → share**.
 
 ## 3. Requirements coverage
 
-Every requirement in [`docs/PROJECT_PLAN.md` §2.3](docs/PROJECT_PLAN.md#23-what-the-expected-solution-asks-for) and every "winning" feature in §9 has a home in the app:
+Every requirement in [`docs/PROJECT_PLAN.md` §2.3](docs/PROJECT_PLAN.md#23-what-the-expected-solution-asks-for) and every "winning" feature in §12 has a home in the app:
 
 | Requirement / feature | Where in the app | Phase |
 |---|---|---|
