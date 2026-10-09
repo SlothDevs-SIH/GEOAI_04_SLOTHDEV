@@ -15,7 +15,8 @@
 
 - **Core:** B4 static-first files + B1 FastAPI / Rasterio / PyTorch. Models: **M7** composites + persistence, **M9** confidence + ablation, **M3** OSCD-trained U-Net, **M1** spectral.
 - **Optional layer:** **B3** browser-first compute (spectral engine + exported small model as ONNX), built only after the core demo and tests are green.
-- **Gated:** **M8** Sentinel-1 radar flood mode, only after the full pipeline works end to end and a 2-hour data-access spike passes.
+- **Gated:** **M8** Sentinel-1 radar flood mode, only after the full pipeline works end to end. **Data sourcing is decided** (Ayush, branch `backend-2`): train / calibrate on Microsoft Planetary Computer, test on NASA OPERA RTC-S1. Five live checks remain (section 13). Full detail: [`docs/M8_RADAR_FLOOD_DATA.md`](docs/M8_RADAR_FLOOD_DATA.md).
+- **Prior art:** what other teams built, and the gaps we close, is in [`docs/PRIOR_ART_TECH_STACKS.md`](docs/PRIOR_ART_TECH_STACKS.md).
 - Rationale and scores: [`docs/TECH_OPTIONS.md`](docs/TECH_OPTIONS.md) section 0.
 
 ---
@@ -87,6 +88,7 @@ Checked against the official GEOAI 04 text (`docs/PROJECT_PLAN.md` §2.1).
 |---|---|
 | ≥ 4 bands incl. NIR/SWIR **and** pixel size ≥ 5 m | `learned` if `eval/results.json` shows it beating spectral on the OSCD test cities, else `spectral` |
 | 3-band RGB **and** pixel size ≤ 2 m | `deep` (BIT) |
+| Sentinel-1 RTC pair (VV/VH, flood preset) *(gated)* | `radar` (M8): reports **open-water flood extent**, not full flood damage |
 | Anything else | Reject with a clear message (never run a model at the wrong resolution) |
 
 ---
@@ -186,6 +188,8 @@ Run `ruff check .` and `pytest -m "not slow"` locally and in CI on every push.
 | `test_learned.py` *(slow)* | Weights load; a small fixture patch gives a probability map in [0, 1]; F1 on a fixture is within tolerance |
 | `test_deep.py` *(slow)* | BIT loads; a sample tile's F1 is within tolerance of the prototype |
 | `test_api.py` | `/health`; a demo job runs to `done`; result is valid GeoJSON with all required properties; each export format downloads; review `PATCH` is idempotent |
+| `test_radar.py` *(gated)* | A synthetic dB pair with a known dark square gives a water-gain polygon there; permanent water and high ground are masked; the dB conversion masks zeros first |
+| `test_s1_access.py` *(gated, marked `integration`, needs network)* | Lists `sentinel-1-rtc` scenes for an Assam box and reads a small window (the check in `docs/M8_RADAR_FLOOD_DATA.md` section 8) |
 | `test_e2e_cli.py` | `python -m engine.run` on a tiny synthetic pair produces GPKG + GeoJSON + summary + audit |
 
 CI (`.github/workflows/ci.yml`): Python 3.11, install CPU torch, `ruff`, `pytest -m "not slow"`, then the web job from `FRONTEND_PLAN.md`.
@@ -211,7 +215,7 @@ The web app reads these static files directly. The live API is an **optional ext
 
 | Scene | Purpose | Notes |
 |---|---|---|
-| **Flood / disaster event** | Main story: ranked flood polygons, hectares of cropland affected, buildings and roads touched | Candidates: a recent flood in India or a clear-sky event elsewhere. **Pick by the post-event AOI cloud percentage (< 5 %) and a before date from the same season.** Floods during the monsoon are often cloudy, so test several |
+| **Flood / disaster event** (optical, or radar once M8 lands: Assam / Bihar / Kerala monsoon events are the M8 targets) | Main story: ranked flood polygons, hectares of cropland affected, buildings and roads touched | Candidates: a recent flood in India or a clear-sky event elsewhere. **Pick by the post-event AOI cloud percentage (< 5 %) and a before date from the same season.** Floods during the monsoon are often cloudy, so test several |
 | **Urban encroachment** | Second story: new construction on a city edge | `pune-hinjewadi` and `navi-mumbai-airport` are already defined in `scripts/fetch_demo_scenes.py` |
 | **Season control** | False-alarm proof: nothing real changed, only crops and lighting | `season-control` (Saswad) is defined; also try an **unseen** no-change pair |
 
@@ -272,7 +276,8 @@ The web app reads these static files directly. The live API is an **optional ext
 | `engine/quality.py` | **Data-quality flags** per scene: cloud %, co-registration shift, season gap, resolution; returned in `summary.warnings` | B3-core |
 | `ml/export_onnx.py` | Export the chosen model to ONNX; `tests/test_onnx_parity.py` checks the ONNX output matches PyTorch within tolerance on fixture patches | Optional (B3) |
 | `engine/report.py` | One-page **PDF report** with **fpdf2** (pure Python, no system libraries, so it also installs on Windows; WeasyPrint needs GTK there): map snapshot image, totals, impact block, top 10 changes, sources, limits, and a QR code (`qrcode`) to the permalink. Called by `export.py` and by `scripts/export_demo_assets.py` for prebuilt demo PDFs | Core |
-| `engine/radar.py` *(gated)* | Sentinel-1 RTC log-ratio + Otsu water change; same filters, vectorise, attributes chain | After the core works |
+| `engine/s1.py` *(gated)* | Sentinel-1 data access: **Planetary Computer** `sentinel-1-rtc` through `pystac-client` + `planetary-computer` (anonymous token, no account; sign right before reading), and **NASA OPERA RTC-S1** through `asf_search` / Earthdata login (credentials in `.env` only). Windowed reads of `vv` and `vh` | After the core works |
+| `engine/radar.py` *(gated)* | M8 radar flood mode (see section 13): dB conversion, 5x5 median speckle filter, log-ratio, event-level Otsu, permanent-water and HAND masks, then the same morphology, vectorise, attributes and tiers chain | After the core works |
 
 ### State and sharing (no sign-in)
 
@@ -285,3 +290,84 @@ The web app reads these static files directly. The live API is an **optional ext
 ### Honest accuracy reporting
 
 Report held-out OSCD metrics **with 95 % confidence intervals**, the ablation table, and calibrated per-polygon confidence. A user's own run has no labels, so do not show them an F1 for it.
+
+---
+
+## 13. M8 radar flood mode: data and method decisions (from Ayush, `backend-2`, 9 Oct 2026)
+
+Source: [`docs/M8_RADAR_FLOOD_DATA.md`](docs/M8_RADAR_FLOOD_DATA.md). Status: **data sourcing decided; code not started; five live checks open.**
+
+### Why
+Optical imagery is blind under monsoon cloud, the season when floods happen. Radar sees through cloud. Calm open water scatters the radar pulse away, so **new water is a sharp drop in backscatter** between a before and an after image. Ayush's survey found none of nine prior projects ships a working Sentinel-1 flood pipeline.
+
+### Data split (train on one source, test on another)
+
+| Role | Source | Product | Use |
+|---|---|---|---|
+| Training / calibration | **Microsoft Planetary Computer** | `sentinel-1-rtc` (terrain corrected, archive 2014 to about April 2026) | Fit thresholds and rules on historical floods. **No account needed** (anonymous token, maintainer-confirmed in Discussion #351) |
+| Labels | **Sen1Floods11** | Hand-labelled chips, including **68 Indian chips (Assam, 12 Aug 2016)** | Ground truth for calibration. Public bucket `gs://sen1floods11`, no login |
+| Testing | **NASA OPERA RTC-S1** (via ASF) | `OPERA_L2_RTC-S1`, global land since April 2016, current through 2026 | **2026 flood events never used for tuning.** A different processor, so it also tests generalisation. Needs a free Earthdata login |
+| Reference | **Copernicus GFM** | Automated flood extent | Independent comparison map for 2026 test events (free registration and API token) |
+| Masks | JRC Global Surface Water; Copernicus DEM / HAND | Permanent water; height above nearest drainage | Remove rivers that were already water and false water on high ground and hill shadow |
+
+**Why MPC is not used for 2026:** GitHub issue #473 (opened 2026-04-22, open) reports that MPC Sentinel-1 and Sentinel-2 ingestion stopped on 17 April 2026, and #472 reports missing RTC scenes for Jan to Feb 2026. We have not independently confirmed either issue.
+
+### Method (threshold-and-rules, calibrated, not a big network)
+1. Convert to dB (`10*log10`, mask zeros first), 5x5 median speckle filter, reproject both sources to the local UTM zone at **30 m**, same polarisation choice (VV primary, VH secondary) in training and testing.
+2. Compute the **log-ratio** (post minus pre, in dB) and the post-event backscatter.
+3. Flag new water where post-event backscatter is below an **event-level Otsu threshold** and the log-ratio shows a clear drop. Use **relative** features, not absolute dB thresholds, because they transfer between processors better.
+4. Remove pixels that were already water (JRC permanent water, or water in the pre image) and high ground (HAND, slope).
+5. Morphological clean-up, vectorise, attributes (`reason`, for example "backscatter fell 6.2 dB; not permanent water"), tiers. Pre-event reference: the **median of 2 to 3 dry-season scenes from the same orbit**.
+6. If time allows, gradient boosting on the same features, still tested only on OPERA 2026 events.
+7. **Freeze** the calibrated parameters in a versioned file (`engine/params_m8.json`); never tune on a test event.
+
+### Evidence so far (measured by Ayush, not re-run by us)
+Single-date water mapping on the 68 Indian Sen1Floods11 chips, IoU against hand labels:
+
+| Method | IoU, all water | IoU, flood only (permanent water removed) |
+|---|---|---|
+| Per-chip Otsu on VV | 0.22 | 0.18 |
+| Fixed -15 dB on VV | 0.50 | 0.41 |
+| **Event-level Otsu on VV + 5x5 median** (-14.06 dB) | **0.52** | **0.43** |
+| Event-level Otsu on VH + 5x5 median (-19.45 dB) | 0.52 | **0.44** |
+
+- Thresholds **must be fitted at event level**; per-chip Otsu more than halves accuracy.
+- This is a **single-date lower bound**; Sen1Floods11 has no pre-event radar, so the before/after change version is not measured yet.
+- **Radar misses flooded vegetation and flooded streets** (double bounce can raise backscatter). Report M8 as **"open-water flood extent estimate"**, never as complete flood damage.
+- Quote **only numbers that exist in `eval/results/`**. Compare against GFM as "compared with GFM (an automated product)", not as accuracy against ground truth, unless hand-checked points were used.
+
+### Eval and test plan
+- `ml/m8_calibrate.py`: fit event-level thresholds on MPC scenes + Sen1Floods11 labels, write `engine/params_m8.json`.
+- `eval/m8_opera.py`: run the frozen parameters on 2 to 3 OPERA 2026 events; score IoU, precision, recall against GFM and against 200 to 500 hand-checked points on any near-date cloud-free Sentinel-2 image; **false alarms per km2 on a dry-season pair** of the same area; runtime per km2. Output `eval/results/m8_opera_2026_<event>.json` with scene IDs, dates, parameter version and GFM product IDs.
+- Cross-processor sanity check on one overlapping pre-April-2026 scene: compare backscatter histograms over a stable area; correct a systematic offset above about 1 dB and report it.
+
+### Open checks (owner: Ayush, branch `backend-2`)
+
+| ID | Check | Status |
+|---|---|---|
+| V-M8-1 | Run the anonymous MPC token script on a laptop: list `sentinel-1-rtc` scenes for an Assam box and read a small window (script in the M8 doc, section 8) | Open |
+| V-M8-2 | Create the team Earthdata Login; download one OPERA RTC-S1 scene over the same area for 2026 | Open |
+| V-M8-3 | Check whether MPC ingestion resumed after 17 April 2026 (latest `sentinel-1-rtc` item date) | Open |
+| V-M8-4 | Register for Copernicus GFM and fetch the flood extent for one 2026 test event | Open |
+| V-M8-5 | Cross-processor sanity check on one overlapping scene | Open |
+
+### Credentials and secrets
+Earthdata token and GFM token go in `.env` only (git-ignored); add `EARTHDATA_TOKEN` and `GFM_TOKEN` to `.env.example` as empty placeholders. MPC needs none.
+
+### Risks
+MPC ingestion stays stopped (use OPERA for 2026; MPC for 2016 to early 2026 training) · MPC policy changes (OPERA has the same archive since 2016; Earth Engine `COPERNICUS/S1_GRD` is a third option) · processor differences (harmonise, relative features) · flooded vegetation and urban areas missed (state the limit) · no same-orbit pre-event scene (use a dry-season median) · hill shadow and layover (HAND and slope masks).
+
+### Updated M8 score
+Reliable: **2 to 4** (free no-account training source, free-login test source with 2026 data, public labels verified; **not 5 until V-M8-1 and V-M8-2 pass**). Result quality: **5 to 4** for floods. Effort: **4 to 3**.
+
+---
+
+## 14. Borrowed ideas from the prior-art survey (credit them)
+
+From [`docs/PRIOR_ART_TECH_STACKS.md`](docs/PRIOR_ART_TECH_STACKS.md), adopted where cheap:
+- **Shift check at ingest** by phase cross-correlation (Goudemant et al. 2026): already in `ingest.py`.
+- **Expected calibration error (ECE)** to justify the `confidence` attribute (P3): add to `eval/results.json`.
+- **Change threshold and minimum-area sliders** (P1): the X1 sensitivity lab.
+- **Mask pre-existing water** and GMM threshold (Byun et al. 2015): flood rules, also reused in M8.
+- **Optional, only if time remains:** Shield-style class-aware scoring in the spectral engine (Tang et al. 2026). It is unsupervised and untested on Sentinel-2, so it is a stretch, credited as adapted, not invented.
+- **A model-status table** ("what actually runs") in the README, as P5 does.

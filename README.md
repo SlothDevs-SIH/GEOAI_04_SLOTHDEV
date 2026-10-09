@@ -44,7 +44,7 @@ The default stack for this problem (React + a map library + FastAPI + a pretrain
 | 1 | **Trust layer** | Before/after built from composites of several least-cloudy scenes, a persistence test for encroachment, calibrated confidence, and an **ablation table** of how many false alarms each rule removes | Planned |
 | 2 | **Browser-first compute** | The spectral engine and the small OSCD-trained model run in the page (ONNX Runtime Web, WebGPU with WebAssembly fallback) with a **live sensitivity slider**; no server needed, imagery never leaves the user's machine | Planned (scoped to small areas) |
 | 3 | **Standards and reproducibility** | STAC metadata, COG and GeoJSON outputs, `audit.json`, one command to reproduce the numbers | Planned |
-| Gated | Sentinel-1 radar flood mode (sees through monsoon cloud); AlphaEarth embeddings for year-over-year encroachment | Only after a data-access check and the core demo works |
+| Gated | **Sentinel-1 radar flood mode (M8)**: sees through monsoon cloud. Data sourcing is decided (train on Planetary Computer, test on NASA OPERA); five live checks remain. AlphaEarth embeddings for year-over-year encroachment | Only after the core demo works |
 
 Anything marked "unverified" in `docs/TECH_OPTIONS.md` is tested before it appears in the pitch.
 
@@ -150,6 +150,8 @@ cd web && npm run lint && npm test && npm run build   # frontend
 | Read this | For |
 |---|---|
 | [`docs/TASK_SPLIT.md`](docs/TASK_SPLIT.md) | **Start here for who does what, and when** |
+| [`docs/M8_RADAR_FLOOD_DATA.md`](docs/M8_RADAR_FLOOD_DATA.md) | Radar flood mode: data sources, access, evidence so far, test plan, open checks (from Ayush) |
+| [`docs/PRIOR_ART_TECH_STACKS.md`](docs/PRIOR_ART_TECH_STACKS.md) | What 9 past projects built, their stacks and datasets, and the gaps we close (from Ayush) |
 | [`docs/TECH_OPTIONS.md`](docs/TECH_OPTIONS.md) | Every stack option we compared, the scored differentiators, and what is still unverified |
 | [`BACKEND_PLAN.md`](BACKEND_PLAN.md) | Engine modules, the ML retraining plan, API, tests, deployment |
 | [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md) | The web app |

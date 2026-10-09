@@ -15,6 +15,8 @@
 | **Models** | **M7** composites + persistence, **M9** uncertainty + ablation, **M3** OSCD-trained U-Net, **M1** spectral indices | none | **M8** Sentinel-1 radar flood mode, only after the whole pipeline works end to end and a 2-hour data-access check passes |
 | **Frontend** | **F3** React + MapLibre, **X5** evidence panel, **X3** offline PWA | **X1** live sensitivity lab (needs B3) | none |
 
+**M8 update (Ayush, 9 Oct):** radar data sourcing is decided (train / calibrate on Planetary Computer, test on NASA OPERA RTC-S1, labels from Sen1Floods11); the Reliable score rises from 2 to 4 and moves to 5 only after the live checks V-M8-1 and V-M8-2 pass. See [`M8_RADAR_FLOOD_DATA.md`](M8_RADAR_FLOOD_DATA.md) and [`PRIOR_ART_TECH_STACKS.md`](PRIOR_ART_TECH_STACKS.md).
+
 **Added to the core on 9 Oct (13:30):** **permalink**, **QR code** (send to phone) and **PDF export** (one-page report with a QR to the permalink). They are small, visible and useful for officers.
 
 **What B3 does and does not do.** B3 does **not** make the model more accurate: the same model on the same pixels gives the same answer in the browser as on the server. What it adds is a **live threshold and minimum-area slider**, so a user can tune sensitivity on their own area and see the effect immediately, plus offline use and, for private uploaded imagery, privacy. Accuracy comes from M7, M9 and M3.

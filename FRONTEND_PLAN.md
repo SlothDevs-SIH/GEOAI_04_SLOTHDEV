@@ -16,6 +16,7 @@
 - **Core:** F3 React + MapLibre, **X5** evidence panel (ablation, held-out metrics with confidence intervals, limits), **X3** offline PWA.
 - **Optional layer:** **X1** live sensitivity lab, which needs the browser-first engine (B3) from [`BACKEND_PLAN.md`](BACKEND_PLAN.md).
 - **Also core (added 9 Oct, 13:30):** **permalink**, **QR code** (send to phone) and **PDF export** (section 13).
+- **Gated (backend M8):** a "Radar flood (Sentinel-1)" scene type and mode chip appear only after `engine/radar.py` lands. Its output is labelled "open-water flood extent estimate" with the limits note (it can miss flooded vegetation and streets).
 - Not selected: language switch, deck.gl, 3D.
 
 ---

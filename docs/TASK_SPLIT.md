@@ -126,9 +126,9 @@ These replace or extend the matching rows above. Decisions: **core** B4 + B1, M7
 | **R2** | `engine/composite.py`, `engine/persistence.py`, `engine/quality.py` (Block 2); `eval/ablation.py` (Block 2 to 3) | by 23:00 |
 | **R1** | `eval/bootstrap.py` for 95 % confidence intervals on the OSCD test cities; after the 21:00 decision gate, `ml/export_onnx.py` + `test_onnx_parity.py` (optional, only if C2 is met) | CIs by 00:00; ONNX by 02:00 |
 | **R3** | **X5** evidence panel and **X3** offline PWA (Block 3); permalink state + QR code; **X1** sensitivity lab only after C2 and ONNX parity | X5, X3 by 02:00; X1 by 03:00 or cut |
-| **R4** | Sentinel-1 **data-access spike** (2 h, after C2, about 23:00 to 01:00): find a before and after radar scene over the flood area and read a small window. Pass: R2 builds `engine/radar.py` in Block 3. Fail: drop M8 | decision by 01:00 |
+| **R4 + Ayush (`backend-2`)** | Sentinel-1 live checks **V-M8-1 to V-M8-5** (see `BACKEND_PLAN.md` section 13). Data sourcing is already decided (train on Planetary Computer, test on NASA OPERA). Ayush can run V-M8-1 and V-M8-2 **now, in parallel**, since they need only a laptop and a free Earthdata login. Pass V-M8-1 and V-M8-2: R2 builds `engine/s1.py` and `engine/radar.py` in Block 3 after C2. Fail: drop M8 | checks by 18:00; go / no-go at C2 |
 
-**M8 rule:** start it only when the whole pipeline (CLI, API, static demos, deployed site, tests in CI) works end to end. If it is not done by the 03:00 feature freeze, cut it.
+**M8 rule (updated):** the data decision is made; what remains is code, calibration (`ml/m8_calibrate.py`) and the OPERA test (`eval/m8_opera.py`). Start it only when the whole pipeline (CLI, API, static demos, deployed site, tests in CI) works end to end. If it is not done by the 03:00 feature freeze, cut it.
 
 **B3 rule:** the browser engine is an add-on. If it slips, the site still works from static demo data and the API.
 
