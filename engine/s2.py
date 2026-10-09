@@ -10,6 +10,7 @@ import json
 import os
 import re
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date
 
@@ -86,22 +87,32 @@ def search(tile: str, months: list[tuple[int, int]], max_cloud: float = 20.0,
     """
     zone, band, sq = tile[:2], tile[2], tile[3:]
     out = []
+    prefixes: list[str] = []
     for y, m in months:
-        for p in _list(f"{ROOT}/{int(zone)}/{band}/{sq}/{y}/{m}/"):
-            try:
-                item = _item(p)
-                props = item["properties"]
-            except Exception:
-                continue
-            cc = float(props.get("eo:cloud_cover", 100))
-            if cc > max_cloud or (bbox_ll and not covers(item.get("geometry"), bbox_ll)):
-                continue
-            out.append(Scene(
-                id=p.rstrip("/").rsplit("/", 1)[1], prefix=p,
-                date=date.fromisoformat(props["datetime"][:10]), cloud_pct=cc,
-                baseline=props.get("s2:processing_baseline", "00.00"),
-                offset_applied=bool(props.get("earthsearch:boa_offset_applied", False)),
-                footprint=item.get("geometry")))
+        prefixes += _list(f"{ROOT}/{int(zone)}/{band}/{sq}/{y}/{m}/")
+
+    def fetch(p: str):
+        try:
+            return p, _item(p)
+        except Exception:
+            return p, None
+
+    # one small JSON per scene: fetch them in parallel (sequentially this took over a minute per search)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        items = list(pool.map(fetch, prefixes))
+    for p, item in items:
+        if item is None:
+            continue
+        props = item["properties"]
+        cc = float(props.get("eo:cloud_cover", 100))
+        if cc > max_cloud or (bbox_ll and not covers(item.get("geometry"), bbox_ll)):
+            continue
+        out.append(Scene(
+            id=p.rstrip("/").rsplit("/", 1)[1], prefix=p,
+            date=date.fromisoformat(props["datetime"][:10]), cloud_pct=cc,
+            baseline=props.get("s2:processing_baseline", "00.00"),
+            offset_applied=bool(props.get("earthsearch:boa_offset_applied", False)),
+            footprint=item.get("geometry")))
     return sorted(out, key=lambda s: s.cloud_pct)
 
 

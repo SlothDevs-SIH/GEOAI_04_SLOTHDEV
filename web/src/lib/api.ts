@@ -58,6 +58,8 @@ export interface FetchRequest {
   before_date: string;
   after_date: string;
   preset: string;
+  composite?: number; // median of this many clear images per date (1 = the single clearest image)
+  persistence?: number; // 0 = off; 2 to 4 = a change must appear in this many later images
 }
 
 export interface ScenePick {

@@ -22,12 +22,18 @@ def offline(tmp_path, monkeypatch):
     monkeypatch.setattr(api_main, "RUNS", str(tmp_path / "runs"))
     monkeypatch.setattr("engine.impact.worldcover_on_grid", lambda *a, **k: None)
 
-    def fake_fetch_pair(bbox, before_date, after_date, out_dir, window_days=20, **_):
+    def fake_fetch_pair(bbox, before_date, after_date, out_dir, window_days=20, composite=1, persistence=0, **_):
         os.makedirs(out_dir, exist_ok=True)
-        make_stack(os.path.join(out_dir, "before.tif"), VEG, [((10, 40, 10, 40), SOIL)])
-        make_stack(os.path.join(out_dir, "after.tif"), VEG, [((10, 40, 10, 40), BUILT)], seed=1)
-        return {"bbox": list(bbox), "before": {"scene": "S2_early", "date": before_date},
-                "after": {"scene": "S2_late", "date": after_date}, "warnings": ["only 12 days between the two images"]}
+        make_stack(os.path.join(out_dir, "before.tif"), VEG, [((10, 40, 10, 40), SOIL), ((60, 100, 60, 100), SOIL)])
+        make_stack(os.path.join(out_dir, "after.tif"), VEG, [((10, 40, 10, 40), BUILT), ((60, 100, 60, 100), BUILT)],
+                   seed=1)
+        meta = {"bbox": list(bbox), "before": {"scene": "S2_early", "date": before_date},
+                "after": {"scene": "S2_late", "date": after_date}, "warnings": ["only 12 days between the two images"],
+                "composite": composite, "persistence": persistence}
+        if persistence:
+            meta["extra_after"] = [make_stack(os.path.join(out_dir, "after_2.tif"), VEG,
+                                              [((10, 40, 10, 40), BUILT), ((60, 100, 60, 100), SOIL)], seed=2)]
+        return meta
 
     monkeypatch.setattr(api_main.aoi, "fetch_pair", fake_fetch_pair)
     return tmp_path
@@ -58,6 +64,9 @@ def test_health_says_any_area_is_available():
     ({"after_date": "2999-01-01"}, "future"),
     ({"preset": "nonsense"}, "preset"),
     ({"window_days": 99}, "window_days"),
+    ({"composite": 9}, "composite"),
+    ({"persistence": 1}, "persistence"),
+    ({"persistence": 2, "preset": "flood"}, "floods"),
 ])
 def test_bad_requests_are_rejected_before_any_download(change, words):
     for path in ("/fetch-s2", "/fetch-s2/preview"):
@@ -96,7 +105,7 @@ def test_fetch_job_runs_end_to_end_and_opens_on_the_swipe_map(offline):
     assert j["bbox"] == BOX and j["fetch"]["before"]["scene"] == "S2_early"
     assert "only 12 days between the two images" in j["warnings"]
     s = client.get(f"/jobs/{jid}/summary").json()
-    assert s["after_filter"] >= 1 and s["by_type"].get("built_up_gain", 0) >= 1
+    assert s["after_filter"] == 2 and s["by_type"].get("built_up_gain", 0) == 2
     # the same file layout as a demo scene, so the web map can open it
     meta = client.get(f"/jobs/{jid}/files/meta.json").json()
     assert meta["id"] == jid and meta["demo"] is False and len(meta["corners"]) == 4
@@ -136,3 +145,22 @@ def test_nothing_left_behind_in_the_repo(offline):
     wait(jid)
     assert not os.path.exists(os.path.join("runs", jid))
     shutil.rmtree(str(offline / "runs"), ignore_errors=True)
+
+
+def test_persistence_job_drops_a_change_seen_on_one_day_only(offline):
+    r = client.post("/fetch-s2", json=body(persistence=2))
+    assert r.status_code == 200, r.text
+    jid = r.json()["job_id"]
+    assert wait(jid)["status"] == "done"
+    s = client.get(f"/jobs/{jid}/summary").json()
+    assert s["persistence"]["k"] == 2 and s["persistence"]["removed_px"] > 0
+    assert s["after_filter"] == 1                      # the second patch is in only one of the two later images
+    plain = client.post("/fetch-s2", json=body()).json()["job_id"]
+    assert wait(plain)["status"] == "done"
+    assert client.get(f"/jobs/{plain}/summary").json()["after_filter"] == 2
+
+
+def test_composite_option_is_passed_to_the_fetch(offline):
+    jid = client.post("/fetch-s2", json=body(composite=3)).json()["job_id"]
+    j = wait(jid)
+    assert j["status"] == "done" and j["fetch"]["composite"] == 3

@@ -13,6 +13,7 @@ from __future__ import annotations
 import math
 import os
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 
 from . import s2
@@ -94,10 +95,12 @@ def find_scenes(bbox, target: date, window_days: int = 20, max_cloud: float = 70
     """Scenes that cover the whole box within the window, best first (clearest, then closest in time)."""
     months = months_for(target, window_days)
     found: dict[str, s2.Scene] = {}
-    for tile in candidate_tiles(bbox):
-        for sc in search_fn(tile, months, max_cloud, bbox_ll=bbox):
-            if abs((sc.date - target).days) <= window_days:
-                found.setdefault(sc.id, sc)
+    tiles = candidate_tiles(bbox)
+    with ThreadPoolExecutor(max_workers=min(4, len(tiles))) as pool:
+        for scenes in pool.map(lambda t: search_fn(t, months, max_cloud, bbox_ll=bbox), tiles):
+            for sc in scenes:
+                if abs((sc.date - target).days) <= window_days:
+                    found.setdefault(sc.id, sc)
     return sorted(found.values(), key=lambda sc: (round(sc.cloud_pct, 1), abs((sc.date - target).days)))
 
 
@@ -107,26 +110,38 @@ def choose_scene(bbox, target: date, window_days: int = 20, tries: int = 4,
 
     Returns {scene, aoi_invalid_pct, days_from_target, candidates}. Raises AoiError if nothing usable exists.
     """
+    return choose_scenes(bbox, target, 1, window_days, max(tries, 1), search_fn, scl_fn)[0]
+
+
+def choose_scenes(bbox, target: date, n: int, window_days: int = 20, tries: int = 8,
+                  search_fn: Callable = s2.search, scl_fn: Callable = s2.read_scl) -> list[dict]:
+    """The best `n` distinct scenes (clearest sky over the box first, usable ones only).
+
+    Fewer than n are returned when fewer usable scenes exist (at least one, or AoiError).
+    """
     scenes = find_scenes(bbox, target, window_days, search_fn=search_fn)
     if not scenes:
         raise AoiError(f"no Sentinel-2 scene covers this box within {window_days} days of {target.isoformat()}; "
                        "try a wider date, or a box that does not sit on the edge of a satellite pass")
-    scored = []
-    for sc in scenes[:tries]:
+    def invalid_pct(sc):
         try:
-            invalid = s2.aoi_cloud_pct(scl_fn(sc, bbox))
+            return s2.aoi_cloud_pct(scl_fn(sc, bbox))
         except Exception:        # unreadable file: skip this date and try the next
-            continue
-        scored.append((invalid, sc))
+            return None
+
+    candidates = scenes[:tries]
+    with ThreadPoolExecutor(max_workers=4) as pool:       # each read opens two remote files: do them side by side
+        pcts = list(pool.map(invalid_pct, candidates))
+    scored = [(i, sc) for i, sc in zip(pcts, candidates, strict=True) if i is not None]
     if not scored:
         raise AoiError("the satellite images for those dates could not be read; try other dates")
     scored.sort(key=lambda t: (round(t[0], 1), abs((t[1].date - target).days)))
-    invalid, best = scored[0]
-    if invalid > UNUSABLE_AOI_PCT:
-        raise AoiError(f"the best image near {target.isoformat()} is {invalid:.0f}% cloud or no-data over this box; "
+    if scored[0][0] > UNUSABLE_AOI_PCT:
+        raise AoiError(f"the best image near {target.isoformat()} is {scored[0][0]:.0f}% cloud or no-data over this box; "
                        "try other dates (in the monsoon, use the radar flood mode)")
-    return {"scene": best, "aoi_invalid_pct": round(invalid, 2), "days_from_target": (best.date - target).days,
-            "candidates": [{"id": sc.id, "date": sc.date.isoformat(), "aoi_invalid_pct": round(i, 2)} for i, sc in scored]}
+    candidates = [{"id": sc.id, "date": sc.date.isoformat(), "aoi_invalid_pct": round(i, 2)} for i, sc in scored]
+    return [{"scene": sc, "aoi_invalid_pct": round(i, 2), "days_from_target": (sc.date - target).days,
+             "candidates": candidates} for i, sc in scored if i <= UNUSABLE_AOI_PCT][:max(1, n)]
 
 
 def describe(choice: dict) -> dict:
@@ -164,24 +179,66 @@ def preview(bbox, before_date: str, after_date: str, window_days: int = 20,
             "before": describe(before), "after": describe(after), "warnings": check_pair(before, after, box)}
 
 
+def _read_same_grid(scenes: list[dict], bbox, read_fn: Callable):
+    """Read each scene over the box; keep only those on the grid of the first (scenes from another UTM zone differ)."""
+    out, kept = [], []
+    for ch in scenes:
+        refl, scl, transform, crs = read_fn(ch["scene"], bbox)
+        if out and (refl.shape != out[0][0].shape or transform != out[0][2] or crs != out[0][3]):
+            continue
+        out.append((refl, scl, transform, crs))
+        kept.append(ch)
+    return out, kept
+
+
 def fetch_pair(bbox, before_date: str, after_date: str, out_dir: str, window_days: int = 20,
                search_fn: Callable = s2.search, scl_fn: Callable = s2.read_scl,
-               read_fn: Callable = s2.read_aoi) -> dict:
-    """Download the box for both dates into out_dir/before.tif and after.tif (6-band stacks the engine reads)."""
+               read_fn: Callable = s2.read_aoi, composite: int = 1, persistence: int = 0) -> dict:
+    """Download the box for both dates into out_dir/before.tif and after.tif (6-band stacks the engine reads).
+
+    composite > 1: build each image as the median of that many clear scenes (removes one-off clouds).
+    persistence >= 2: also write after_2.tif ... for later scenes, so a change must appear in that many of them.
+    """
+    from . import composite as comp
     box = validate_bbox(bbox)
     bd, ad = parse_date(before_date, "before date"), parse_date(after_date, "after date")
     if bd >= ad:
         raise AoiError("the before date must be earlier than the after date")
+    if not 1 <= composite <= 5:
+        raise AoiError("composite must be between 1 and 5 scenes")
+    if persistence not in (0, 2, 3, 4):
+        raise AoiError("persistence must be 0 (off) or 2 to 4 later images")
     os.makedirs(out_dir, exist_ok=True)
-    meta: dict = {"bbox": list(box)}
+    meta: dict = {"bbox": list(box), "composite": composite, "persistence": persistence}
     choices = {}
     for side, target in (("before", bd), ("after", ad)):
-        choice = choose_scene(box, target, window_days, search_fn=search_fn, scl_fn=scl_fn)
-        sc = choice["scene"]
-        refl, scl, transform, crs = read_fn(sc, box)
+        n = max(composite, persistence if side == "after" else 1)
+        picked = choose_scenes(box, target, n, window_days, search_fn=search_fn, scl_fn=scl_fn)
+        reads, kept = _read_same_grid(picked, box, read_fn)
+        main_n = min(composite, len(kept))
+        if composite > 1 and main_n > 1:
+            refl, scl, _ = comp.median_composite([(r, s) for r, s, _, _ in reads[:main_n]])
+            note = {"composite_of": [c["scene"].id for c in kept[:main_n]]}
+        else:
+            refl, scl = reads[0][0], reads[0][1]
+            note = {}
+        _, _, transform, crs = reads[0]
+        sc = kept[0]["scene"]
         s2.write_stack(os.path.join(out_dir, f"{side}.tif"), refl, scl, transform, crs,
-                       {"scene": sc.id, "date": sc.date.isoformat(), "baseline": sc.baseline})
-        choices[side] = choice
-        meta[side] = describe(choice) | {"processing_baseline": sc.baseline, "dn_offset_removed": sc.dn_offset}
+                       {"scene": sc.id, "date": sc.date.isoformat(), "baseline": sc.baseline, **{k: ",".join(v) for k, v in note.items()}})
+        choices[side] = kept[0]
+        meta[side] = describe(kept[0]) | {"processing_baseline": sc.baseline, "dn_offset_removed": sc.dn_offset} | note
+        if side == "after" and persistence:
+            extras = []
+            for j, (r, s_, tr, cr) in enumerate(reads[1:persistence], start=2):
+                path = os.path.join(out_dir, f"after_{j}.tif")
+                s2.write_stack(path, r, s_, tr, cr, {"scene": kept[j - 1]["scene"].id,
+                                                     "date": kept[j - 1]["scene"].date.isoformat()})
+                extras.append(path)
+            meta["extra_after"] = extras
+            meta["extra_after_dates"] = [kept[j - 1]["scene"].date.isoformat() for j in range(2, 2 + len(extras))]
     meta["warnings"] = check_pair(choices["before"], choices["after"], box)
+    if persistence and len(meta.get("extra_after", [])) < persistence - 1:
+        meta["warnings"].append(f"only {len(meta.get('extra_after', [])) + 1} later image(s) were available, "
+                                f"so persistence uses fewer than the {persistence} you asked for")
     return meta

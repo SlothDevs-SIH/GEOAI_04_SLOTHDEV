@@ -153,7 +153,8 @@ def _set(job_id, **kw):
     return j
 
 
-def _run(job_id, before, after, preset, mode, before_date, after_date, min_area_m2, info=None, extra_warnings=()):
+def _run(job_id, before, after, preset, mode, before_date, after_date, min_area_m2, info=None, extra_warnings=(),
+         extra_after=(), persistence=0):
     from engine import run
     out = os.path.join(RUNS, job_id)
     try:
@@ -167,7 +168,8 @@ def _run(job_id, before, after, preset, mode, before_date, after_date, min_area_
         if min_area_m2 is not None:
             p = replace(p, min_area_m2=float(min_area_m2))
         res = run.analyze(before, after, preset=preset, before_date=before_date, after_date=after_date,
-                          worldcover_cache=os.path.join(out, "worldcover.tif"), params=p)
+                          worldcover_cache=os.path.join(out, "worldcover.tif"), params=p,
+                          extra_after_paths=list(extra_after), persistence=persistence)
         _set(job_id, stage="vectorising", progress=0.8)
         res.gdf["review_status"] = "pending"
         run.write_outputs(res, out, inputs=[before, after], title=f"GEOAI 04 · {preset}")
@@ -242,6 +244,8 @@ class FetchBody(BaseModel):
     preset: str = "encroachment"
     window_days: int = 20
     min_area_m2: float | None = None
+    composite: int = 1      # build each image as the median of this many clear scenes (1 = single scene)
+    persistence: int = 0    # 0 = off; 2 to 4 = a change must appear in this many later images
 
 
 def _check_fetch(body: FetchBody):
@@ -249,6 +253,12 @@ def _check_fetch(body: FetchBody):
         raise HTTPException(400, f"preset must be one of {', '.join(PRESETS)}")
     if not 1 <= body.window_days <= 45:
         raise HTTPException(400, "window_days must be between 1 and 45")
+    if not 1 <= body.composite <= 5:
+        raise HTTPException(400, "composite must be between 1 and 5 scenes")
+    if body.persistence not in (0, 2, 3, 4):
+        raise HTTPException(400, "persistence must be 0 (off) or 2 to 4 later images")
+    if body.persistence and body.preset == "flood":
+        raise HTTPException(400, "persistence is not used for floods: flood water recedes, so it would remove real change")
     try:
         aoi.validate_bbox(body.bbox)
         aoi.parse_date(body.before_date, "before date")
@@ -273,14 +283,16 @@ def _run_fetch(job_id: str, body: dict):
     out = os.path.join(RUNS, job_id)
     try:
         _set(job_id, status="running", stage="fetching", progress=0.05)
-        meta = aoi.fetch_pair(body["bbox"], body["before_date"], body["after_date"], out, body["window_days"])
+        meta = aoi.fetch_pair(body["bbox"], body["before_date"], body["after_date"], out, body["window_days"],
+                              composite=body["composite"], persistence=body["persistence"])
         _set(job_id, fetch=meta, progress=0.3)
         info = {"name": "Your area", "place": "{:.3f}, {:.3f} (lat, lon)".format(
                     (body["bbox"][1] + body["bbox"][3]) / 2, (body["bbox"][0] + body["bbox"][2]) / 2),
                 "event": f"{body['preset']} between {meta['before']['date']} and {meta['after']['date']}",
                 "kind": body["preset"], "source": "Sentinel-2 L2A (Copernicus), via the Element84 Earth Search COG bucket"}
         _run(job_id, os.path.join(out, "before.tif"), os.path.join(out, "after.tif"), body["preset"], "spectral",
-             meta["before"]["date"], meta["after"]["date"], body.get("min_area_m2"), info, meta["warnings"])
+             meta["before"]["date"], meta["after"]["date"], body.get("min_area_m2"), info, meta["warnings"],
+             meta.get("extra_after", []), body["persistence"])
     except aoi.AoiError as e:
         _set(job_id, status="error", error=str(e))
     except Exception as e:  # noqa: BLE001

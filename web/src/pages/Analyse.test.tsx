@@ -75,6 +75,28 @@ describe("Analyse any area", () => {
     expect(api.fetchPreview).toHaveBeenCalledWith(expect.objectContaining({ bbox: [77.1, 28.5, 77.17, 28.56], preset: "encroachment" }));
   });
 
+  it("sends the false-alarm options only when asked, and never persistence for floods", async () => {
+    api.startFetch.mockResolvedValue({ job_id: "opt1" });
+    api.getJob.mockResolvedValue({ status: "error", error: "stopped for this test" });   // a finished job re-enables the button
+    page();
+    fireEvent.click(await screen.findByText("draw good box"));
+    fireEvent.click(screen.getByTestId("analyse-area"));
+    await waitFor(() => expect(api.startFetch).toHaveBeenCalledTimes(1));
+    expect(api.startFetch.mock.calls[0][0]).toMatchObject({ composite: 1, persistence: 0 });
+    await screen.findByTestId("job-error", {}, { timeout: 4000 });
+    fireEvent.change(screen.getByTestId("composite"), { target: { value: "3" } });
+    fireEvent.click(screen.getByTestId("persistence"));
+    fireEvent.click(screen.getByTestId("analyse-area"));
+    await waitFor(() => expect(api.startFetch).toHaveBeenCalledTimes(2));
+    expect(api.startFetch.mock.calls[1][0]).toMatchObject({ composite: 3, persistence: 2, preset: "encroachment" });
+    await waitFor(() => expect(screen.getByTestId("analyse-area")).not.toBeDisabled(), { timeout: 4000 });
+    fireEvent.change(screen.getByDisplayValue(/Encroachment/), { target: { value: "flood" } });
+    expect(screen.getByTestId("persistence")).toBeDisabled();
+    fireEvent.click(screen.getByTestId("analyse-area"));
+    await waitFor(() => expect(api.startFetch).toHaveBeenCalledTimes(3));
+    expect(api.startFetch.mock.calls[2][0]).toMatchObject({ preset: "flood", persistence: 0 });
+  });
+
   it("shows the server message when no scene can be found", async () => {
     api.fetchPreview.mockRejectedValue(new Error("no Sentinel-2 scene covers this box within 20 days"));
     page();

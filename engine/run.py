@@ -64,7 +64,12 @@ def raw_layer(candidate, transform, crs, cap=2000):
 
 
 def analyze(before_path, after_path, preset="general", mode="auto", before_date=None, after_date=None,
-            worldcover_cache=None, rules=None, params=None):
+            worldcover_cache=None, rules=None, params=None, extra_after_paths=(), persistence=0):
+    """Run the optical pipeline.
+
+    `extra_after_paths` + `persistence` (k): keep a change only if it is also detected in at least k-1 of the
+    extra later scenes (see engine/persistence.py). Off by default.
+    """
     t0 = time.time()
     p = params or params_for(preset)
     pair = ingest.read_pair(before_path, after_path)
@@ -72,7 +77,22 @@ def analyze(before_path, after_path, preset="general", mode="auto", before_date=
     if mode != "spectral":
         raise NotImplementedError(f"mode '{mode}' is not available in this build; use spectral or radar")
     det = change_spectral.detect(pair, p)
+    raw_candidate = det["candidate"]          # the raw layer always shows the single-scene detections
+    persist_note = None
+    if persistence and extra_after_paths:
+        from . import persistence as pers
+        masks = [det["candidate"]]
+        for extra in extra_after_paths:
+            masks.append(change_spectral.detect(ingest.read_pair(before_path, extra), p)["candidate"])
+        k = min(int(persistence), len(masks))
+        single = det["candidate"]
+        det = {**det, "candidate": pers.persistent(masks, k) & single}
+        persist_note = {"k": k, "scenes": len(masks), "removed_px": int(single.sum() - det["candidate"].sum()),
+                        "raw_blobs_single_scene": filters.components(single)}
     mask, tmap, drops, raw_blobs = filters.apply(det, pair, p, **({"rules": rules} if rules else {}))
+    if persist_note:
+        drops = {"persistence": persist_note["removed_px"], **drops}
+        raw_blobs = persist_note["raw_blobs_single_scene"]    # the raw count stays the single-scene detections
     polys, lab = vectorise.polygons(mask, pair.transform)
     gdf = attributes.build(polys, lab, det, tmap, pair, det["magnitude"][det["valid"]])
     wc = impact.worldcover_on_grid(mask.shape, pair.transform, pair.crs, worldcover_cache)
@@ -88,9 +108,10 @@ def analyze(before_path, after_path, preset="general", mode="auto", before_date=
         by_type=gdf["change_type"].value_counts().to_dict() if len(gdf) else {},
         runtime_s=round(runtime, 2), area_km2=round(area_km2, 2), s_per_km2=round(runtime / area_km2, 3),
         change_threshold=round(det["threshold"], 4), impact=imp, quality=q, warnings=warnings,
+        persistence=persist_note,
         sources=["Copernicus Sentinel-2 L2A (ESA), via the Element84 Earth Search COG bucket"],
         limits=LIMITS_OPTICAL, params=asdict(p))
-    raw = raw_layer(det["candidate"], pair.transform, pair.crs)
+    raw = raw_layer(raw_candidate, pair.transform, pair.crs)
     return Result(pair, det, mask, lab, gdf, raw, summary)
 
 
@@ -136,7 +157,9 @@ def run_radar(after_path, out_dir, threshold_db=None):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("images", nargs="+", help="BEFORE AFTER (or a single Sentinel-1 file with --mode radar)")
+    ap.add_argument("images", nargs="+", help="BEFORE AFTER [MORE_AFTER ...] (or one Sentinel-1 file with --mode radar)")
+    ap.add_argument("--persistence", type=int, default=0,
+                    help="keep a change only if found in this many of the later images (needs MORE_AFTER images)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--mode", default="auto", choices=["auto", "spectral", "radar"])
     ap.add_argument("--preset", default="general", choices=["general", "encroachment", "flood", "deforestation"])
@@ -146,9 +169,12 @@ def main(argv=None):
     if a.mode == "radar":
         print(json.dumps(run_radar(a.images[-1], a.out), indent=1))
         return
-    if len(a.images) != 2:
+    if len(a.images) < 2:
         ap.error("spectral mode needs BEFORE and AFTER")
-    res = analyze(a.images[0], a.images[1], a.preset, a.mode, a.before_date, a.after_date)
+    if a.persistence and len(a.images) < 3:
+        ap.error("--persistence needs at least one more later image after BEFORE AFTER")
+    res = analyze(a.images[0], a.images[1], a.preset, a.mode, a.before_date, a.after_date,
+                  extra_after_paths=a.images[2:], persistence=a.persistence)
     write_outputs(res, a.out, inputs=a.images)
     s = res.summary
     print(json.dumps({k: s[k] for k in ("mode", "raw_detections", "after_filter", "dropped", "by_tier",

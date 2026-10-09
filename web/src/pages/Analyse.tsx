@@ -27,6 +27,8 @@ export default function Analyse() {
   const [place, setPlace] = useState<(typeof PLACES)[number]>();
   const [beforeDate, setBeforeDate] = useState(DEFAULTS.before);
   const [afterDate, setAfterDate] = useState(DEFAULTS.after);
+  const [composite, setComposite] = useState(1);
+  const [persist, setPersist] = useState(false);
   const [pick, setPick] = useState<FetchPreview>();
   const [pickError, setPickError] = useState<string>();
   const [checking, setChecking] = useState(false);
@@ -62,7 +64,11 @@ export default function Analyse() {
 
   const problem = boxProblem(box);
   const datesOk = beforeDate < afterDate;
-  const request = () => ({ bbox: box as Box, before_date: beforeDate, after_date: afterDate, preset });
+  const persistOk = preset !== "flood";   // flood water recedes, so requiring it to persist would remove real change
+  const request = () => ({
+    bbox: box as Box, before_date: beforeDate, after_date: afterDate, preset, composite,
+    persistence: persist && persistOk ? 2 : 0,
+  });
 
   const reset = () => {
     setJob(undefined);
@@ -165,6 +171,19 @@ export default function Analyse() {
           <p className="mt-1 text-xs text-slate-500">Choose the same time of year for both dates, so growing crops are not mistaken for change. We use the clearest image within about 20 days of each date.</p>
           {!datesOk && <p className="mt-1 text-xs text-red-700">The before date must be earlier than the after date.</p>}
           <div className="mt-3">{presetSelect}</div>
+          <details className="mt-3 text-sm" data-testid="advanced">
+            <summary className="cursor-pointer font-medium">Fewer false alarms (optional)</summary>
+            <label className="mt-2 block">Images per date
+              <select className="ml-2 rounded border border-slate-300 p-1" value={composite} onChange={(e) => { setComposite(Number(e.target.value)); setPick(undefined); }} data-testid="composite">
+                <option value={1}>The single clearest image</option>
+                <option value={3}>Median of 3 images (removes one-off clouds; slower)</option>
+              </select>
+            </label>
+            <label className="mt-2 flex items-start gap-2">
+              <input type="checkbox" checked={persist && persistOk} disabled={!persistOk} onChange={(e) => setPersist(e.target.checked)} data-testid="persistence" />
+              <span>Keep a change only if it is also seen in a second, later image (removes one-day artefacts; for construction, not floods)</span>
+            </label>
+          </details>
           <div className="mt-3 flex flex-wrap gap-2">
             <button type="button" disabled={!box || !!problem || !datesOk || checking} onClick={check} data-testid="check-scenes"
               className="rounded border border-accent px-4 py-1.5 font-semibold text-accent disabled:opacity-40">{checking ? "Checking…" : "Check scenes"}</button>
