@@ -99,4 +99,9 @@ def write_scene_files(res, out_dir: str, info: dict) -> dict:
     }
     with open(f"{out_dir}/meta.json", "w") as f:
         json.dump(meta, f, indent=1)
+    try:   # now that the images and crops exist, replace the plain report with the full one (numbered map, top-10 cards, all changes)
+        from . import report
+        report.build_from_dir(out_dir, f"{out_dir}/report.pdf", title=meta["name"])
+    except Exception:  # noqa: BLE001  the first report written by write_outputs stays in place
+        pass
     return meta

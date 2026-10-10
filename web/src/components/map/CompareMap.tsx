@@ -5,8 +5,10 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "../../hooks/motion";
-import { MAP_STYLE, POLYGON, TIERS, tierColor } from "../../lib/tiers";
-import type { FeatureCollection, SceneData } from "../../lib/types";
+import { evidenceOf, pitches, type RankMarker } from "../../lib/explain";
+import { area, pct } from "../../lib/format";
+import { MAP_STYLE, POLYGON, TIERS, TIER_SHAPE, tierColor, tierLabel, typeLabel } from "../../lib/tiers";
+import type { ChangeProps, FeatureCollection, SceneData } from "../../lib/types";
 import { useUi, type Resolved } from "../../store/ui";
 import MapControls from "../result/MapControls";
 import SwipeHandle from "../result/SwipeHandle";
@@ -69,6 +71,68 @@ export function styleFor(scene: SceneData, side: "before" | "after", mode: Resol
   return style;
 }
 
+const CLIP: Record<string, string> = {
+  octagon: "polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)",
+  diamond: "polygon(50% 0,100% 50%,50% 100%,0 50%)",
+  square: "inset(6% round 16%)",
+  circle: "circle(50%)",
+};
+
+/** Badge colours (background, text), chosen so the number reads at 4.5:1 or better in both themes; the hues match the tier colours. */
+const MARKER: Record<string, [string, string]> = {
+  critical: ["#E11D48", "#ffffff"], high: ["#F97316", "#14181f"], medium: ["#FACC15", "#14181f"], low: ["#38BDF8", "#14181f"],
+};
+
+/** A numbered rank badge for the map: the tier's shape and colour with the change's rank inside (never colour alone). */
+function markerEl(m: RankMarker, active: boolean, onClick: (id: number) => void) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.setAttribute("aria-label", `Change ${m.id}, ${tierLabel(m.tier)} priority`);
+  btn.dataset.testid = "rank-marker";
+  Object.assign(btn.style, {
+    width: "28px", height: "28px", padding: "0", border: "0", background: "transparent", cursor: "pointer",
+    filter: active ? "drop-shadow(0 0 4px #FDE047) drop-shadow(0 1px 2px rgba(0,0,0,.6))" : "drop-shadow(0 1px 2px rgba(0,0,0,.6))",
+    transform: active ? "scale(1.3)" : "none", transition: "transform 120ms",
+  });
+  const face = document.createElement("span");
+  Object.assign(face.style, {
+    display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%",
+    background: MARKER[m.tier][0], color: MARKER[m.tier][1],
+    font: "700 11px/1 system-ui, sans-serif", clipPath: CLIP[TIER_SHAPE[m.tier]] ?? CLIP.circle,
+  });
+  face.textContent = String(m.id);
+  btn.append(face);
+  btn.addEventListener("click", (e) => { e.stopPropagation(); onClick(m.id); });
+  return btn;
+}
+
+/** The popup shown at the selected change, built with textContent only (no HTML from the data is ever parsed). */
+function popupContent(p: ChangeProps, total: number | undefined, onClose: () => void) {
+  const box = document.createElement("div");
+  Object.assign(box.style, { font: "13px/1.4 system-ui, sans-serif", color: "#14181f", minWidth: "190px" });
+  const line = (text: string, bold = false, size = "") => {
+    const d = document.createElement("div");
+    d.textContent = text;
+    if (bold) d.style.fontWeight = "700";
+    if (size) d.style.fontSize = size;
+    box.append(d);
+    return d;
+  };
+  const head = line(`#${p.id}${total ? ` of ${total.toLocaleString("en-IN")}` : ""} \u00b7 ${tierLabel(p.tier)} priority`, true);
+  const close = document.createElement("button");
+  close.type = "button";
+  close.textContent = "\u00d7";
+  close.setAttribute("aria-label", "Close");
+  Object.assign(close.style, { float: "right", border: "0", background: "transparent", fontSize: "18px", lineHeight: "1", cursor: "pointer", color: "#14181f", padding: "0 0 0 8px" });
+  close.addEventListener("click", onClose);
+  head.prepend(close);
+  line(typeLabel(p.change_type));
+  line(`${area(p.area_m2)}${pitches(p.area_m2) ? ` (${pitches(p.area_m2)})` : ""} \u00b7 confidence ${pct(p.confidence)}${p.needs_review ? " \u00b7 needs review" : ""}`, false, "12px");
+  const why = evidenceOf(p.reason);
+  line(why.length > 150 ? `${why.slice(0, 147)}\u2026` : why, false, "12px").style.color = "#475569";
+  return box;
+}
+
 /** Re-colours an existing map for a theme change without recreating it (camera and layers stay as they are). */
 function restyle(m: maplibregl.Map, mode: Resolved) {
   const set = (layer: string, prop: string, v: unknown) => m.getLayer(layer) && m.setPaintProperty(layer, prop as never, v as never);
@@ -121,6 +185,12 @@ export interface CompareMapProps {
   onSelect: (id: number) => void;
   swipe: number; // 0..100, position of the divider
   onSwipe: (pct: number) => void;
+  /** Numbered rank badges for the highest-priority changes on screen (shown with the filtered polygons). */
+  markers?: RankMarker[];
+  /** The selected change, for the popup on the map. */
+  selectedProps?: ChangeProps;
+  total?: number;
+  onClear?: () => void;
 }
 
 function corners(scene: SceneData) {
@@ -135,7 +205,11 @@ function bounds(scene: SceneData): LngLatBoundsLike {
 }
 
 export default function CompareMap(props: CompareMapProps) {
-  const { scene, filterOn, raw, showLabels, showPolygons, filter, selected, onSelect, swipe, onSwipe } = props;
+  const { scene, filterOn, raw, showLabels, showPolygons, filter, selected, onSelect, swipe, onSwipe, markers, selectedProps, total, onClear } = props;
+  const markersOn = filterOn && showPolygons;
+  const boxEl = useRef<HTMLDivElement>(null);
+  const onClearRef = useRef(onClear);
+  onClearRef.current = onClear;
   const resolved = useUi((s) => s.resolved);
   const reduced = useReducedMotion();
   const beforeEl = useRef<HTMLDivElement>(null);
@@ -240,9 +314,50 @@ export default function CompareMap(props: CompareMapProps) {
     if (f) m.easeTo({ center: [f.properties.centroid_lon, f.properties.centroid_lat], zoom: Math.max(m.getZoom(), 15), duration: reducedRef.current ? 0 : 600 });
   }, [selected, ready, scene.filtered]);
 
+  // numbered rank badges (DOM markers, so they need no font server and work offline); one set per map, each visible on its own side of the divider
+  useEffect(() => {
+    const { before, after } = maps.current;
+    if (!before || !after || !ready || readyMap.current !== after || !markersOn || !markers?.length) return;
+    const made: maplibregl.Marker[] = [];
+    for (const map of [before, after]) {
+      for (const m of markers) {
+        const el = markerEl(m, m.id === selected, (id) => onSelectRef.current(id));
+        made.push(new maplibregl.Marker({ element: el }).setLngLat([m.lon, m.lat]).addTo(map));
+      }
+    }
+    return () => made.forEach((m) => m.remove());
+  }, [ready, markers, markersOn, selected]);
+
+  // a card on the map at the selected change, so a click answers "what is this?" right where the user is looking.
+  // One element above both maps (not a MapLibre popup per map), so it is never split by the swipe divider.
+  useEffect(() => {
+    const { after } = maps.current;
+    const host = boxEl.current;
+    if (!after || !host || !ready || readyMap.current !== after || !markersOn || !selectedProps) return;
+    const card = document.createElement("div");
+    card.dataset.testid = "map-popup";
+    Object.assign(card.style, {
+      position: "absolute", zIndex: "25", maxWidth: "280px", padding: "8px 10px", borderRadius: "8px", background: "#ffffff",
+      boxShadow: "0 4px 14px rgba(0,0,0,.45)", pointerEvents: "auto", transform: "translate(-50%, calc(-100% - 22px))",
+    });
+    card.append(popupContent(selectedProps, total, () => onClearRef.current?.()));
+    host.append(card);
+    const place = () => {
+      const pt = after.project([selectedProps.centroid_lon, selectedProps.centroid_lat]);
+      card.style.left = `${pt.x}px`;
+      card.style.top = `${pt.y}px`;
+    };
+    place();
+    after.on("move", place);
+    return () => {
+      after.off("move", place);
+      card.remove();
+    };
+  }, [ready, markersOn, selectedProps, total]);
+
   const after = () => maps.current.after;
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-md border border-line bg-surface-alt" data-testid="compare-map">
+    <div ref={boxEl} className="relative h-full w-full overflow-hidden rounded-md border border-line bg-surface-alt" data-testid="compare-map">
       {/* inline position: maplibre's own CSS sets .maplibregl-map { position: relative }, which would collapse these */}
       <div ref={afterEl} role="region" style={{ position: "absolute", inset: 0 }} aria-label="After map" />
       <div ref={beforeEl} role="region" style={{ position: "absolute", inset: 0, clipPath: `inset(0 ${100 - swipe}% 0 0)` }} aria-label="Before map" />

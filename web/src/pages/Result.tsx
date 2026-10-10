@@ -20,6 +20,7 @@ import { FilterToggle, LabelsSwitch, PolygonsSwitch } from "../components/result
 import { CardSection, EmptyState, ErrorState, InlineAlert, Skeleton, TabSegment } from "../components/ui/Primitives";
 import { useRaw, useScene } from "../hooks/useScene";
 import { type FilterState, mapFilter, passes, tabCounts } from "../lib/filters";
+import { rankMarkers } from "../lib/explain";
 import type { ChangeProps, Detector } from "../lib/types";
 import { isModified, useFilters } from "../store/filters";
 import { reviewKey, useReview } from "../store/review";
@@ -136,6 +137,7 @@ export default function Result({ job = false }: { job?: boolean }) {
   const changeTypes = useMemo(() => [...new Set(props.map((p) => p.change_type))], [props]);
   const maxArea = useMemo(() => props.reduce((m, p) => Math.max(m, p.area_m2), 0), [props]);
   const confirmed = useMemo(() => props.filter((p) => status(p.id) === "confirmed"), [props, status]);
+  const markers = useMemo(() => rankMarkers(visible), [visible]);
 
   const filterActions = useFilters.getState();
   const onFilterChange = (patch: Partial<FilterState>) => {
@@ -189,7 +191,8 @@ export default function Result({ job = false }: { job?: boolean }) {
           <div className="relative h-[62vh] min-h-[360px] lg:h-[min(72vh,760px)] lg:min-h-[480px]">
             <CompareMap scene={data} filterOn={filterOn} raw={raw} showLabels={showLabels} showPolygons={showPolygons}
               filter={filterExpr} selected={selectedId ?? undefined} onSelect={setSelectedId}
-              swipe={swipePct} onSwipe={useFilters.getState().setSwipePct} />
+              swipe={swipePct} onSwipe={useFilters.getState().setSwipePct}
+              markers={markers} selectedProps={sel} total={props.length} onClear={() => setSelectedId(null)} />
             {(scene.variantLoading || rawLoading) && (
               <div role="status" className="pointer-events-none absolute bottom-s8 left-1/2 z-30 -translate-x-1/2 rounded-xs border border-line bg-surface-alt px-s12 py-s4 text-micro text-fg shadow-card">
                 {scene.variantLoading ? `Loading ${DETECTOR_LABEL[scene.mode]} results…` : "Loading raw detections…"}
@@ -205,7 +208,7 @@ export default function Result({ job = false }: { job?: boolean }) {
         {/* ---- right: impact, the selected change, the ranked list and exports ---- */}
         <aside aria-label="Changes and exports" className="thin-scroll flex flex-col gap-s12 lg:sticky lg:top-[77px] lg:max-h-[calc(100vh-89px)] lg:overflow-y-auto lg:pr-1">
           <ImpactPanel summary={s} />
-          <ChangeCard feature={sel} base={data.dataBase ?? data.base} status={sel ? status(sel.id) : "pending"}
+          <ChangeCard feature={sel} base={data.dataBase ?? data.base} total={props.length} status={sel ? status(sel.id) : "pending"}
             onReview={(st) => sel && setReview(rk, sel.id, st)} />
 
           <CardSection title={`Changes, ranked (${visible.length.toLocaleString("en-IN")})`} testid="changes">

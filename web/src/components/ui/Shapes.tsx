@@ -19,7 +19,7 @@ export function TierIcon({ tier, size = 14 }: { tier: string; size?: number }) {
 }
 
 const TIER_CLASS: Record<string, string> = {
-  critical: "bg-tier-critical-soft text-tier-critical border-tier-critical/60",
+  critical: "bg-tier-critical-soft text-tier-critical-text border-tier-critical/60", // lighter / darker text than the shape colour: 4.5:1 on the soft background
   high: "bg-tier-high-soft text-tier-high border-tier-high/60",
   medium: "bg-tier-medium-soft text-tier-medium border-tier-medium/60",
   low: "bg-tier-low-soft text-tier-low border-tier-low/60",

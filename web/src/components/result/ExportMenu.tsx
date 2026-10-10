@@ -3,7 +3,7 @@ import { CardSection, InlineAlert } from "../ui/Primitives";
 import QRBlock from "./QRBlock";
 
 export const EXPORT_FILES: [string, string][] = [
-  ["GeoPackage (QGIS)", "changes.gpkg"], ["GeoJSON", "changes.geojson"], ["PDF report", "report.pdf"],
+  ["GeoPackage (QGIS)", "changes.gpkg"], ["GeoJSON", "changes.geojson"], ["PDF report (all changes)", "report.pdf"],
   ["CSV (field pack)", "changes.csv"], ["KML (Google Earth)", "changes.kml"], ["Audit trail", "audit.json"],
 ];
 

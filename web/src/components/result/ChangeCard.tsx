@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { area, coord, ha, pct } from "../../lib/format";
-import { typeLabel } from "../../lib/tiers";
+import { evidenceOf, pitches, tierAdvice, typeMeaning } from "../../lib/explain";
+import { tierLabel, typeLabel } from "../../lib/tiers";
 import type { ChangeProps, ReviewStatus } from "../../lib/types";
 import { useUi } from "../../store/ui";
 import { TierChip } from "../ui/Shapes";
@@ -31,8 +32,8 @@ function Crop({ src, side, id, onOpen }: { src: string; side: "before" | "after"
  * R-25: the selected change. Selecting a different change flashes the card background accent-soft for 400 ms and
  * cross-fades the content in 160 ms; the confirm / dismiss buttons spring in (A-07). All of it is skipped under reduced motion.
  */
-export default function ChangeCard({ feature: p, base, status = "pending", onReview }: {
-  feature?: ChangeProps; base: string; status?: ReviewStatus; onReview: (s: ReviewStatus) => void;
+export default function ChangeCard({ feature: p, base, status = "pending", onReview, total }: {
+  feature?: ChangeProps; base: string; status?: ReviewStatus; onReview: (s: ReviewStatus) => void; total?: number;
 }) {
   const showToast = useUi((s) => s.showToast);
   const openImageViewer = useUi((s) => s.openImageViewer);
@@ -60,13 +61,19 @@ export default function ChangeCard({ feature: p, base, status = "pending", onRev
             <TierChip tier={p.tier} />
             <span className="text-body text-secondary">{typeLabel(p.change_type)}</span>
           </div>
+          <p data-testid="rank" className="mt-s4 text-body text-secondary">
+            Rank {p.id}{total ? ` of ${total.toLocaleString("en-IN")}` : ""} · {tierLabel(p.tier)} priority
+          </p>
           <p className="mt-s8 text-h2 text-fg">{area(p.area_m2)}</p>
+          {pitches(p.area_m2) && <p data-testid="pitches" className="text-small text-secondary">{pitches(p.area_m2)}</p>}
           <p className="text-body text-secondary">
             Confidence {pct(p.confidence)} · magnitude {p.magnitude.toFixed(2)}
             {p.needs_review && <b className="ml-1 text-fg"> · needs review</b>}
           </p>
           {p.cropland_ha != null && p.cropland_ha > 0 && <p className="text-body text-secondary">Cropland inside: {ha(p.cropland_ha, 2)}</p>}
-          <p className="mt-s8 text-body text-secondary" data-testid="reason"><b className="text-fg">Why:</b> {p.reason}</p>
+          {typeMeaning(p.change_type) && <p className="mt-s8 text-body text-secondary" data-testid="meaning"><b className="text-fg">What it is:</b> {typeMeaning(p.change_type)}</p>}
+          <p className="mt-s8 text-body text-secondary" data-testid="reason"><b className="text-fg">Why:</b> {evidenceOf(p.reason)}</p>
+          <p className="mt-s8 text-body text-secondary" data-testid="advice"><b className="text-fg">What to do:</b> {tierAdvice(p.tier)}</p>
 
           <div className="mt-s8 flex flex-wrap items-center gap-x-s8 text-body text-secondary">
             <span data-testid="centroid">{coord(p.centroid_lat)}, {coord(p.centroid_lon)}</span>
