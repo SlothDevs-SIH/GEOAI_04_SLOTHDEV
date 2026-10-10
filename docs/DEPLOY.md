@@ -85,3 +85,7 @@ docker run --rm -p 7860:7860 geoai04:test
 - [ ] With the API live: **Analyse, Draw an area**, pick a box in your city, **Check scenes**, then **Analyse this area**.
 - [ ] Add both URLs to `README.md` and `docs/DECISIONS.md`.
 - [ ] Never put tokens in the repo: Earthdata and GFM tokens go in the host's secret store (`.env.example` lists the names).
+
+## Scene cache version (lazy loading)
+
+The service worker precaches only the app shell (about 2.5 MB). Scene files are cached when first used or when the user presses "Save for offline", in the cache named `SCENE_CACHE` (`web/vite.config.ts`, currently `demo-scenes-v1`). Images and `sens.bin` are served cache-first, so **bump the name (`demo-scenes-v2`, ...) whenever the demo data is regenerated**; otherwise returning visitors keep seeing the old images.

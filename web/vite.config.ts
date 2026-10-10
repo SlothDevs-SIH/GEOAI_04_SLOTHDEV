@@ -4,8 +4,10 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Bump when demo data is regenerated (CacheFirst would otherwise keep serving old images). Also in docs/DEPLOY.md.
+export const SCENE_CACHE = "demo-scenes-v1";
+
 // base "./" so the built site works on any static host and from a sub-path.
-// The PWA caches the app shell AND the demo scenes (about 22 MB), so the demo opens with no network at all.
 export default defineConfig({
   base: "./",
   plugins: [
@@ -28,11 +30,28 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,png,webp,json,geojson,mjs,bin}"],
+        // Precache the app shell only (about 3 MB). Scene data is cached when it is first used, or when the user presses
+        // "Save for offline" (see runtimeCaching below), so a first visit does not download all scenes.
+        globPatterns: ["*.{js,css,html,png,ico,svg,webmanifest}", "assets/**/*.{js,css,png,svg,woff2,mjs}", "demos/index.json", "eval/results.json"],
+        globIgnores: ["demos/*/**"],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         navigateFallback: "index.html",
-        // live API calls and map tiles are never served from the cache
-        runtimeCaching: [],
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          // small JSON of a scene: show the cached copy at once, refresh in the background
+          {
+            urlPattern: ({ url }: { url: URL }) => /\/demos\/[^/]+\/[^/]+\.(json|geojson)$/.test(url.pathname),
+            handler: "StaleWhileRevalidate",
+            options: { cacheName: SCENE_CACHE },
+          },
+          // heavy, rarely-changing files: cache first. Bump SCENE_CACHE whenever demo data is regenerated.
+          {
+            urlPattern: ({ url }: { url: URL }) => /\/demos\/[^/]+\/.+\.(webp|bin|geojson|json)$/.test(url.pathname) && /\/(crops|variants)\/|\.(webp|bin)$/.test(url.pathname),
+            handler: "CacheFirst",
+            options: { cacheName: SCENE_CACHE, expiration: { maxEntries: 1500 } },
+          },
+          // live API calls, jobs and map tiles are never cached: they are not matched here
+        ],
       },
     }),
   ],
