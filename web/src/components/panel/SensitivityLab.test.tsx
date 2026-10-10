@@ -59,3 +59,28 @@ describe("Sensitivity lab", () => {
     expect(container).toBeEmptyDOMElement();
   });
 });
+
+
+describe("Sensitivity lab loads lazily", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it("requests no sens.* file until the card is near the viewport", async () => {
+    let fire: (hit: boolean) => void = () => {};
+    vi.stubGlobal("IntersectionObserver", class {
+      constructor(cb: (e: { isIntersecting: boolean }[]) => void) { fire = (hit) => cb([{ isIntersecting: hit }]); }
+      observe() {}
+      disconnect() {}
+    });
+    const fetchMock = vi.fn(async (u: RequestInfo | URL) => String(u).endsWith("sens.json") ? new Response(JSON.stringify(info)) : new Response(bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength) as ArrayBuffer));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<SensitivityLab base="scene" />);
+    expect(screen.getByTestId("sensitivity-loading")).toBeInTheDocument();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(fetchMock).not.toHaveBeenCalled();
+    fire(false);
+    await new Promise((r) => setTimeout(r, 20));
+    expect(fetchMock).not.toHaveBeenCalled();
+    fire(true);
+    expect(await screen.findByTestId("lab-count")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});

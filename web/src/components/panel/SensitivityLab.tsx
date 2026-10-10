@@ -19,6 +19,21 @@ async function loadSens(base: string): Promise<Loaded | undefined> {
   }
 }
 
+/** true once the element is within `margin` of the viewport (and for good after that); true at once where IntersectionObserver is missing. */
+export function useNearViewport(ref: React.RefObject<Element | null>, margin: string): boolean {
+  const [near, setNear] = useState(typeof IntersectionObserver === "undefined");
+  useEffect(() => {
+    const el = ref.current;
+    if (near || !el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) { setNear(true); io.disconnect(); }
+    }, { rootMargin: margin });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref, margin, near]);
+  return near;
+}
+
 const fmt = (n: number) => n.toLocaleString("en-IN");
 // surviving changes are painted in the critical-tier rose (#F43F5E in the dark palette) on top of the after image
 const MASK_RGB = [244, 63, 94] as const;
@@ -36,7 +51,12 @@ export default function SensitivityLab({ base }: { base: string }) {
   const idT = useId();
   const idA = useId();
 
+  // sens.json + sens.bin (up to 1.7 MB) are fetched only when the lab is about to be scrolled into view
+  const holder = useRef<HTMLDivElement>(null);
+  const near = useNearViewport(holder, "300px");
+
   useEffect(() => {
+    if (!near) return;
     let alive = true;
     loadSens(base).then((l) => {
       if (!alive) return;
@@ -49,7 +69,7 @@ export default function SensitivityLab({ base }: { base: string }) {
     return () => {
       alive = false;
     };
-  }, [base]);
+  }, [base, near]);
 
   const data = loaded?.base === base ? loaded.l : undefined;
   const t = useDeferredValue(threshold);
@@ -85,7 +105,7 @@ export default function SensitivityLab({ base }: { base: string }) {
     img.src = `${base}/after.webp`;
   }, [data, result, base]);
 
-  if (!loaded || loaded.base !== base) return <div data-testid="sensitivity-loading" aria-hidden="true"><Skeleton height={120} radius={13} /></div>; // shimmer while the files load
+  if (!loaded || loaded.base !== base) return <div ref={holder} data-testid="sensitivity-loading" aria-hidden="true"><Skeleton height={120} radius={13} /></div>; // shimmer while the files load
   if (!data || !result) return null; // scenes without slider data show nothing
   const { info } = data;
   const hectares = (result.pixels * info.pixel_m * info.pixel_m) / 1e4;

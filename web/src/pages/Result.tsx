@@ -21,6 +21,7 @@ import { CardSection, EmptyState, ErrorState, InlineAlert, Skeleton, TabSegment 
 import { useRaw, useScene } from "../hooks/useScene";
 import { type FilterState, mapFilter, passes, tabCounts } from "../lib/filters";
 import { rankMarkers } from "../lib/explain";
+import { isOfflineError } from "../lib/offline";
 import type { ChangeProps, Detector } from "../lib/types";
 import { isModified, useFilters } from "../store/filters";
 import { reviewKey, useReview } from "../store/review";
@@ -150,9 +151,14 @@ export default function Result({ job = false }: { job?: boolean }) {
 
   if (scene.loading || (!scene.error && !ready)) return <ResultSkeleton />;
   if (scene.error || !data) {
+    const offline = !job && isOfflineError(scene.error);
     return (
-      <div className="mx-auto max-w-xl p-s18">
-        <ErrorState message={`Could not load this scene (${scene.error ?? "no data"}).`} onRetry={scene.retry} />
+      <div className="mx-auto max-w-xl p-s18" data-testid={offline ? "scene-not-saved" : undefined}>
+        <ErrorState
+          message={offline
+            ? "This scene was not saved for offline use. Connect to the internet, or open it once while online."
+            : `Could not load this scene (${scene.error ?? "no data"}).`}
+          onRetry={scene.retry} />
         <p className="text-center"><Link to={job ? "/analyse" : "/"} className="tap text-accent">{job ? "Back to Analyse" : "Back to scenes"}</Link></p>
       </div>
     );
