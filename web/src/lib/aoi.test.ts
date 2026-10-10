@@ -20,6 +20,9 @@ describe("area box", () => {
     expect(boxProblem([77, 28, 77.5, 28.5])).toMatch(new RegExp(`limit is ${MAX_SIDE_KM}`));
     expect(boxProblem([77.1, 28.5, 77.101, 28.501])).toMatch(/at least/);
     expect(boxProblem([77.1, 28.5, 77.17, 28.56])).toBeUndefined();
+    // a server with a smaller limit (the 6 km free host) rejects a 8 x 8 km box that the 15 km default accepts
+    expect(boxProblem([77.1, 28.5, 77.18, 28.57], 6)).toMatch(/limit is 6 × 6 km/);
+    expect(boxProblem([77.1, 28.5, 77.18, 28.57])).toBeUndefined();
   });
 
   it("draws the box as a closed polygon", () => {

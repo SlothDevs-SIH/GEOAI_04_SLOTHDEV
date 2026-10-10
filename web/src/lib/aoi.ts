@@ -1,6 +1,7 @@
 // Box limits for "analyse any area". The same limits are enforced by the server (engine/aoi.py); this copy
 // only gives the user instant feedback while drawing.
 
+/** Fallback limit; the live server reports its own (it is 6 on the small free host) in /health as max_side_km. */
 export const MAX_SIDE_KM = 15;
 export const MIN_SIDE_KM = 0.5;
 
@@ -19,10 +20,10 @@ export function boxFromCorners(a: [number, number], b: [number, number]): Box {
 }
 
 /** A plain-language problem with the box, or undefined when it is fine. */
-export function boxProblem(b: Box | undefined): string | undefined {
+export function boxProblem(b: Box | undefined, maxKm: number = MAX_SIDE_KM): string | undefined {
   if (!b) return "Click two opposite corners on the map to draw the area.";
   const [w, h] = sizeKm(b);
-  if (w > MAX_SIDE_KM || h > MAX_SIDE_KM) return `The area is ${w.toFixed(1)} × ${h.toFixed(1)} km; the limit is ${MAX_SIDE_KM} × ${MAX_SIDE_KM} km. Draw a smaller box.`;
+  if (w > maxKm || h > maxKm) return `The area is ${w.toFixed(1)} × ${h.toFixed(1)} km; the limit is ${maxKm} × ${maxKm} km. Draw a smaller box.`;
   if (w < MIN_SIDE_KM || h < MIN_SIDE_KM) return `The area is ${w.toFixed(2)} × ${h.toFixed(2)} km; draw at least ${MIN_SIDE_KM} × ${MIN_SIDE_KM} km.`;
   return undefined;
 }

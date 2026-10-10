@@ -22,7 +22,7 @@ import {
   API_URL, type ApiHealth, type DetectorMode, type FetchPreview, type JobState,
   fetchHealth, fetchPreview, getJob, getJobSummary, startAnalyze, startFetch,
 } from "../lib/api";
-import { type Box, MIN_DATE, PLACES, boxProblem, dateProblem, todayISO } from "../lib/aoi";
+import { type Box, MAX_SIDE_KM, MIN_DATE, PLACES, boxProblem, dateProblem, todayISO } from "../lib/aoi";
 import { useUi } from "../store/ui";
 
 type Net = { state: "checking" } | { state: "online"; health: ApiHealth } | { state: "offline"; configured: boolean };
@@ -101,7 +101,8 @@ export default function Analyse() {
   // a chosen detector that the server turns out not to have falls back to the default instead of failing later
   const mode: DetectorMode = !online || modeAvailability(health, modePref).available ? modePref : "spectral";
 
-  const problem = boxProblem(box);
+  const maxKm = health?.max_side_km && health.max_side_km > 0 ? health.max_side_km : MAX_SIDE_KM;
+  const problem = boxProblem(box, maxKm);
   const dProblem = dateProblem(beforeDate, afterDate);
   const datesOk = !dProblem;
   const persistOk = preset !== "flood";   // flood water recedes, so requiring it to persist would remove real change

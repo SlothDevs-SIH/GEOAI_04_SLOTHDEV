@@ -145,6 +145,8 @@ export interface ApiHealth {
   model_status?: Record<string, ModeStatus>;
   default_mode?: string;
   measured_default_method?: string | null;
+  max_side_km?: number;                               // largest box side this server accepts
+  min_side_km?: number;
 }
 
 /** The parsed /health body, or undefined when no API is configured or it does not answer (4 s limit). */

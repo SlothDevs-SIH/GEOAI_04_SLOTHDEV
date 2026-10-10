@@ -164,3 +164,9 @@ def test_composite_option_is_passed_to_the_fetch(offline):
     jid = client.post("/fetch-s2", json=body(composite=3)).json()["job_id"]
     j = wait(jid)
     assert j["status"] == "done" and j["fetch"]["composite"] == 3
+
+
+def test_health_reports_the_size_limit_the_server_enforces():
+    from engine import aoi
+    h = client.get("/health").json()
+    assert h["max_side_km"] == aoi.MAX_SIDE_KM and h["min_side_km"] == aoi.MIN_SIDE_KM

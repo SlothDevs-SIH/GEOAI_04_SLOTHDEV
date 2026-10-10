@@ -102,7 +102,8 @@ def health():
             "modes": [m for m, s in st.items() if s.get("available")] + ["radar"],
             "models": {"learned": bool(st["learned"].get("available")), "deep": bool(st["deep"].get("available"))},
             "model_status": {k: st[k] for k in ("learned", "deep")},
-            "default_mode": "spectral", "measured_default_method": _measured_default()}
+            "default_mode": "spectral", "measured_default_method": _measured_default(),
+            "max_side_km": aoi.MAX_SIDE_KM, "min_side_km": aoi.MIN_SIDE_KM}
 
 
 @api.get("/metrics")

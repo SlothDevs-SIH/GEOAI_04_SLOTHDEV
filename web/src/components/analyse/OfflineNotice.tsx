@@ -3,7 +3,7 @@ import { Button, InlineAlert } from "../ui/Primitives";
 import { LINK_PRIMARY } from "./styles";
 
 const STEPS: [string, string, string][] = [
-  ["1", "Draw a box anywhere in India", "Click two opposite corners on the map. Boxes from 0.5 to 15 km a side work."],
+  ["1", "Draw a box anywhere in India", "Click two opposite corners on the map. Boxes from 0.5 km up to the server's limit (15 km, or less on small hosts) work."],
   ["2", "Pick two dates", "Use the same time of year for both, so growing crops are not mistaken for change."],
   ["3", "The server finds the clearest images", "It picks the least cloudy Sentinel-2 image near each date, then finds what really changed."],
 ];
