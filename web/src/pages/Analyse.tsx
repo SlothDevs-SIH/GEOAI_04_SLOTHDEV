@@ -84,7 +84,7 @@ export default function Analyse() {
         if (j.status === "error") clearInterval(t);
       } catch (e) {
         if (++fails < MAX_POLL_FAILURES) return;
-        setJob({ status: "error", error: (e as Error).message });
+        setJob({ status: "error", error: `Lost contact with the analysis server (${(e as Error).message}). It most likely restarted because the area was too large for its memory, and a restart loses the running job. Draw a smaller area and try again.` });
         clearInterval(t);
       }
     }, POLL_MS);

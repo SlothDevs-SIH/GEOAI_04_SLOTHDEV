@@ -18,7 +18,9 @@ from datetime import date, timedelta
 
 from . import s2
 
-MAX_SIDE_KM = 15.0          # per side; larger areas need tiling (future work)
+# per side; larger areas need tiling (future work). Small hosts (about 512 MB RAM) lower it with MAX_SIDE_KM:
+# a 12.8 x 13.9 km job peaks above 530 MB in the engine alone, so the process is killed and the proxy answers 502.
+MAX_SIDE_KM = float(os.environ.get("MAX_SIDE_KM", "15"))
 MIN_SIDE_KM = 0.5
 EARLIEST = date(2017, 1, 1)  # Sentinel-2 L2A cloud-optimised archive starts here
 CLOUDY_AOI_PCT = 25.0        # warn above this share of invalid pixels over the box

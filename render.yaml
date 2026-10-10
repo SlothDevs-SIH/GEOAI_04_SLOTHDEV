@@ -13,5 +13,7 @@ services:
         value: "*"
       - key: JOB_WORKERS
         value: "1"
+      - key: MAX_SIDE_KM   # 512 MB RAM: keep jobs small (a 13 x 14 km box needs about 540 MB)
+        value: "6"
       - key: MAX_UPLOAD_MB
         value: "50"
