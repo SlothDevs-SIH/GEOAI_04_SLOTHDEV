@@ -32,3 +32,13 @@ test("the report button downloads the full PDF", async ({ page, request }) => {
   expect(body.subarray(0, 5).toString()).toBe("%PDF-");
   expect(body.length).toBeGreaterThan(50_000);
 });
+
+test("the selected-change card keeps its height on a 1280x720 laptop screen (it once collapsed to 2 px and hid its buttons)", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto("./#/scene/navi-mumbai-airport");
+  await page.getByTestId("change-row").first().click();
+  const card = await page.getByTestId("change-card").boundingBox();
+  expect(card?.height).toBeGreaterThan(300);
+  await page.getByTestId("confirm").click({ timeout: 5000 });
+  await expect(page.getByTestId("confirm")).toContainText("Confirmed");
+});

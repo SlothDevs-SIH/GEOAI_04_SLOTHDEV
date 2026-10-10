@@ -214,7 +214,7 @@ export default function Result({ job = false }: { job?: boolean }) {
         </div>
 
         {/* ---- right: impact, the selected change, the ranked list and exports ---- */}
-        <aside aria-label="Changes and exports" className="thin-scroll flex flex-col gap-s12 lg:sticky lg:top-[77px] lg:max-h-[calc(100vh-89px)] lg:overflow-y-auto lg:pr-1">
+        <aside aria-label="Changes and exports" className="thin-scroll flex flex-col gap-s12 [&>*]:shrink-0 lg:sticky lg:top-[77px] lg:max-h-[calc(100vh-89px)] lg:overflow-y-auto lg:pr-1">
           <ImpactPanel summary={s} />
           <ChangeCard feature={sel} base={data.dataBase ?? data.base} total={props.length} status={sel ? status(sel.id) : "pending"}
             onReview={(st) => sel && setReview(rk, sel.id, st)} />
