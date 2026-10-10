@@ -12,7 +12,7 @@ await hold(6500);
 await v.card(null); await hold(700);
 
 // 0:07 home: the scenes
-await v.caption("Eight real places across India, each with a before and an after satellite image");
+await v.caption("Nine real places across India, each with a before and an after satellite image");
 await hold(2500);
 await v.scroll(420, 1800);
 await v.glide('[data-testid="scene-card"] >> nth=1');
