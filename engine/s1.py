@@ -9,7 +9,7 @@
 Both give linear power; `radar.load_chip` expects dB, so `read_chip` converts (zeros and negatives are masked
 BEFORE the log, otherwise they become -inf).
 
-Verification status (see docs/M8_RADAR_FLOOD_DATA.md section 8): everything here is unit-tested offline, but the
+Verification status (see eval/README.md): everything here is unit-tested offline, but the
 live checks V-M8-1 (Planetary Computer) and V-M8-2 (Earthdata/OPERA) have to be run from a machine with access:
     python -m engine.s1 --check mpc
     EARTHDATA_TOKEN=... python -m engine.s1 --check opera

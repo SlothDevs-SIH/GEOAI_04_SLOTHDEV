@@ -1,13 +1,13 @@
 # GEOAI 04: Frontend Plan, the Web App
 
-> **Status banner (9 Oct 2026, evening).** `main` already contains the integrated engine, API and React app. What remains, who does it and the decisions made are in [`docs/DECISIONS.md`](docs/DECISIONS.md) and [`docs/packages/`](docs/packages/CONTRACTS.md). Where this plan disagrees with those, they win.
+> **Status (10 Oct 2026).** This is the web app design record. The React app is on `main`, deployed and tested; [`README.md`](README.md) has the current results and run instructions. Where this plan disagrees with the README, the README wins.
 
 **Product:** a website where an officer or analyst opens a disaster or encroachment scene (or uploads a before/after pair) and sees a **before/after swipe map** of what really changed, ranked by severity, with the false alarms filtered out, an **impact summary** (hectares, cropland, buildings, roads) and one-click exports.
 **Module:** `web/` (Vite + React + TypeScript)
 **Talks to:** the FastAPI service in [`BACKEND_PLAN.md`](BACKEND_PLAN.md) §6, **but works without it** for the demo scenes (static files in `web/public/demos/`).
-**Hosting:** Vercel. **Deadline:** 10:00, 10 October 2026 ([`docs/TASK_SPLIT.md`](docs/TASK_SPLIT.md)).
+**Hosting:** Render (one Docker service serves the site and the API): https://geoai04.onrender.com
 **Design philosophy:** map first · every number has a source · the false-alarm story is visible in one click · usable on a laptop projector **and** on a phone browser.
-**Master doc:** [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) · **Overview:** [`README.md`](README.md)
+**Overview:** [`README.md`](README.md)
 
 > **What changed from the earlier plan.** The Android app is dropped. The official statement asks for an interactive split-view **web** map, a website is the fastest thing to deploy and share with judges, and the team already built a React + MapLibre app on PS_121.
 

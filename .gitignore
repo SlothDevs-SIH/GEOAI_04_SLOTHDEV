@@ -13,7 +13,7 @@ data/
 # BIT checkpoint and code are fetched by scripts/fetch_bit.py, never committed
 engine/weights/bit_levir.pt
 engine/weights/BIT_CD/
-# ...but the small trained models ARE committed (docs/packages/CONTRACTS.md Seam 6)
+# ...but the small trained models ARE committed (the learned Siamese U-Net and its ONNX export)
 !engine/weights/siamunet_oscd.pt
 eval/cache/
 

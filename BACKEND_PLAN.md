@@ -1,13 +1,13 @@
 # GEOAI 04: Backend, ML and Deployment Plan
 
-> **Status banner (9 Oct 2026, evening).** `main` already contains the integrated engine, API and React app. What remains, who does it and the decisions made are in [`docs/DECISIONS.md`](docs/DECISIONS.md) and [`docs/packages/`](docs/packages/CONTRACTS.md). Where this plan disagrees with those, they win.
+> **Status (10 Oct 2026).** This is the backend design record. The integrated engine, API and web app are on `main`, deployed and tested; [`README.md`](README.md) has the current results, numbers and run instructions. Where this plan disagrees with the README, the README wins.
 
 **What it is:** the change-detection engine (ingest → detect → filter → vectorise → attribute → impact) plus a FastAPI service around it, an ML track that **retrains a model on real Sentinel-2 change data**, an evaluation harness that produces the numbers we show judges, and the deployment recipe.
 **Folders:** `engine/` (pure Python pipeline, no web code) · `api/` (FastAPI) · `ml/` (data loaders, models, training, evaluation) · `eval/` (metric scripts + `results.json`) · `demos/` (preloaded scenes) · `tests/` · `scripts/`
 **Stack:** Python 3.11 · Rasterio · NumPy · OpenCV · scikit-image · Shapely 2 · GeoPandas · pyproj · PyTorch (CPU at serve time; GPU on Kaggle/Colab for training) · FastAPI + Uvicorn · pytest + ruff · Docker
 **Starting point:** [`prototype/pipeline.py`](prototype/pipeline.py) (runs end to end on LEVIR-CD pairs) and `engine/s2.py` + `engine/config.py` (Sentinel-2 scene search and AOI reads, written, not yet tested end to end).
-**Deadline:** project submission **10:00, 10 October 2026**. Hour-by-hour schedule: [`docs/TASK_SPLIT.md`](docs/TASK_SPLIT.md).
-**Related:** [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md) (the web app) · [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md) (master doc) · [`README.md`](README.md)
+**Live:** https://geoai04.onrender.com
+**Related:** [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md) (the web app) · [`README.md`](README.md)
 
 > **What changed from the earlier plan.** (1) The client is a **website**, not an Android app, because the official statement asks for an interactive split-view **web** map. (2) We now **retrain a model** on real labelled Sentinel-2 change data (OSCD) and report held-out numbers, instead of relying only on pretrained weights. (3) A new **impact** stage turns polygons into numbers a public official cares about. (4) The architecture is **static-first**: demo results are precomputed, so the deployed site always works even if the live backend is asleep.
 
@@ -17,9 +17,7 @@
 
 - **Core:** B4 static-first files + B1 FastAPI / Rasterio / PyTorch. Models: **M7** composites + persistence, **M9** confidence + ablation, **M3** OSCD-trained U-Net, **M1** spectral.
 - **Optional layer:** **B3** browser-first compute (spectral engine + exported small model as ONNX), built only after the core demo and tests are green.
-- **Gated:** **M8** Sentinel-1 radar flood mode, only after the full pipeline works end to end. **Data sourcing is decided** (Ayush, branch `backend-2`): train / calibrate on Microsoft Planetary Computer, test on NASA OPERA RTC-S1. Five live checks remain (section 13). Full detail: [`docs/M8_RADAR_FLOOD_DATA.md`](docs/M8_RADAR_FLOOD_DATA.md).
-- **Prior art:** what other teams built, and the gaps we close, is in [`docs/PRIOR_ART_TECH_STACKS.md`](docs/PRIOR_ART_TECH_STACKS.md).
-- Rationale and scores: [`docs/TECH_OPTIONS.md`](docs/TECH_OPTIONS.md) section 0.
+- **Gated:** **M8** Sentinel-1 radar flood mode, only after the full pipeline works end to end. **Data sourcing is decided** (Ayush, branch `backend-2`): train / calibrate on Microsoft Planetary Computer, test on NASA OPERA RTC-S1. Five live checks remain (section 13).
 
 ---
 
@@ -46,7 +44,7 @@ after.tif  ─┤ (validate,    change_learned.py  ─┼─► filters.py ─�
 
 ## 2. Requirements coverage
 
-Checked against the official GEOAI 04 text (`docs/PROJECT_PLAN.md` §2.1).
+Checked against the official GEOAI 04 problem statement.
 
 | Official requirement | Module | Test / evidence |
 |---|---|---|
@@ -191,7 +189,7 @@ Run `ruff check .` and `pytest -m "not slow"` locally and in CI on every push.
 | `test_deep.py` *(slow)* | BIT loads; a sample tile's F1 is within tolerance of the prototype |
 | `test_api.py` | `/health`; a demo job runs to `done`; result is valid GeoJSON with all required properties; each export format downloads; review `PATCH` is idempotent |
 | `test_radar.py` *(gated)* | A synthetic dB pair with a known dark square gives a water-gain polygon there; permanent water and high ground are masked; the dB conversion masks zeros first |
-| `test_s1_access.py` *(gated, marked `integration`, needs network)* | Lists `sentinel-1-rtc` scenes for an Assam box and reads a small window (the check in `docs/M8_RADAR_FLOOD_DATA.md` section 8) |
+| `test_s1_access.py` *(gated, marked `integration`, needs network)* | Lists `sentinel-1-rtc` scenes for an Assam box and reads a small window |
 | `test_e2e_cli.py` | `python -m engine.run` on a tiny synthetic pair produces GPKG + GeoJSON + summary + audit |
 
 CI (`.github/workflows/ci.yml`): Python 3.11, install CPU torch, `ruff`, `pytest -m "not slow"`, then the web job from `FRONTEND_PLAN.md`.
@@ -228,7 +226,7 @@ The web app reads these static files directly. The live API is an **optional ext
 | Piece | Where | How |
 |---|---|---|
 | **Web app** | **Vercel** (free) | Connect the repo, root directory `web/`, build `npm run build`, env `VITE_API_URL`. Static demo data ships inside the build |
-| **API** | **Hugging Face Spaces** (Docker SDK). **Check first:** the official docs and July 2026 forum posts say Docker Spaces may now need a paid plan, so confirm in the Space creation dialog before building around it (see `docs/TECH_OPTIONS.md` §2, B2). If it is paid, use the fallbacks below or the browser-first design | `Dockerfile` based on `python:3.11-slim`, CPU torch wheels, `uvicorn api.main:app --host 0.0.0.0 --port 7860`. Weights and cropped demo TIFFs live in the Space (Git LFS) or are downloaded in the Dockerfile from a GitHub Release |
+| **API** | **Hugging Face Spaces** (Docker SDK). **Check first:** the official docs and July 2026 forum posts say Docker Spaces may now need a paid plan, so confirm in the Space creation dialog before building around it. If it is paid, use the fallbacks below or the browser-first design | `Dockerfile` based on `python:3.11-slim`, CPU torch wheels, `uvicorn api.main:app --host 0.0.0.0 --port 7860`. Weights and cropped demo TIFFs live in the Space (Git LFS) or are downloaded in the Dockerfile from a GitHub Release |
 | Fallback API | Render or a laptop with a tunnel | Render's free tier has about 512 MB RAM, which is too small for torch. Use it only for spectral mode |
 
 **Rules:**
@@ -240,7 +238,7 @@ The web app reads these static files directly. The live API is an **optional ext
 
 ---
 
-## 10. Build phases (mapped to clock times in `docs/TASK_SPLIT.md`)
+## 10. Build phases
 
 | Phase | Deliverable | Done when |
 |---|---|---|
@@ -263,7 +261,7 @@ The web app reads these static files directly. The live API is an **optional ext
 - [ ] The impact block is filled for the flood scene, with sources named.
 - [ ] `ruff` and `pytest -m "not slow"` are green in CI; slow tests were run once locally and the result noted in the README.
 - [ ] The API is live on a public URL and the deployed web app works with and without it.
-- [ ] The GPKG opens in QGIS (screenshot saved in `docs/`).
+- [ ] The GPKG opens in QGIS (screenshot in `docs/img/`).
 
 ---
 
@@ -297,7 +295,7 @@ Report held-out OSCD metrics **with 95 % confidence intervals**, the ablation ta
 
 ## 13. M8 radar flood mode: data and method decisions (from Ayush, `backend-2`, 9 Oct 2026)
 
-Source: [`docs/M8_RADAR_FLOOD_DATA.md`](docs/M8_RADAR_FLOOD_DATA.md). Status: **data sourcing decided; code not started; five live checks open.**
+Status: **built and evaluated on Sen1Floods11 (results in the README); the live 2026 NASA OPERA fetch is not verified.**
 
 ### Why
 Optical imagery is blind under monsoon cloud, the season when floods happen. Radar sees through cloud. Calm open water scatters the radar pulse away, so **new water is a sharp drop in backscatter** between a before and an after image. Ayush's survey found none of nine prior projects ships a working Sentinel-1 flood pipeline.
@@ -366,7 +364,7 @@ Reliable: **2 to 4** (free no-account training source, free-login test source wi
 
 ## 14. Borrowed ideas from the prior-art survey (credit them)
 
-From [`docs/PRIOR_ART_TECH_STACKS.md`](docs/PRIOR_ART_TECH_STACKS.md), adopted where cheap:
+From a survey of ten similar open-source projects, adopted where cheap:
 - **Shift check at ingest** by phase cross-correlation (Goudemant et al. 2026): already in `ingest.py`.
 - **Expected calibration error (ECE)** to justify the `confidence` attribute (P3): add to `eval/results.json`.
 - **Change threshold and minimum-area sliders** (P1): the X1 sensitivity lab.

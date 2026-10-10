@@ -12,7 +12,7 @@ Inputs (all produced by scripts in this repo):
   eval/results/oscd_variant_study.json             ml/variant_study.py        -> "oscd.variant_study" (validation only)
   eval/results/levir_bit.json                      eval/levir_eval.py         -> "levir"
   eval/results/m8_opera_2026_<event>.json, m8_mpc_<event>.json   eval/m8_opera.py   -> "m8_change"
-Keys follow docs/packages/CONTRACTS.md Seam 3. A key is written only when its result file exists: numbers come
+Keys are the ones the Accuracy page reads. A key is written only when its result file exists: numbers come
 from code that ran, never from a placeholder, and `not_measured` lists what is still missing.
 """
 import glob
