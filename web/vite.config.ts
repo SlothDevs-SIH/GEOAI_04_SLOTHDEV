@@ -3,10 +3,10 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { SCENE_CACHE } from "./src/lib/offline";
 
-// Bump when demo data is regenerated (CacheFirst would otherwise keep serving old images). Also in docs/DEPLOY.md.
-export const SCENE_CACHE = "demo-scenes-v1";
-
+// SCENE_CACHE (src/lib/offline.ts) is the cache name: bump it when demo data is regenerated (CacheFirst would otherwise
+// keep serving old images). Also in docs/DEPLOY.md.
 // base "./" so the built site works on any static host and from a sub-path.
 export default defineConfig({
   base: "./",

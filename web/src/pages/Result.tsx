@@ -18,6 +18,7 @@ import ResultHeader from "../components/result/ResultHeader";
 import { DropCounts, SceneEvalTable, WarningsBanner } from "../components/result/ResultInfo";
 import { FilterToggle, LabelsSwitch, PolygonsSwitch } from "../components/result/Switches";
 import { CardSection, EmptyState, ErrorState, InlineAlert, Skeleton, TabSegment } from "../components/ui/Primitives";
+import SaveOffline from "../components/scenes/SaveOffline";
 import { useRaw, useScene } from "../hooks/useScene";
 import { type FilterState, mapFilter, passes, tabCounts } from "../lib/filters";
 import { rankMarkers } from "../lib/explain";
@@ -175,7 +176,8 @@ export default function Result({ job = false }: { job?: boolean }) {
   return (
     <div data-testid="result" data-detector={data.detector ?? "spectral"} className="mx-auto max-w-[1500px] px-s12 pb-s26 md:px-s18">
       <ResultHeader name={data.meta.name} subtitle={s.subtitle ?? data.meta.place} event={data.meta.event} kind={job ? "live" : "demo"}
-        backTo={job ? "/analyse" : "/"} backLabel={job ? "Analyse" : "Scenes"} />
+        backTo={job ? "/analyse" : "/"} backLabel={job ? "Analyse" : "Scenes"}
+        action={job ? undefined : <SaveOffline ids={[id]} />} />
 
       <div className="grid gap-s12 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
         {/* ---- left: the map and what the filter did ---- */}

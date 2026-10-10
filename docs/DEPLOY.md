@@ -88,4 +88,4 @@ docker run --rm -p 7860:7860 geoai04:test
 
 ## Scene cache version (lazy loading)
 
-The service worker precaches only the app shell (about 2.5 MB). Scene files are cached when first used or when the user presses "Save for offline", in the cache named `SCENE_CACHE` (`web/vite.config.ts`, currently `demo-scenes-v1`). Images and `sens.bin` are served cache-first, so **bump the name (`demo-scenes-v2`, ...) whenever the demo data is regenerated**; otherwise returning visitors keep seeing the old images.
+The service worker precaches only the app shell (about 2.5 MB). Scene files are cached when first used or when the user presses "Save for offline", in the cache named `SCENE_CACHE` (`web/src/lib/offline.ts`, currently `demo-scenes-v1`). Images and `sens.bin` are served cache-first, so **bump the name (`demo-scenes-v2`, ...) whenever the demo data is regenerated**; otherwise returning visitors keep seeing the old images.

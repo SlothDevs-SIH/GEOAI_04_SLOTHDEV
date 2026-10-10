@@ -1,6 +1,7 @@
 import { Skeleton } from "../ui/Primitives";
 import type { SceneWithVariants } from "./kinds";
 import AnalyseCard from "./AnalyseCard";
+import SaveOffline from "./SaveOffline";
 import SceneCard from "./SceneCard";
 
 const GRID = "grid gap-s18 sm:grid-cols-2 lg:grid-cols-4";
@@ -9,7 +10,7 @@ const GRID = "grid gap-s18 sm:grid-cols-2 lg:grid-cols-4";
 export function SceneGrid({ scenes }: { scenes: SceneWithVariants[] }) {
   return (
     <ul data-testid="scene-grid" className={`${GRID} m-0 list-none p-0`}>
-      {scenes.map((s, i) => <li key={s.id} className="h-full"><SceneCard scene={s} index={i} /></li>)}
+      {scenes.map((s, i) => <li key={s.id} className="flex h-full flex-col gap-s4"><div className="flex-1"><SceneCard scene={s} index={i} /></div><SaveOffline ids={[s.id]} compact testid={`save-${s.id}`} /></li>)}
       <li className="h-full"><AnalyseCard index={scenes.length} /></li>
     </ul>
   );

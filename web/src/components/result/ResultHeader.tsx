@@ -2,7 +2,8 @@ import { Link } from "react-router-dom";
 import { DemoBadge } from "../ui/Primitives";
 
 /** R-10: back link, scene name, subtitle / event, and the Demo / Live badge. */
-export default function ResultHeader({ name, subtitle, event, kind, backTo = "/", backLabel = "Scenes" }: {
+export default function ResultHeader({ name, subtitle, event, kind, backTo = "/", backLabel = "Scenes", action }: {
+  action?: React.ReactNode;
   name: string; subtitle?: string; event?: string; kind: "demo" | "live"; backTo?: string; backLabel?: string;
 }) {
   return (
@@ -17,6 +18,7 @@ export default function ResultHeader({ name, subtitle, event, kind, backTo = "/"
         {(subtitle || event) && <p className="text-body text-secondary">{[subtitle, event].filter(Boolean).join(" · ")}</p>}
       </div>
       <span className="mt-s8"><DemoBadge kind={kind} /></span>
+      {action && <div className="mt-s4 w-full sm:w-auto">{action}</div>}
     </div>
   );
 }

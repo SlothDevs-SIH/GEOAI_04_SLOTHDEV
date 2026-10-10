@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import AnalyseCard from "../components/scenes/AnalyseCard";
 import HeroHeader from "../components/scenes/HeroHeader";
+import SaveOffline from "../components/scenes/SaveOffline";
 import { SceneGrid, SceneGridSkeleton } from "../components/scenes/SceneGrid";
 import { useScenes } from "../components/scenes/useScenes";
 import { EmptyState, ErrorState } from "../components/ui/Primitives";
@@ -45,6 +46,7 @@ export default function Scenes() {
         {scenes && scenes.length > 0 && (
           <>
             <div className="mb-s18 flex flex-wrap items-center gap-s8">
+              <SaveOffline ids={scenes.map((x) => x.id)} label={`Save all scenes (~${Math.round(scenes.length * 4.4)} MB)`} testid="save-all" />
               <button
                 type="button"
                 data-testid="filter-all"
