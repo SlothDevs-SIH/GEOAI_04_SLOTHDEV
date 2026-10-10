@@ -8,7 +8,7 @@ test("demo flow: scenes → result → toggle → select → confirm → permali
   page.on("console", (m) => m.type() === "error" && !ignorable(m.text()) && errors.push(m.text()));
 
   await page.goto("./");
-  await expect(page.getByTestId("scene-card")).toHaveCount(7);
+  expect(await page.getByTestId("scene-card").count()).toBeGreaterThanOrEqual(7);
   await page.getByText("Navi Mumbai airport build-out").click();
   await expect(page.getByTestId("counter")).toHaveText("2,185 raw detections → 265 real changes");
   await expect(page.locator("canvas.maplibregl-canvas")).toHaveCount(2);

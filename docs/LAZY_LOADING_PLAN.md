@@ -97,3 +97,24 @@ Why it hurts: on the first visit the service worker (`web/vite.config.ts`, `Vite
 2. **Enrichment**: for each change, the land that was there before (WorldCover shares) plus buildings and roads from OpenStreetMap (today these always show "unknown").
 3. **Tiled analysis**: split a large box into tiles, run them in parallel, show results as they finish starting from the centre, merge polygons across tile seams and apply the size filters after merging. This removes the 15 km / 6 km limit. Two to three hours of careful work; not safe to start near a deadline.
 4. **Authority alerts** (municipal corporations): needs enrichment with administrative boundaries first.
+
+---
+
+## 9. Status (11 Oct 2026, branch `lazy-loading`)
+
+Done: steps 0-5. Step 6 (near me + idle prefetch) is not built.
+
+| Measure | Before | Now (measured, `eval/test_runs/lazy_loading_first_load.json`) |
+|---|---|---|
+| Precache | 899 entries, 39,022 KiB | **13 entries, 2,525 KiB** |
+| Bytes on first visit (home page + service worker install, Chromium, local, unthrottled) | ~40 MB | **4.57 MB** (under the 5 MB target; the plan's "about 3 MB" estimate was optimistic: the eight scene thumbnails on the home page are about 2 MB of it) |
+| Service worker active | ~19 s | **0.4 s** |
+| Scene files requested before a scene is opened | all | **0** (apart from the thumbnails) |
+
+What changed: `web/vite.config.ts` (shell-only precache + runtime caching, cache `demo-scenes-v1` named in `web/src/lib/offline.ts`), `web/src/lib/offline.ts` (save a scene, friendly offline error), `web/src/components/scenes/SaveOffline.tsx` (button + progress; scene page, each card, "Save all scenes"), lazy sensitivity lab, `scripts/build_scene_manifests.py` (writes `files.json` per scene; re-run after any scene export), `/health` reports `max_side_km` and the Analyse page uses it.
+
+Tests: `web/e2e/offline.spec.ts` now takes the network away by stopping a local server (Playwright's `setOffline` does not stop a service worker's own fetches, so it cannot prove offline use), `web/e2e/first-load.spec.ts` measures the first visit and the lazy requests, plus unit tests for saving, quota and network errors.
+
+Two layout bugs found while running the whole suite, both fixed: the result page was 501 px wide on a 360 px phone (the grid had no `minmax(0,1fr)` column below the large breakpoint), and the Accuracy and About pages were 533 px wide because screen-reader-only text inside a table escaped the table's scroll box (the scroller was not `position: relative`).
+
+Still failing on `main` and not caused by this work: `web/e2e/smoke.spec.ts` "demo flow" cannot click Confirm at 1280x720 because the sticky sidebar's Impact card sits over the change card, and the change list renders all ~270 rows at once (11,000 px tall). Both are for Soham to look at.

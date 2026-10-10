@@ -148,7 +148,7 @@ export function TabSegment<T extends string>({ tabs, active, onChange, counts, t
 export function Scroller({ children, testid = "table-scroller" }: { children: ReactNode; testid?: string }) {
   return (
     <div className="relative">
-      <div tabIndex={0} data-testid={testid} className="thin-scroll overflow-x-auto" role="region" aria-label="Scrollable table">{children}</div>
+      <div tabIndex={0} data-testid={testid} className="thin-scroll relative overflow-x-auto" role="region" aria-label="Scrollable table">{children}</div>
       <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-6" style={{ background: "linear-gradient(90deg, transparent, var(--c-surface))" }} />
     </div>
   );

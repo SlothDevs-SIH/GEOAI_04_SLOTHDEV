@@ -1,0 +1,9 @@
+{
+ "measured_by": "web/e2e/first-load.spec.ts (Chromium, local preview, no throttling)",
+ "first_visit_bytes": 4796930,
+ "first_visit_mb": 4.57,
+ "service_worker_ready_ms": 411,
+ "wall_ms": 10501,
+ "scene_requests_before_opening_a_scene": 0,
+ "thumbnail_requests": 8
+}

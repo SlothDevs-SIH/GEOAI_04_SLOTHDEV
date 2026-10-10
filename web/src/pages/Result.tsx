@@ -179,7 +179,7 @@ export default function Result({ job = false }: { job?: boolean }) {
         backTo={job ? "/analyse" : "/"} backLabel={job ? "Analyse" : "Scenes"}
         action={job ? undefined : <SaveOffline ids={[id]} />} />
 
-      <div className="grid gap-s12 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-s12 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
         {/* ---- left: the map and what the filter did ---- */}
         <div className="flex min-w-0 flex-col gap-s12">
           <div className="flex flex-wrap items-center gap-x-s18 gap-y-s4">
