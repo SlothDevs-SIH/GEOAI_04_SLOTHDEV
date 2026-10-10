@@ -11,6 +11,7 @@ A **web app** that shows what actually changed on the ground between two dates: 
 > | Live site | **https://geoai04.onrender.com** (first load can take about a minute: free hosting sleeps when idle) |
 > | Live API | same address: `/health`, `/demos`, `/analyze`, `/fetch-s2` |
 > | Demo video | **TODO: add the YouTube link** |
+> | Presentation | [`PPT/FUS_016_GEO_AI_04_SlothDev.pptx`](PPT/FUS_016_GEO_AI_04_SlothDev.pptx) |
 
 ![GEOAI 04 system architecture](docs/img/geoai04_architecture_final.png)
 
@@ -163,6 +164,7 @@ scripts/    fetch and build demo scenes, export detector variants, system_test, 
 tests/      pytest (engine, any-area, composites, radar, detector modes, API)
 prototype/  round-1 pipeline and static prototype
 frontend/   Expo (React Native Web) front-end, built in parallel with web/; the deployed site is web/
+PPT/        the team presentation
 docs/img/   the architecture diagram and the pictures from the regional review
 ```
 
@@ -209,6 +211,7 @@ CI runs the first two on every push (`.github/workflows/ci.yml`).
 
 | Read this | For |
 |---|---|
+| [`PPT/FUS_016_GEO_AI_04_SlothDev.pptx`](PPT/FUS_016_GEO_AI_04_SlothDev.pptx) | The team presentation (NETRA) |
 | [`BACKEND_PLAN.md`](BACKEND_PLAN.md) | The backend: what was built and why, API contract, tests, deployment |
 | [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md) | The web app: screens, components, behaviour |
 | [`eval/README.md`](eval/README.md) | Every measured result and the command that reproduces it |

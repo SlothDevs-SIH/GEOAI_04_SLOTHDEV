@@ -7,7 +7,7 @@
 **Stack:** Python 3.11 · Rasterio · NumPy · OpenCV · scikit-image · Shapely 2 · GeoPandas · pyproj · PyTorch (CPU at serve time; GPU on Kaggle/Colab for training) · FastAPI + Uvicorn · pytest + ruff · Docker
 **Starting point:** [`prototype/pipeline.py`](prototype/pipeline.py) (runs end to end on LEVIR-CD pairs) and `engine/s2.py` + `engine/config.py` (Sentinel-2 scene search and AOI reads, written, not yet tested end to end).
 **Live:** https://geoai04.onrender.com
-**Related:** [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md) (the web app) · [`README.md`](README.md)
+**Related:** [`FRONTEND_PLAN.md`](FRONTEND_PLAN.md) (the web app) · [`README.md`](README.md) · [presentation](PPT/FUS_016_GEO_AI_04_SlothDev.pptx)
 
 > **What changed from the earlier plan.** (1) The client is a **website**, not an Android app, because the official statement asks for an interactive split-view **web** map. (2) We now **retrain a model** on real labelled Sentinel-2 change data (OSCD) and report held-out numbers, instead of relying only on pretrained weights. (3) A new **impact** stage turns polygons into numbers a public official cares about. (4) The architecture is **static-first**: demo results are precomputed, so the deployed site always works even if the live backend is asleep.
 

@@ -7,7 +7,7 @@
 **Talks to:** the FastAPI service in [`BACKEND_PLAN.md`](BACKEND_PLAN.md) §6, **but works without it** for the demo scenes (static files in `web/public/demos/`).
 **Hosting:** Render (one Docker service serves the site and the API): https://geoai04.onrender.com
 **Design philosophy:** map first · every number has a source · the false-alarm story is visible in one click · usable on a laptop projector **and** on a phone browser.
-**Overview:** [`README.md`](README.md)
+**Overview:** [`README.md`](README.md) · [presentation](PPT/FUS_016_GEO_AI_04_SlothDev.pptx)
 
 > **What changed from the earlier plan.** The Android app is dropped. The official statement asks for an interactive split-view **web** map, a website is the fastest thing to deploy and share with judges, and the team already built a React + MapLibre app on PS_121.
 
